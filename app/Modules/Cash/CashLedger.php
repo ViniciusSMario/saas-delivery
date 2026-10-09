@@ -4,6 +4,7 @@ namespace App\Modules\Cash;
 
 use App\Modules\Access\Audit;
 use App\Modules\Access\Models\User;
+use App\Modules\Cash\Events\CashSessionClosed;
 use App\Modules\Cash\Models\CashMovement;
 use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Cash\Models\CashSession;
@@ -128,7 +129,7 @@ class CashLedger
      */
     public function close(CashSession $session, User $user, array $counted, ?string $notes = null): CashSession
     {
-        return DB::connection('tenant')->transaction(function () use ($session, $user, $counted, $notes) {
+        $closed = DB::connection('tenant')->transaction(function () use ($session, $user, $counted, $notes) {
             $locked = CashSession::lockForUpdate()->findOrFail($session->id);
 
             if (! $locked->isOpen()) {
@@ -158,6 +159,10 @@ class CashLedger
 
             return $locked;
         });
+
+        event(new CashSessionClosed($closed));
+
+        return $closed;
     }
 
     /**

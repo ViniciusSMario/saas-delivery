@@ -98,6 +98,16 @@
                         <input wire:model="cost" id="cost" type="text" inputmode="decimal" class="input" placeholder="Ex.: 120,00">
                         @error('cost') <p class="field-error">{{ $message }}</p> @enderror
                     </div>
+                    @can('finance.manage')
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model.live="createPayable" class="checkbox"> Gerar conta a pagar no financeiro</label>
+                        @if ($createPayable)
+                            <div class="grid grid-cols-2 gap-2">
+                                <input wire:model="supplier" type="text" class="input" placeholder="Fornecedor" aria-label="Fornecedor">
+                                <input wire:model="dueDate" type="date" class="input" aria-label="Vencimento">
+                            </div>
+                        @endif
+                        @error('createPayable') <p class="field-error">{{ $message }}</p> @enderror
+                    @endcan
                 @endif
                 <div>
                     <label for="reason" class="label">{{ $movement === 'loss' ? 'Motivo' : 'Observação (opcional)' }}</label>

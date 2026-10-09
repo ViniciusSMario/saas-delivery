@@ -18,6 +18,10 @@ use App\Livewire\Tenant\Orders;
 use App\Livewire\Tenant\Tables;
 use App\Livewire\Tenant\Cash;
 use App\Livewire\Tenant\Stock;
+use App\Livewire\Tenant\Customers;
+use App\Livewire\Tenant\Finance;
+use App\Livewire\Tenant\Reports;
+use App\Http\Controllers\Tenant\ReportExportController;
 use App\Livewire\Tenant\Profile;
 use App\Livewire\Tenant\Roles;
 use App\Livewire\Tenant\Users;
@@ -69,6 +73,17 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
         Route::get('/estoque/fichas/adicional/{addon}', Stock\RecipeEditor::class)->whereNumber('addon')->name('recipe.addon');
         Route::get('/estoque/consumo', Stock\Consumption::class)->name('consumption');
     });
+
+    Route::get('/clientes', Customers\Index::class)->middleware('can:customers.manage')->name('customers.index');
+    Route::get('/clientes/{customer}', Customers\Show::class)->whereNumber('customer')->middleware('can:customers.manage')->name('customers.show');
+
+    Route::get('/financeiro', Finance\Index::class)->middleware('can:finance.view')->name('finance.index');
+    Route::get('/financeiro/novo', Finance\EntryForm::class)->middleware('can:finance.manage')->name('finance.create');
+    Route::get('/financeiro/{entry}', Finance\EntryForm::class)->whereNumber('entry')->middleware('can:finance.manage')->name('finance.edit');
+    Route::get('/financeiro/contas', Finance\Accounts::class)->middleware('can:finance.manage')->name('finance.accounts');
+
+    Route::get('/relatorios', Reports\Index::class)->middleware('can:reports.view')->name('reports.index');
+    Route::get('/relatorios/exportar/{type}', ReportExportController::class)->whereIn('type', ['vendas', 'produtos'])->middleware('can:reports.view')->name('reports.export');
 
     Route::get('/caixa', Cash\Current::class)->middleware('can:cash.operate')->name('cash.current');
     Route::get('/caixa/sessoes', Cash\Sessions::class)->middleware('can:cash.manage')->name('cash.sessions');

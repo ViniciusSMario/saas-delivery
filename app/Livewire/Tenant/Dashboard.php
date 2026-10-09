@@ -2,34 +2,60 @@
 
 namespace App\Livewire\Tenant;
 
-use App\Modules\Access\Models\User;
 use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\OpeningHour;
-use App\Modules\Establishment\Models\Setting;
-use App\Modules\Orders\Enums\OrderStatus;
+use App\Modules\Finance\Models\FinancialEntry;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Reports\SalesReport;
 use App\Modules\Stock\Models\StockItem;
+use App\Modules\Tables\Models\Command;
 use App\Support\Money;
+use Carbon\CarbonImmutable;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
+/** Início: o dia do estabelecimento. Cada bloco aparece conforme a permissão. */
 #[Title('Início')]
 class Dashboard extends Component
 {
     public function render()
     {
-        $timezone = Setting::read('timezone', 'America/Sao_Paulo');
-
-        return view('livewire.tenant.dashboard', [
+        $user = auth()->user();
+        $report = app(SalesReport::class);
+        $now = CarbonImmutable::now($report->timezone);
+        $data = [
             'establishment' => Establishment::current(),
-            'today' => OpeningHour::where('weekday', now($timezone)->dayOfWeek)->first(),
-            'activeUsers' => User::where('is_active', true)->count(),
-            'ordersToday' => Order::where('created_at', '>=', now($timezone)->startOfDay()->utc())->where('status', '!=', OrderStatus::Cancelled->value)->count(),
-            'salesToday' => Money::cents((int) Order::where('created_at', '>=', now($timezone)->startOfDay()->utc())->where('status', '!=', OrderStatus::Cancelled->value)->sum('total_cents')),
-            'openOrders' => Order::open()->count(),
-            'lowStock' => auth()->user()->can('stock.manage')
-                ? StockItem::belowMinimum()->with('unit')->orderBy('name')->limit(8)->get()
-                : collect(),
-        ]);
+            'today' => OpeningHour::where('weekday', $now->dayOfWeek)->first(),
+            'now' => $now,
+            'lowStock' => collect(),
+            'sales' => null,
+        ];
+
+        if ($user->can('reports.view')) {
+            // Hoje até agora x mesmo dia da semana passada até o mesmo horário.
+            $data['sales'] = $report->summary($now->startOfDay()->utc(), $now->utc());
+            $data['lastWeek'] = $report->summary($now->subWeek()->startOfDay()->utc(), $now->subWeek()->utc());
+            $data['methods'] = $report->byPaymentMethod($now->startOfDay()->utc(), $now->utc());
+        }
+
+        if ($user->can('orders.view')) {
+            $data['openOrders'] = Order::open()->count();
+        }
+
+        if ($user->can('tables.manage')) {
+            $data['openTables'] = Command::open()->whereNotNull('table_id')->count();
+        }
+
+        if ($user->can('finance.view')) {
+            $today = $now->toDateString();
+            $data['dueToday'] = Money::cents((int) FinancialEntry::open()->where('kind', 'payable')->where('due_date', $today)->sum('amount_cents'));
+            $data['overdue'] = Money::cents((int) FinancialEntry::open()->where('kind', 'payable')->where('due_date', '<', $today)->sum('amount_cents'));
+        }
+
+        if ($user->can('stock.manage')) {
+            $data['lowStock'] = StockItem::belowMinimum()->with('unit')->orderBy('name')->limit(8)->get();
+        }
+
+        return view('livewire.tenant.dashboard', $data);
     }
 }

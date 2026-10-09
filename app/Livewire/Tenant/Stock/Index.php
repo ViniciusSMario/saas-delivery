@@ -3,6 +3,8 @@
 namespace App\Livewire\Tenant\Stock;
 
 use App\Modules\Access\Audit;
+use App\Modules\Finance\FinanceBook;
+use App\Modules\Finance\Models\FinancialCategory;
 use App\Modules\Stock\Models\StockItem;
 use App\Modules\Stock\Models\Unit;
 use App\Modules\Stock\StockLedger;
@@ -42,6 +44,13 @@ class Index extends Component
 
     public string $reason = '';
 
+    // Compra: gerar conta a pagar no financeiro (opcional, desmarcado por padrão)
+    public bool $createPayable = false;
+
+    public string $supplier = '';
+
+    public string $dueDate = '';
+
     public function mount(): void
     {
         $this->unitId = Unit::where('code', 'kg')->value('id');
@@ -65,7 +74,8 @@ class Index extends Component
     {
         $this->movingId = $id;
         $this->movement = in_array($type, ['purchase', 'loss', 'count'], true) ? $type : 'purchase';
-        $this->reset('quantity', 'cost', 'reason');
+        $this->reset('quantity', 'cost', 'reason', 'createPayable', 'supplier');
+        $this->dueDate = now()->toDateString();
         $this->resetErrorBag();
     }
 
@@ -89,12 +99,30 @@ class Index extends Component
         $user = Auth::guard('web')->user();
         $quantity = Quantity::parse($this->quantity);
 
+        if ($this->movement === 'purchase' && $this->createPayable && ! $user->can('finance.manage')) {
+            $this->addError('createPayable', 'Você não tem permissão para lançar no financeiro.');
+
+            return;
+        }
+
         try {
-            match ($this->movement) {
+            $movement = match ($this->movement) {
                 'purchase' => $ledger->purchase($item, $quantity, Money::parse($this->cost), $user, $this->reason ?: null),
                 'loss' => $ledger->loss($item, $quantity, $user, $this->reason),
                 'count' => $ledger->count($item, $quantity, $user, $this->reason ?: null),
             };
+
+            if ($this->movement === 'purchase' && $this->createPayable) {
+                app(FinanceBook::class)->create([
+                    'kind' => 'payable',
+                    'description' => 'Compra: '.Quantity::format($quantity).' '.$item->unit->code.' de '.$item->name,
+                    'counterparty' => $this->supplier,
+                    'category_id' => FinancialCategory::where('kind', 'payable')->where('name', 'Fornecedores')->value('id'),
+                    'amount' => Money::parse($this->cost),
+                    'due_date' => $this->dueDate ?: now()->toDateString(),
+                    'source_ref' => 'stock_purchase:'.$movement->id,
+                ], $user);
+            }
         } catch (ValidationException $e) {
             foreach ($e->errors() as $key => $messages) {
                 $this->addError($key, $messages[0]);

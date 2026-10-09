@@ -6,6 +6,8 @@ use App\Modules\Access\DefaultRoles;
 use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Establishment\Models\OpeningHour;
 use App\Modules\Establishment\Models\Setting;
+use App\Modules\Finance\Models\FinancialAccount;
+use App\Modules\Finance\Models\FinancialCategory;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Stock\Models\Unit;
 use Illuminate\Database\Seeder;
@@ -38,5 +40,7 @@ class TenantDatabaseSeeder extends Seeder
         PaymentMethod::seedDefaults();
         CashRegister::seedDefault();
         Unit::seedDefaults();
+        FinancialAccount::seedDefaults();
+        FinancialCategory::seedDefaults();
     }
 }

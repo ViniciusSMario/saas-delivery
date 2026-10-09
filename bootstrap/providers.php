@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Access\AccessServiceProvider;
+use App\Modules\Finance\FinanceServiceProvider;
 use App\Modules\Stock\StockServiceProvider;
 use App\Platform\PlatformServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -13,4 +14,5 @@ return [
     TenancyServiceProvider::class,
     AccessServiceProvider::class,
     StockServiceProvider::class,
+    FinanceServiceProvider::class,
 ];

@@ -60,10 +60,13 @@
                 @error('customer.name') <p class="field-error">{{ $message }}</p> @enderror
             </div>
             <div>
-                <input wire:model="customerPhone" type="tel" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
+                <input wire:model.blur="customerPhone" type="tel" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
                 @error('customer.phone') <p class="field-error">{{ $message }}</p> @enderror
             </div>
         </div>
+        @if ($customerNotes)
+            <p class="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">Cliente: {{ $customerNotes }}</p>
+        @endif
 
         @if ($fulfillment === 'delivery')
             <div class="grid grid-cols-3 gap-2">

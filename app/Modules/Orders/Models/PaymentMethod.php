@@ -2,16 +2,24 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Modules\Finance\Models\FinancialAccount;
 use App\Tenancy\TenantModel;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PaymentMethod extends TenantModel
 {
-    protected $fillable = ['code', 'name', 'is_active', 'accepts_change', 'position'];
+    protected $fillable = ['code', 'name', 'is_active', 'accepts_change', 'position', 'financial_account_id'];
 
     protected function casts(): array
     {
         return ['is_active' => 'boolean', 'accepts_change' => 'boolean'];
+    }
+
+    /** Conta financeira onde o dinheiro desta forma de pagamento cai. */
+    public function financialAccount(): BelongsTo
+    {
+        return $this->belongsTo(FinancialAccount::class);
     }
 
     public const DEFAULTS = [

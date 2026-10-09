@@ -5,6 +5,7 @@ namespace App\Livewire\Tenant\Orders;
 use App\Livewire\Tenant\Concerns\PicksMenuItems;
 use App\Modules\Access\Models\User;
 use App\Modules\Cash\CashLedger;
+use App\Modules\Customers\Models\Customer;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Actions\PlaceOrder;
 use App\Modules\Orders\Enums\OrderSource;
@@ -32,6 +33,9 @@ class Counter extends Component
 
     public string $customerPhone = '';
 
+    /** Observações do cadastro do cliente (ex.: alergia), só para mostrar. */
+    public string $customerNotes = '';
+
     /** @var array<string, string> */
     public array $address = ['street' => '', 'number' => '', 'complement' => '', 'district' => '', 'city' => '', 'reference' => ''];
 
@@ -48,9 +52,32 @@ class Counter extends Component
         $this->paymentMethod = (string) PaymentMethod::active()->value('code');
     }
 
+    /** Cliente que já pediu: o telefone preenche nome e o último endereço (só o que está em branco). */
+    public function updatedCustomerPhone(): void
+    {
+        if (! Customer::isValidPhone($this->customerPhone)) {
+            return;
+        }
+
+        $customer = Customer::with('addresses')->where('phone', Customer::normalizePhone($this->customerPhone))->first();
+
+        if (! $customer) {
+            return;
+        }
+
+        $this->customerName = $this->customerName ?: $customer->name;
+        $address = $customer->addresses->first();
+
+        if ($address && collect($this->address)->filter()->isEmpty()) {
+            $this->address = array_merge($this->address, array_map(fn ($v) => (string) $v, $address->only(['street', 'number', 'complement', 'district', 'city', 'reference'])));
+        }
+
+        $this->customerNotes = (string) $customer->notes;
+    }
+
     public function clearCart(): void
     {
-        $this->reset('cart', 'customerName', 'customerPhone', 'address', 'changeFor', 'discount', 'notes');
+        $this->reset('cart', 'customerName', 'customerPhone', 'customerNotes', 'address', 'changeFor', 'discount', 'notes');
         $this->fulfillment = 'counter';
         $this->resetErrorBag();
     }
