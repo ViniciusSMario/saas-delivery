@@ -6,41 +6,88 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/*
+ * Design system do SaaS Delivery.
+ * Marca: laranja-tomate (apetite, ação). Neutros: stone (quente, combina com comida).
+ * As classes de componente abaixo (card, btn-*, input, badge-*, table...) são usadas
+ * em todas as telas; mudar aqui muda o sistema inteiro.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
 
-    --color-brand-50: oklch(0.97 0.02 40);
-    --color-brand-100: oklch(0.94 0.05 40);
-    --color-brand-500: oklch(0.65 0.18 38);
-    --color-brand-600: oklch(0.58 0.18 36);
-    --color-brand-700: oklch(0.5 0.16 34);
+    --color-brand-50: oklch(0.975 0.018 45);
+    --color-brand-100: oklch(0.945 0.045 45);
+    --color-brand-200: oklch(0.89 0.09 44);
+    --color-brand-300: oklch(0.82 0.13 42);
+    --color-brand-400: oklch(0.73 0.17 40);
+    --color-brand-500: oklch(0.665 0.195 38);
+    --color-brand-600: oklch(0.6 0.19 36);
+    --color-brand-700: oklch(0.51 0.165 34);
+    --color-brand-800: oklch(0.43 0.135 33);
+    --color-brand-900: oklch(0.36 0.105 33);
+
+    --shadow-card: 0 1px 2px 0 rgb(28 25 23 / 0.04), 0 1px 3px 0 rgb(28 25 23 / 0.06);
+    --shadow-float: 0 10px 30px -10px rgb(28 25 23 / 0.25), 0 4px 10px -6px rgb(28 25 23 / 0.12);
 }
 
 /* Base dos botões; @utility para poder ser usada em @apply (Tailwind 4). */
 @utility btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition select-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+
+/* Base dos selos (badge-*). */
+@utility badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap;
 }
 
 [x-cloak] {
     display: none !important;
 }
 
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-stone-100 text-stone-900 antialiased;
+        font-feature-settings: 'cv11', 'ss01';
+    }
+}
+
 @layer components {
+    /* Cartões e seções */
     .card {
-        @apply rounded-xl border border-stone-200 bg-white shadow-xs;
+        @apply rounded-2xl border border-stone-200/80 bg-white shadow-(--shadow-card);
     }
 
     .card-body {
         @apply p-5 sm:p-6;
     }
 
+    .card-header {
+        @apply flex items-center justify-between gap-3 border-b border-stone-100 px-5 py-4 sm:px-6;
+    }
+
+    .section-title {
+        @apply text-base font-semibold text-stone-900;
+    }
+
+    .page-title {
+        @apply text-2xl font-bold tracking-tight text-stone-900;
+    }
+
+    /* Formulários */
     .label {
-        @apply mb-1 block text-sm font-medium text-stone-700;
+        @apply mb-1.5 block text-sm font-medium text-stone-700;
     }
 
     .input {
-        @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs placeholder:text-stone-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500;
+        @apply block min-h-10 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs transition placeholder:text-stone-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500;
+    }
+
+    select.input {
+        @apply pr-8;
     }
 
     .checkbox {
@@ -48,54 +95,138 @@
     }
 
     .field-error {
-        @apply mt-1 text-sm text-red-600;
+        @apply mt-1.5 text-sm font-medium text-red-600;
     }
 
     .hint {
-        @apply mt-1 text-xs text-stone-500;
+        @apply mt-1.5 text-xs text-stone-500;
     }
 
+    /* Botões */
     .btn-primary {
-        @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500;
+        @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:ring-brand-500;
     }
 
     .btn-secondary {
-        @apply btn border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 focus:ring-stone-300;
+        @apply btn border border-stone-300 bg-white text-stone-700 shadow-xs hover:border-stone-400 hover:bg-stone-50 focus-visible:ring-stone-300;
+    }
+
+    .btn-ghost {
+        @apply btn text-stone-600 hover:bg-stone-100 hover:text-stone-900 focus-visible:ring-stone-300;
     }
 
     .btn-danger {
-        @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+        @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-500;
+    }
+
+    .btn-success {
+        @apply btn bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 focus-visible:ring-emerald-500;
+    }
+
+    .btn-sm {
+        @apply h-8 rounded-lg px-3 text-xs;
+    }
+
+    .btn-lg {
+        @apply h-12 rounded-2xl px-6 text-base;
+    }
+
+    .btn-icon {
+        @apply btn size-10 px-0;
     }
 
     .btn-link {
-        @apply text-sm font-medium text-brand-700 hover:underline;
+        @apply text-sm font-semibold text-brand-700 hover:text-brand-800 hover:underline;
     }
 
-    .badge {
-        @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
-    }
+    /* Selos */
+    .badge-gray { @apply badge bg-stone-100 text-stone-700; }
+    .badge-brand { @apply badge bg-brand-100 text-brand-800; }
+    .badge-green { @apply badge bg-emerald-100 text-emerald-800; }
+    .badge-amber { @apply badge bg-amber-100 text-amber-800; }
+    .badge-red { @apply badge bg-red-100 text-red-700; }
+    .badge-blue { @apply badge bg-sky-100 text-sky-800; }
+    .badge-violet { @apply badge bg-violet-100 text-violet-800; }
 
+    /* Tabelas */
     .table {
-        @apply min-w-full divide-y divide-stone-200 text-sm;
+        @apply min-w-full text-sm;
+    }
+
+    .table thead {
+        @apply bg-stone-50/80;
     }
 
     .table th {
-        @apply px-4 py-3 text-left text-xs font-semibold tracking-wide text-stone-500 uppercase;
+        @apply border-b border-stone-200 px-4 py-3 text-left text-xs font-semibold tracking-wide text-stone-500 uppercase first:pl-5 last:pr-5;
     }
 
     .table td {
-        @apply px-4 py-3 align-middle text-stone-700;
+        @apply px-4 py-3.5 align-middle text-stone-700 first:pl-5 last:pr-5;
     }
 
-    .page-title {
-        @apply text-xl font-semibold text-stone-900 sm:text-2xl;
+    .table tbody tr {
+        @apply transition-colors hover:bg-stone-50/70;
     }
 
+    .table tbody tr + tr td {
+        @apply border-t border-stone-100;
+    }
+
+    /* Avisos */
     .alert-success {
-        @apply rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800;
+        @apply flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800;
     }
 
     .alert-error {
-        @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
+        @apply flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800;
     }
+
+    .alert-warning {
+        @apply flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900;
+    }
+
+    /* Abas e chips */
+    .tab {
+        @apply -mb-px border-b-2 border-transparent px-3 py-2.5 text-sm font-semibold text-stone-500 transition hover:text-stone-800;
+    }
+
+    .tab-active {
+        @apply border-brand-600 text-brand-700;
+    }
+
+    .chip {
+        @apply inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 text-sm font-medium whitespace-nowrap text-stone-700 transition hover:border-stone-300;
+    }
+
+    .chip-active {
+        @apply border-stone-900 bg-stone-900 text-white hover:border-stone-900;
+    }
+
+    /* Indicadores */
+    .stat-label {
+        @apply text-xs font-semibold tracking-wide text-stone-500 uppercase;
+    }
+
+    .stat-value {
+        @apply mt-1 text-2xl font-bold tracking-tight text-stone-900 tabular-nums;
+    }
+}
+
+/* Barra de rolagem discreta em listas horizontais. */
+@utility scrollbar-none {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Áreas seguras do iPhone (notch / barra inferior). */
+@utility pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+@utility pt-safe {
+    padding-top: env(safe-area-inset-top);
 }
