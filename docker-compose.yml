@@ -3,8 +3,14 @@ name: saas-delivery
 x-php: &php
   build: docker/php
   image: saas-delivery-php:dev
+  # Mesmo usuário do php-fpm: arquivos criados por artisan/composer/testes continuam graváveis pela web.
+  user: www-data
+  environment:
+    COMPOSER_HOME: /tmp/composer
   volumes:
     - ./:/var/www/html
+    # vendor/ fica num volume: ler milhares de arquivos por bind mount no Windows é muito lento.
+    - vendor:/var/www/html/vendor
   depends_on:
     postgres:
       condition: service_healthy
@@ -71,7 +77,10 @@ services:
       - "${VITE_PORT:-5173}:5173"
     volumes:
       - ./:/var/www/html
+      - node_modules:/var/www/html/node_modules
 
 volumes:
   pgdata:
   redisdata:
+  vendor:
+  node_modules:

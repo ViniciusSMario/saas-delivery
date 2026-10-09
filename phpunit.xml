@@ -38,6 +38,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="SESSION_STORE" value="sessions" force="true"/>
         <env name="TENANCY_CENTRAL_DOMAINS" value="localhost" force="true"/>
         <env name="TENANCY_BASE_DOMAIN" value="localhost" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>

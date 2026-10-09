@@ -78,6 +78,15 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
+        // Store das sessões, com prefixo fixo: não muda com o tenant ativo, então a
+        // sessão é lida e gravada na mesma chave seja qual for a ordem de boot.
+        // O isolamento da sessão vem do cookie por host e de EnsureSessionBelongsToTenant.
+        'sessions' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
+            'prefix' => env('CACHE_PREFIX', 'saas_').'session:',
+        ],
+
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),

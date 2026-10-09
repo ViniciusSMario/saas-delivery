@@ -138,3 +138,13 @@ it('resolve e ativa o tenant antes de iniciar a sessão', function () {
     ])->and(array_search(Illuminate\Session\Middleware\StartSession::class, $stack))
         ->toBeLessThan(array_search(App\Tenancy\Middleware\EnsureSessionBelongsToTenant::class, $stack));
 });
+
+it('usa um store de sessão com prefixo fixo, que não muda com o tenant ativo', function () {
+    // Regressão: com o prefixo do tenant, a sessão podia ser gravada numa chave e lida em
+    // outra, dependendo de quando o driver de sessão era criado (419 no Livewire).
+    $outside = Cache::store('sessions')->getPrefix();
+
+    expect(config('session.store'))->toBe('sessions')
+        ->and(inTenant($this->a, fn () => Cache::store('sessions')->getPrefix()))->toBe($outside)
+        ->and($outside)->not->toContain($this->a->id);
+});
