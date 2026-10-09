@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Confere o status do tenant identificado e, se estiver ativo, ativa o contexto
- * (search_path, cache, disco e log). Só depois disso a sessão é iniciada.
+ * (schema, cache, disco e log). Só depois disso a sessão é iniciada.
  */
 class EnsureTenantIsActive
 {

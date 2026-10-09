@@ -49,10 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureSessionBelongsToTenant::class,
             SubstituteBindings::class,
         ]);
-
-        $middleware->prependToPriorityList(EncryptCookies::class, IdentifyTenant::class);
-        $middleware->appendToPriorityList(IdentifyTenant::class, EnsureTenantIsActive::class);
-        $middleware->appendToPriorityList(StartSession::class, EnsureSessionBelongsToTenant::class);
+        // Os três middlewares de tenancy ficam fora da lista de prioridade de propósito:
+        // assim o Laravel nunca os reordena em relação à sessão.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

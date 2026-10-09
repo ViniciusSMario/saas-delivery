@@ -13,8 +13,6 @@ use Livewire\Livewire;
 
 class TenancyServiceProvider extends ServiceProvider
 {
-    private static bool $payloadHookRegistered = false;
-
     public function register(): void
     {
         $this->app->singleton(SchemaManager::class);
@@ -30,19 +28,15 @@ class TenancyServiceProvider extends ServiceProvider
     /** Jobs TenantAware levam o id do tenant ativo no payload. */
     private function registerQueuePayloadHook(): void
     {
-        // O hook é estático na fila; registrar uma vez por processo basta.
-        if (self::$payloadHookRegistered) {
-            return;
-        }
-
-        self::$payloadHookRegistered = true;
-
         Queue::createPayloadUsing(function (?string $connection, ?string $queue, array $payload): array {
-            $class = $payload['data']['commandName'] ?? null;
+            // Neste ponto o Laravel ainda passa o objeto do job (serializa depois).
+            $command = $payload['data']['command'] ?? null;
 
-            if (! $class || ! in_array(TenantAware::class, class_uses_recursive($class), true)) {
+            if (! is_object($command) || ! in_array(TenantAware::class, class_uses_recursive($command), true)) {
                 return [];
             }
+
+            $class = $command::class;
 
             $tenantId = app(TenantContext::class)->id()
                 ?? throw MissingTenantForJob::onDispatch($class);
