@@ -130,29 +130,31 @@
                                 @endif
                             </div>
 
-                            <div class="flex items-center gap-2 border-t border-stone-100 bg-stone-50/70 px-3.5 py-2.5">
-                                <span class="font-bold tabular-nums">{{ $order->total_cents->format() }}</span>
-                                <div class="ml-auto flex gap-1.5">
+                            {{-- Rodapé em duas linhas: total + cancelar, e a ação principal na largura toda
+                                 (cabe em colunas estreitas, como 4 colunas em telas de 1366 px). --}}
+                            <div class="space-y-2 border-t border-stone-100 bg-stone-50/70 px-3.5 py-2.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-bold whitespace-nowrap tabular-nums">{{ $order->total_cents->format() }}</span>
                                     @can('orders.cancel')
-                                        <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
-                                    @endcan
-                                    @can('orders.manage')
-                                        @if ($label = $nextLabel($order))
-                                            <button type="button" wire:click="advance({{ $order->id }})" wire:loading.attr="disabled" class="btn-primary btn-sm">
-                                                {{ $label }} <x-icon name="chevron-right" class="size-3.5" />
-                                            </button>
-                                        @endif
+                                        <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-ghost btn-sm -mr-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
                                     @endcan
                                 </div>
+                                @can('orders.manage')
+                                    @if ($label = $nextLabel($order))
+                                        <button type="button" wire:click="advance({{ $order->id }})" wire:loading.attr="disabled" class="btn-primary w-full">
+                                            {{ $label }} <x-icon name="chevron-right" class="size-4" />
+                                        </button>
+                                    @endif
+                                @endcan
                             </div>
 
                             @if ($cancellingId === $order->id)
                                 <form wire:submit="cancel" class="space-y-2 border-t border-red-100 bg-red-50/50 p-3.5">
                                     <input wire:model="cancelReason" type="text" class="input" placeholder="Motivo do cancelamento" maxlength="255" autofocus>
                                     @error('cancelReason') <p class="field-error">{{ $message }}</p> @enderror
-                                    <div class="flex justify-end gap-2">
+                                    <div class="flex flex-wrap justify-end gap-2">
                                         <button type="button" wire:click="$set('cancellingId', null)" class="btn-secondary btn-sm">Voltar</button>
-                                        <button type="submit" class="btn-danger btn-sm">Confirmar cancelamento</button>
+                                        <button type="submit" class="btn-danger btn-sm">Confirmar</button>
                                     </div>
                                 </form>
                             @endif
