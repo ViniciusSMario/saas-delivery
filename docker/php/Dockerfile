@@ -1,8 +1,14 @@
 FROM php:8.3-fpm-alpine
 
+# www-data com o mesmo uid/gid do seu usuário: arquivos criados no container
+# (logs, cache, migrations geradas) ficam graváveis dos dois lados.
+ARG UID=1000
+ARG GID=1000
+
 COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
 RUN install-php-extensions pdo_pgsql pgsql intl zip bcmath pcntl redis opcache \
-    && apk add --no-cache git unzip postgresql17-client
+    && apk add --no-cache git unzip postgresql17-client shadow \
+    && groupmod -o -g ${GID} www-data && usermod -o -u ${UID} -g ${GID} www-data
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY php.ini /usr/local/etc/php/conf.d/zz-app.ini

@@ -22,7 +22,7 @@ docker compose exec app php artisan central:migrate --seed
 | Vite (dev) | http://localhost:5173 |
 | PostgreSQL | localhost:5432 (usuário `saas` / `secret`, banco `saas`) |
 
-`vendor/` e `node_modules/` ficam em volumes Docker (bind mount no Windows é lento demais para eles). Rode `composer` e `artisan` sempre dentro do container. Na primeira abertura, o Vite leva uns segundos para compilar.
+Use a pasta dentro do Ubuntu (WSL), com a integração WSL do Docker Desktop ligada. O `www-data` dos containers PHP usa o uid/gid 1000, o mesmo do seu usuário; se o seu for outro, rode `UID=$(id -u) GID=$(id -g) docker compose build`. `vendor/` e `node_modules/` ficam em volumes Docker. Rode `composer` e `artisan` sempre dentro do container. Na primeira abertura, o Vite leva uns segundos para compilar.
 
 ## Criar um tenant de teste
 

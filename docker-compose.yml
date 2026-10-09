@@ -1,7 +1,11 @@
 name: saas-delivery
 
 x-php: &php
-  build: docker/php
+  build:
+    context: docker/php
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
   image: saas-delivery-php:dev
   # Mesmo usuário do php-fpm: arquivos criados por artisan/composer/testes continuam graváveis pela web.
   user: www-data
@@ -9,7 +13,7 @@ x-php: &php
     COMPOSER_HOME: /tmp/composer
   volumes:
     - ./:/var/www/html
-    # vendor/ fica num volume: ler milhares de arquivos por bind mount no Windows é muito lento.
+    # vendor/ fica num volume: mais rápido (principalmente no Windows/macOS) e independente do host.
     - vendor:/var/www/html/vendor
   depends_on:
     postgres:
