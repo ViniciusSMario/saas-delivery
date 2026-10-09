@@ -5,6 +5,7 @@
 
 use App\Http\Controllers\Tenant\EstablishmentLogoController;
 use App\Http\Controllers\Tenant\LogoutController;
+use App\Http\Controllers\Tenant\MenuImageController;
 use App\Livewire\Tenant\AuditLogIndex;
 use App\Livewire\Tenant\Auth\ForgotPassword;
 use App\Livewire\Tenant\Auth\Login;
@@ -12,6 +13,7 @@ use App\Livewire\Tenant\Auth\ResetPassword;
 use App\Livewire\Tenant\Dashboard;
 use App\Livewire\Tenant\Establishment\EditEstablishment;
 use App\Livewire\Tenant\Establishment\EditSettings;
+use App\Livewire\Tenant\Menu;
 use App\Livewire\Tenant\Profile;
 use App\Livewire\Tenant\Roles;
 use App\Livewire\Tenant\Users;
@@ -45,4 +47,22 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/perfis/{role}', Roles\Form::class)->middleware('can:roles.manage')->name('roles.edit');
 
     Route::get('/auditoria', AuditLogIndex::class)->middleware('can:audit.view')->name('audit.index');
+
+    Route::middleware('can:menu.manage')->name('menu.')->group(function () {
+        Route::get('/categorias', Menu\Categories::class)->name('categories');
+
+        Route::get('/produtos', Menu\Products\Index::class)->name('products.index');
+        Route::get('/produtos/novo', Menu\Products\Form::class)->name('products.create');
+        Route::get('/produtos/{product}', Menu\Products\Form::class)->whereNumber('product')->name('products.edit');
+        Route::get('/produtos/imagens/{image}', [MenuImageController::class, 'product'])->whereNumber('image')->name('images.show');
+
+        Route::get('/adicionais', Menu\AddonGroups\Index::class)->name('addon-groups.index');
+        Route::get('/adicionais/novo', Menu\AddonGroups\Form::class)->name('addon-groups.create');
+        Route::get('/adicionais/{group}', Menu\AddonGroups\Form::class)->whereNumber('group')->name('addon-groups.edit');
+
+        Route::get('/combos', Menu\Combos\Index::class)->name('combos.index');
+        Route::get('/combos/novo', Menu\Combos\Form::class)->name('combos.create');
+        Route::get('/combos/{combo}', Menu\Combos\Form::class)->whereNumber('combo')->name('combos.edit');
+        Route::get('/combos/{combo}/imagem', [MenuImageController::class, 'combo'])->whereNumber('combo')->name('combos.image');
+    });
 });

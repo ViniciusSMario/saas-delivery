@@ -36,6 +36,18 @@ class AuditLog extends TenantModel
             'establishment.updated' => 'Alterou dados do estabelecimento',
             'settings.updated' => 'Alterou configurações',
             'opening_hours.updated' => 'Alterou horário de funcionamento',
+            'category.created' => 'Criou categoria',
+            'category.updated' => 'Alterou categoria',
+            'category.deleted' => 'Excluiu categoria',
+            'product.created' => 'Criou produto',
+            'product.updated' => 'Alterou produto',
+            'product.deleted' => 'Excluiu produto',
+            'addon_group.created' => 'Criou grupo de adicionais',
+            'addon_group.updated' => 'Alterou grupo de adicionais',
+            'addon_group.deleted' => 'Excluiu grupo de adicionais',
+            'combo.created' => 'Criou combo',
+            'combo.updated' => 'Alterou combo',
+            'combo.deleted' => 'Excluiu combo',
             default => $this->action,
         };
     }

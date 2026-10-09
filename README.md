@@ -7,7 +7,9 @@ Entregue até agora:
 - **Fase 1 (Fundação):** camada de tenancy, comandos `tenants:*` e suíte de isolamento.
 - **Fase 2 (Acesso e estabelecimento):** login, recuperação de senha, usuários, perfis e permissões, auditoria, dados do estabelecimento, horários e configurações. Admin da plataforma com 2FA, lista, criação, suspensão e reativação de estabelecimentos.
 
-Próxima: cardápio (fase 3).
+- **Fase 3 (Cardápio):** categorias, produtos com fotos e código de PDV, grupos de adicionais, combos e cardápio público (vitrine).
+
+Próxima: pedidos e balcão (fase 4).
 
 ## Subir o ambiente
 
@@ -51,6 +53,16 @@ O dono recebe um e-mail com o link para definir a senha. Em desenvolvimento, o e
 ```bash
 docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.test "Nome" --role=dono
 ```
+
+## Cardápio
+
+- **Gestão** (permissão `menu.manage`, perfis Dono e Gerente): `/produtos`, `/categorias`, `/adicionais` e `/combos` no endereço do estabelecimento.
+- **Vitrine pública:** `http://<slug>.localhost:8080/cardapio` ou `http://localhost:8080/cardapio/<slug>`. Mostra se está aberto agora, conforme o horário e o fuso do estabelecimento (turnos depois da meia-noite incluídos). Também tem destaques, combos, categorias, busca e detalhe do produto com adicionais. Pedido online chega na fase 4.
+- **Dinheiro** sempre em centavos (`bigint`), com `App\Support\Money` e o cast `MoneyCast`. O formulário aceita "39,90", "1.234,56" ou "R$ 9,90".
+- **Busca** por parte do nome usa índice trigram (`pg_trgm`, schema `extensions`); o código do produto é buscado por igualdade. O código é único entre os produtos não excluídos.
+- **Produto excluído** é soft delete: sai do cardápio, mas pedidos antigos continuam apontando para ele. **Esgotado** mantém o produto visível, sem permitir pedido. Combo com item indisponível sai do cardápio.
+- **Fotos** ficam em `storage/app/tenants/<id>/products/<produto>/` (até 5 por produto) e são servidas por id, nunca por caminho vindo da URL.
+- **Cardápio de demonstração:** `docker compose exec app php artisan tenants:seed --tenant=empresa1 --class="Database\Seeders\Tenant\DemoMenuSeeder"`
 
 ## Comandos
 
@@ -96,4 +108,4 @@ Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/
 - **Livewire:** `/livewire/update`, upload e preview passam pelo grupo `tenant`. No `admin.localhost`, existe uma rota de update própria no grupo `platform`, registrada antes da do tenant.
 - **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment}` (negócio; não pode usar `Platform`), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu}, `app/Support` (Money)` (negócio; não pode usar `Platform`), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.

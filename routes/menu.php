@@ -2,7 +2,14 @@
 
 // Cardápio público: empresa1.meusistema.com/cardapio ou meusistema.com/cardapio/{slug}.
 // O slug é consumido pelo PathResolver; as rotas não o recebem.
+// Este arquivo é registrado nos dois formatos, por isso as rotas não têm nome:
+// a view monta os links a partir da URL atual.
 
+use App\Http\Controllers\Tenant\EstablishmentLogoController;
+use App\Http\Controllers\Tenant\PublicMenuController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'tenant.menu');
+Route::get('/', [PublicMenuController::class, 'index']);
+Route::get('/logo', EstablishmentLogoController::class);
+Route::get('/imagens/{image}', [PublicMenuController::class, 'productImage'])->whereNumber('image');
+Route::get('/combos/{combo}/imagem', [PublicMenuController::class, 'comboImage'])->whereNumber('combo');

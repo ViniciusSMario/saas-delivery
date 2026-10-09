@@ -1,6 +1,12 @@
 @php
     $nav = [
         ['route' => 'dashboard', 'label' => 'Início', 'can' => null],
+        ['section' => 'Cardápio', 'can' => 'menu.manage'],
+        ['route' => 'menu.products.index', 'label' => 'Produtos', 'can' => 'menu.manage'],
+        ['route' => 'menu.categories', 'label' => 'Categorias', 'can' => 'menu.manage'],
+        ['route' => 'menu.addon-groups.index', 'label' => 'Adicionais', 'can' => 'menu.manage'],
+        ['route' => 'menu.combos.index', 'label' => 'Combos', 'can' => 'menu.manage'],
+        ['section' => 'Administração', 'can' => null],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'can' => 'settings.manage'],
         ['route' => 'users.index', 'label' => 'Usuários', 'can' => 'users.view'],
@@ -29,7 +35,11 @@
 
             <nav class="space-y-1 p-3">
                 @foreach ($nav as $item)
-                    @if (! $item['can'] || $user->can($item['can']))
+                    @if (isset($item['section']))
+                        @if (! $item['can'] || $user->can($item['can']))
+                            <p class="px-3 pt-4 pb-1 text-xs font-semibold tracking-wide text-stone-400 uppercase">{{ $item['section'] }}</p>
+                        @endif
+                    @elseif (! $item['can'] || $user->can($item['can']))
                         <a href="{{ route($item['route']) }}" wire:navigate
                            @class([
                                'block rounded-lg px-3 py-2 text-sm font-medium',
@@ -40,7 +50,7 @@
                 @endforeach
             </nav>
 
-            <p class="px-5 pt-4 text-xs text-stone-400">Cardápio, pedidos, PDV e estoque chegam nas próximas fases.</p>
+            <p class="px-5 pt-4 text-xs text-stone-400">Pedidos, PDV e estoque chegam nas próximas fases.</p>
         </aside>
 
         <div class="fixed inset-0 z-20 bg-stone-900/30 lg:hidden" x-show="menu" x-cloak @click="menu = false"></div>

@@ -8,8 +8,6 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
-    <main class="mx-auto max-w-2xl px-4 py-10">
-        {{ $slot }}
-    </main>
+    {{ $slot }}
 </body>
 </html>
