@@ -1,59 +1,67 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SaaS Delivery
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SaaS multi-tenant para restaurantes: Laravel 12, Livewire 3, PostgreSQL 17 (um schema por estabelecimento), Redis e Docker.
 
-## About Laravel
+Esta é a **Fase 1 (Fundação)**: camada de tenancy, comandos `tenants:*` e a suíte de isolamento. Os módulos de negócio chegam nas próximas fases.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Subir o ambiente
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+cp .env.example .env
+docker compose build
+docker compose run --rm app composer install
+docker compose run --rm -u root app php artisan key:generate
+docker compose up -d
+docker compose exec app php artisan central:migrate --seed
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Serviço | Endereço |
+|---|---|
+| App (site central) | http://localhost:8080 |
+| Mailpit | http://localhost:8025 |
+| Vite (dev) | http://localhost:5173 |
+| PostgreSQL | localhost:5432 (usuário `saas` / `secret`, banco `saas`) |
 
-## Learning Laravel
+`vendor/` e `node_modules/` ficam em volumes Docker (bind mount no Windows é lento demais para eles). Rode `composer` e `artisan` sempre dentro do container. Na primeira abertura, o Vite leva uns segundos para compilar.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Criar um tenant de teste
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+docker compose exec app php artisan tenants:create empresa1 "Pizzaria Empresa 1"
+```
 
-## Laravel Sponsors
+Depois, abra **http://empresa1.localhost:8080**. Navegadores resolvem `*.localhost` para a sua máquina, então não precisa editar o `hosts`. O cardápio público fica em `http://empresa1.localhost:8080/cardapio` e em `http://localhost:8080/cardapio/empresa1`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Comandos
 
-### Premium Partners
+| Comando | O que faz |
+|---|---|
+| `central:migrate [--fresh] [--seed]` | migra o schema `public` (plataforma) |
+| `tenants:create {slug} {nome} [--domain=] [--document=]` | provisiona: registro, schema, migrations, seed, ativo |
+| `tenants:migrate [--tenant=slug] [--pretend]` | migra todos os tenants ativos e suspensos, ou um só |
+| `tenants:rollback [--tenant=slug] [--step=1]` | desfaz migrations de tenant |
+| `tenants:seed [--tenant=slug] [--class=]` | roda seeders de tenant |
+| `tenants:status` | status, schema, versão e migrations pendentes de cada tenant |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Ordem do deploy: `central:migrate`, depois `tenants:migrate`. Se a migration falhar em um tenant, os outros seguem, a falha vai para `tenant_events` e o comando termina com erro.
 
-## Contributing
+## Testes
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+docker compose exec app php artisan test
+```
 
-## Code of Conduct
+Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/15). A cada execução, o `public` é recriado e os tenants `teste1` e `teste2` são provisionados.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Como a tenancy funciona
 
-## Security Vulnerabilities
+- **Conexões:** `central` sempre em `public`; `tenant` é a padrão e, sem tenant ativo, aponta para `tenant_none`, um schema que não existe. Assim, qualquer query sem tenant falha.
+- **search_path do tenant:** `"<schema>,extensions"`, nunca `public`. Só `App\Tenancy\SchemaManager` mexe nele (há um teste de arquitetura que garante isso).
+- **Schema:** o nome é `tenant_<ulid>`, gerado pelo sistema e imutável. Ele vem sempre de `public.tenants`, nunca da URL, e é validado por `/^tenant_[a-z0-9]{6,40}$/`.
+- **Requisição:** `IdentifyTenant` resolve o tenant pelo host (`tenant_domains`) ou pelo slug (`/cardapio/{slug}`). Depois, `EnsureTenantIsActive` bloqueia suspenso (403) e provisioning/excluído (404) e ativa o contexto. Só então a sessão inicia. `EnsureSessionBelongsToTenant` derruba sessões de outro tenant. No `terminate`, o estado fechado volta.
+- **Contexto auxiliar:** o prefixo de cache vira `tenant:<id>:`, o disco `tenant` aponta para `storage/app/tenants/<id>` e os logs ganham `tenant_id`. A sessão usa um store próprio com prefixo fixo e fica isolada pelo cookie por host.
+- **Jobs:** use o trait `App\Tenancy\Jobs\TenantAware`. O id do tenant vai no payload, e o worker reativa esse tenant e reseta no fim. Despachar sem tenant ativo é erro.
+- **Livewire:** `/livewire/update` e o upload temporário passam pelo grupo de middleware `tenant`.
+- **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (models da plataforma), `app/Modules` (negócio; não pode usar `Platform`), `database/migrations/{central,tenant}`.
