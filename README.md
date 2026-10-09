@@ -13,7 +13,9 @@ Entregue até agora:
 
 - **Fase 5 (Mesas e PDV):** mesas e comandas, PDV com busca rápida e caixa (abertura, sangria, suprimento, fechamento com conferência).
 
-Próxima: estoque (fase 6): insumos, movimentações, ficha técnica e baixa automática na venda.
+- **Fase 6 (Estoque):** insumos, movimentações (compra, venda, perda, ajuste), ficha técnica com custo e margem, e baixa automática na venda.
+
+Próxima: clientes, financeiro e dashboard (fase 7).
 
 ## Subir o ambiente
 
@@ -93,6 +95,15 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
   - Cancelamento de venda já paga: gera estorno.
 - **PDV** (`/balcao`): `/` foca a busca, Enter adiciona o primeiro resultado (código exato tem prioridade). Mostra as contas pedidas aguardando pagamento.
 
+## Estoque
+
+- **Insumos** (`/estoque`, permissão `stock.manage`): unidade (`un`, `kg`, `g`, `l`, `ml`), estoque mínimo, custo médio e valor em estoque. Na mesma tela: entrada (quantidade + valor pago, que recalcula o custo médio ponderado), perda com motivo e contagem (lança a diferença como ajuste).
+- **O saldo nunca é editado direto:** cada mudança grava uma linha em `stock_movements` e atualiza o saldo materializado na mesma transação, com o insumo travado (`SELECT ... FOR UPDATE`). Isso fica num único ponto, `App\Modules\Stock\StockLedger`. As quantidades são `numeric(14,3)` e as contas usam bcmath (`App\Support\Quantity`).
+- **Ficha técnica** (`/estoque/fichas`): o que um produto ou adicional consome, em qualquer unidade compatível (ex.: 200 g de um insumo em kg). Combos usam a ficha de cada produto. A visão geral mostra custo, preço e margem de cada produto.
+- **Baixa automática:** quando o pedido entra em preparo (ou é concluído no fechamento da comanda), uma vez só (`orders.stock_deducted_at`). Cancelado antes disso não mexe; depois, os insumos viram perda. Estoque negativo é permitido (a venda não trava) e o insumo fica em alerta. Em Configurações há a opção de esgotar o produto quando um insumo da ficha zerar.
+- **Consumo** (`/estoque/consumo`): entradas, vendas, perdas e ajustes por período, com o custo do que saiu. Insumos abaixo do mínimo aparecem no Início.
+- **Demonstração:** `docker compose exec app php artisan tenants:seed --tenant=empresa1 --class="Database\Seeders\Tenant\DemoStockSeeder"` (aditivo: não mexe no que já existe).
+
 ## Comandos
 
 | Comando | O que faz |
@@ -137,4 +148,4 @@ Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/
 - **Livewire:** `/livewire/update`, upload e preview passam pelo grupo `tenant`. No `admin.localhost`, existe uma rota de update própria no grupo `platform`, registrada antes da do tenant.
 - **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers,Tables,Cash}` (negócio; não pode usar `Platform`), `app/Support` (Money), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers,Tables,Cash,Stock}` (negócio; não pode usar `Platform`), `app/Support` (Money, Quantity), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
