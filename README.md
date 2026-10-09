@@ -9,7 +9,9 @@ Entregue até agora:
 
 - **Fase 3 (Cardápio):** categorias, produtos com fotos e código de PDV, grupos de adicionais, combos e cardápio público (vitrine).
 
-Próxima: pedidos e balcão (fase 4).
+- **Fase 4 (Pedidos e balcão):** pedido online pelo cardápio (carrinho, checkout e acompanhamento), venda de balcão e painel de pedidos com status.
+
+Próxima: mesas e PDV (fase 5): mesas, comandas, PDV com busca rápida e caixa.
 
 ## Subir o ambiente
 
@@ -64,6 +66,18 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Fotos** ficam em `storage/app/tenants/<id>/products/<produto>/` (até 5 por produto) e são servidas por id, nunca por caminho vindo da URL.
 - **Cardápio de demonstração:** `docker compose exec app php artisan tenants:seed --tenant=empresa1 --class="Database\Seeders\Tenant\DemoMenuSeeder"`
 
+## Pedidos
+
+- **Pedido online:** no cardápio público, o cliente monta o carrinho (fica no navegador), escolhe entrega ou retirada e o pagamento na entrega (dinheiro com troco, Pix, cartão, vale). Depois acompanha o status em `.../cardapio/pedido/<token>`, que se atualiza sozinho. Funciona no subdomínio e em `localhost:8080/cardapio/<slug>`.
+- **Tudo é conferido no servidor** (`App\Modules\Orders\Actions\PlaceOrder`): preço, item ativo e não esgotado, regras de mínimo e máximo dos adicionais, horário de funcionamento, pedido mínimo, opções de entrega, troco e desconto (só no balcão, com a permissão `orders.discount`).
+- **Retrato:** o pedido copia nome, preço e adicionais do momento da venda. Mudar o cardápio depois não altera o histórico.
+- **Número do pedido:** sequência do schema (`order_number_seq`), então cada estabelecimento começa do 1.
+- **Painel** (`/pedidos`, permissão `orders.view`): colunas Recebido → Em preparo → Pronto → Saiu para entrega → Concluído. Atualiza a cada 10 s (`wire:poll`), avisa pedido novo (título da aba e som opcional) e registra cada mudança em `order_status_history`. Avançar exige `orders.manage`; cancelar exige `orders.cancel` e motivo. Concluir registra o pagamento como recebido.
+- **Venda no balcão** (`/balcao`, permissão `pos.use`): busca por nome ou código, adicionais, balcão/retirada/entrega por telefone. No balcão, o pagamento é registrado na hora.
+- **Histórico** (`/pedidos/historico`): por dia, status, número, nome ou telefone. O detalhe do pedido tem impressão.
+- **Configurações:** liga/desliga pedidos online e escolhe as formas de pagamento aceitas.
+- Fica para fases seguintes: pagamento online, taxa por bairro, mesas e comandas, caixa (abertura e fechamento) e baixa de estoque.
+
 ## Comandos
 
 | Comando | O que faz |
@@ -108,4 +122,4 @@ Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/
 - **Livewire:** `/livewire/update`, upload e preview passam pelo grupo `tenant`. No `admin.localhost`, existe uma rota de update própria no grupo `platform`, registrada antes da do tenant.
 - **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu}` (negócio; não pode usar `Platform`), `app/Support` (Money), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers}` (negócio; não pode usar `Platform`), `app/Support` (Money), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.

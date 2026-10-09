@@ -74,7 +74,7 @@
         @endif
 
         @if ($combos->isNotEmpty())
-            <section id="combos" data-menu-section class="scroll-mt-32">
+            <section id="combos" data-menu-section class="scroll-mt-32" x-data>
                 <h2 class="text-lg font-semibold">Combos</h2>
                 <div class="mt-3 space-y-3">
                     @foreach ($combos as $combo)

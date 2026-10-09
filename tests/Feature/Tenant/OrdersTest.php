@@ -253,7 +253,11 @@ it('volta para o checkout com o erro quando o pedido é recusado', function () {
 
 it('mostra o carrinho no cardápio só quando aceita pedidos', function () {
     orderMenu($this->a);
-    $this->get(tenantUrl($this->a, '/cardapio'))->assertSee('Ver carrinho')->assertSee('picker(', false);
+    $this->get(tenantUrl($this->a, '/cardapio'))
+        ->assertSee('Ver carrinho')
+        ->assertSee('picker(', false)
+        // O botão "Adicionar" do combo precisa estar dentro de um escopo Alpine.
+        ->assertSee('id="combos" data-menu-section class="scroll-mt-32" x-data', false);
 
     inTenant($this->a, fn () => OpeningHour::query()->update(['is_closed' => true]));
     $this->get(tenantUrl($this->a, '/cardapio'))->assertDontSee('Ver carrinho')->assertSee('Estamos fechados agora');

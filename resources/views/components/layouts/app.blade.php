@@ -10,7 +10,7 @@
         ['route' => 'menu.categories', 'label' => 'Categorias', 'can' => 'menu.manage'],
         ['route' => 'menu.addon-groups.index', 'label' => 'Adicionais', 'can' => 'menu.manage'],
         ['route' => 'menu.combos.index', 'label' => 'Combos', 'can' => 'menu.manage'],
-        ['section' => 'Administração', 'can' => null],
+        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view']],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'can' => 'settings.manage'],
         ['route' => 'users.index', 'label' => 'Usuários', 'can' => 'users.view'],
@@ -40,7 +40,7 @@
             <nav class="space-y-1 p-3">
                 @foreach ($nav as $item)
                     @if (isset($item['section']))
-                        @if (! $item['can'] || $user->can($item['can']))
+                        @if (! $item['can'] || $user->canAny((array) $item['can']))
                             <p class="px-3 pt-4 pb-1 text-xs font-semibold tracking-wide text-stone-400 uppercase">{{ $item['section'] }}</p>
                         @endif
                     @elseif (! $item['can'] || $user->can($item['can']))
