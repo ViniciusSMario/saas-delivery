@@ -12,6 +12,7 @@ use App\Modules\Orders\Actions\PlaceOrder;
 use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
+use App\Modules\Orders\Events\OrderStatusChanged;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Tables\Models\Command;
@@ -180,7 +181,9 @@ class ManageCommand
         $session = $this->ledger->requireSession($actor);
         $discount ??= Money::zero();
 
-        return DB::connection('tenant')->transaction(function () use ($command, $actor, $payments, $serviceFee, $discount, $session) {
+        $completed = [];
+
+        $result = DB::connection('tenant')->transaction(function () use ($command, $actor, $payments, $serviceFee, $discount, $session, &$completed) {
             $locked = Command::lockForUpdate()->findOrFail($command->id);
             $this->assertOpen($locked);
 
@@ -222,6 +225,7 @@ class ManageCommand
                 $from = $order->status;
                 $order->update(['status' => OrderStatus::Completed, 'completed_at' => now()]);
                 $order->history()->create(['from_status' => $from, 'to_status' => OrderStatus::Completed, 'user_id' => $actor->id, 'note' => 'Conta fechada']);
+                $completed[] = $order;
             }
 
             Audit::record('command.closed', $locked, [
@@ -232,6 +236,13 @@ class ManageCommand
 
             return ['change' => $change];
         });
+
+        // Depois do commit: quem escuta o fluxo do pedido (ex.: baixa de estoque) é avisado.
+        foreach ($completed as $order) {
+            event(new OrderStatusChanged($order));
+        }
+
+        return $result;
     }
 
     /**

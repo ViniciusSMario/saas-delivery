@@ -17,6 +17,7 @@ use App\Livewire\Tenant\Menu;
 use App\Livewire\Tenant\Orders;
 use App\Livewire\Tenant\Tables;
 use App\Livewire\Tenant\Cash;
+use App\Livewire\Tenant\Stock;
 use App\Livewire\Tenant\Profile;
 use App\Livewire\Tenant\Roles;
 use App\Livewire\Tenant\Users;
@@ -59,6 +60,15 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');
     Route::get('/mesas/cadastro', Tables\Manage::class)->middleware('can:establishment.manage')->name('tables.manage');
     Route::get('/comandas/{command}', Tables\CommandPage::class)->whereNumber('command')->middleware('can:tables.manage')->name('tables.command');
+
+    Route::middleware('can:stock.manage')->name('stock.')->group(function () {
+        Route::get('/estoque', Stock\Index::class)->name('index');
+        Route::get('/estoque/insumos/{item}', Stock\Show::class)->whereNumber('item')->name('show');
+        Route::get('/estoque/fichas', Stock\Recipes::class)->name('recipes');
+        Route::get('/estoque/fichas/produto/{product}', Stock\RecipeEditor::class)->whereNumber('product')->name('recipe.product');
+        Route::get('/estoque/fichas/adicional/{addon}', Stock\RecipeEditor::class)->whereNumber('addon')->name('recipe.addon');
+        Route::get('/estoque/consumo', Stock\Consumption::class)->name('consumption');
+    });
 
     Route::get('/caixa', Cash\Current::class)->middleware('can:cash.operate')->name('cash.current');
     Route::get('/caixa/sessoes', Cash\Sessions::class)->middleware('can:cash.manage')->name('cash.sessions');

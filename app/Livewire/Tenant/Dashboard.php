@@ -8,6 +8,7 @@ use App\Modules\Establishment\Models\OpeningHour;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Stock\Models\StockItem;
 use App\Support\Money;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -26,6 +27,9 @@ class Dashboard extends Component
             'ordersToday' => Order::where('created_at', '>=', now($timezone)->startOfDay()->utc())->where('status', '!=', OrderStatus::Cancelled->value)->count(),
             'salesToday' => Money::cents((int) Order::where('created_at', '>=', now($timezone)->startOfDay()->utc())->where('status', '!=', OrderStatus::Cancelled->value)->sum('total_cents')),
             'openOrders' => Order::open()->count(),
+            'lowStock' => auth()->user()->can('stock.manage')
+                ? StockItem::belowMinimum()->with('unit')->orderBy('name')->limit(8)->get()
+                : collect(),
         ]);
     }
 }

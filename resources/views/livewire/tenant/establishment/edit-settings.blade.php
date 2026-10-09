@@ -48,6 +48,12 @@
         @error('service_fee_percent') <p class="field-error">{{ $message }}</p> @enderror
     </section>
 
+    <section class="card card-body space-y-2">
+        <h2 class="font-semibold">Estoque</h2>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="stock_auto_sold_out" class="checkbox"> Marcar o produto como esgotado quando um insumo da ficha técnica zerar</label>
+        <p class="hint">Desligado, a venda continua mesmo com estoque negativo, e o insumo fica em alerta.</p>
+    </section>
+
     <section class="card card-body">
         <h2 class="font-semibold">Formas de pagamento aceitas</h2>
         <p class="hint">Pagamento na entrega, na retirada ou no balcão.</p>

@@ -4,6 +4,13 @@
         <p class="mt-1 text-sm text-stone-500">{{ $establishment->trade_name }}</p>
     </div>
 
+    @if ($lowStock->isNotEmpty())
+        <a href="{{ route('stock.index', ['onlyLow' => 1]) }}" wire:navigate class="alert-error block">
+            <span class="font-semibold">Estoque baixo:</span>
+            {{ $lowStock->map(fn ($i) => $i->name.' ('.\App\Support\Quantity::format($i->quantity).' '.$i->unit->code.')')->implode(', ') }}
+        </a>
+    @endif
+
     @can('orders.view')
         <div class="grid gap-4 sm:grid-cols-3">
             <a href="{{ route('orders.board') }}" wire:navigate class="card card-body hover:border-brand-500">
