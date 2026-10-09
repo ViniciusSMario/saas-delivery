@@ -4,6 +4,7 @@ namespace App\Livewire\Tenant\Establishment;
 
 use App\Modules\Access\Audit;
 use App\Modules\Establishment\Models\Setting;
+use App\Modules\Orders\Models\PaymentMethod;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -14,9 +15,14 @@ class EditSettings extends Component
 
     public string $timezone = 'America/Sao_Paulo';
 
+    public bool $accepts_online_orders = true;
+
     public bool $accepts_delivery = true;
 
     public bool $accepts_pickup = true;
+
+    /** @var array<int, bool> id da forma de pagamento => ativa */
+    public array $paymentMethods = [];
 
     /** Valores em reais na tela; gravados em centavos. */
     public string $min_order = '0,00';
@@ -34,7 +40,9 @@ class EditSettings extends Component
     {
         $this->welcome_message = (string) Setting::read('welcome_message', '');
         $this->timezone = (string) Setting::read('timezone', 'America/Sao_Paulo');
+        $this->accepts_online_orders = (bool) Setting::read('accepts_online_orders', true);
         $this->accepts_delivery = (bool) Setting::read('accepts_delivery', true);
+        $this->paymentMethods = PaymentMethod::orderBy('position')->pluck('is_active', 'id')->map(fn ($v) => (bool) $v)->all();
         $this->accepts_pickup = (bool) Setting::read('accepts_pickup', true);
         $this->min_order = $this->toMoney((int) Setting::read('min_order_cents', 0));
         $this->delivery_fee = $this->toMoney((int) Setting::read('delivery_fee_cents', 0));
@@ -45,7 +53,9 @@ class EditSettings extends Component
         return [
             'welcome_message' => ['required', 'string', 'max:160'],
             'timezone' => ['required', 'in:'.implode(',', array_keys(self::TIMEZONES))],
+            'accepts_online_orders' => ['boolean'],
             'accepts_delivery' => ['boolean'],
+            'paymentMethods' => ['array', fn ($a, $v, $fail) => in_array(true, (array) $v, true) ? null : $fail('Deixe pelo menos uma forma de pagamento ativa.')],
             'accepts_pickup' => ['boolean'],
             'min_order' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
             'delivery_fee' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
@@ -70,6 +80,7 @@ class EditSettings extends Component
         $values = [
             'welcome_message' => $this->welcome_message,
             'timezone' => $this->timezone,
+            'accepts_online_orders' => $this->accepts_online_orders,
             'accepts_delivery' => $this->accepts_delivery,
             'accepts_pickup' => $this->accepts_pickup,
             'min_order_cents' => $this->toCents($this->min_order),
@@ -84,6 +95,15 @@ class EditSettings extends Component
             if ($old !== $value) {
                 Setting::write($key, $value);
                 $changes[$key] = ['de' => $old, 'para' => $value];
+            }
+        }
+
+        foreach (PaymentMethod::all() as $method) {
+            $active = (bool) ($this->paymentMethods[$method->id] ?? false);
+
+            if ($method->is_active !== $active) {
+                $method->update(['is_active' => $active]);
+                $changes['pagamento: '.$method->name] = $active ? 'ativado' : 'desativado';
             }
         }
 
@@ -107,6 +127,9 @@ class EditSettings extends Component
 
     public function render()
     {
-        return view('livewire.tenant.establishment.edit-settings', ['timezones' => self::TIMEZONES]);
+        return view('livewire.tenant.establishment.edit-settings', [
+            'timezones' => self::TIMEZONES,
+            'methods' => PaymentMethod::orderBy('position')->get(),
+        ]);
     }
 }

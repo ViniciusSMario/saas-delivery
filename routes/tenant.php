@@ -14,6 +14,7 @@ use App\Livewire\Tenant\Dashboard;
 use App\Livewire\Tenant\Establishment\EditEstablishment;
 use App\Livewire\Tenant\Establishment\EditSettings;
 use App\Livewire\Tenant\Menu;
+use App\Livewire\Tenant\Orders;
 use App\Livewire\Tenant\Profile;
 use App\Livewire\Tenant\Roles;
 use App\Livewire\Tenant\Users;
@@ -47,6 +48,11 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/perfis/{role}', Roles\Form::class)->middleware('can:roles.manage')->name('roles.edit');
 
     Route::get('/auditoria', AuditLogIndex::class)->middleware('can:audit.view')->name('audit.index');
+
+    Route::get('/pedidos', Orders\Board::class)->middleware('can:orders.view')->name('orders.board');
+    Route::get('/pedidos/historico', Orders\Index::class)->middleware('can:orders.view')->name('orders.index');
+    Route::get('/pedidos/{order}', Orders\Show::class)->whereNumber('order')->middleware('can:orders.view')->name('orders.show');
+    Route::get('/balcao', Orders\Counter::class)->middleware('can:pos.use')->name('orders.counter');
 
     Route::middleware('can:menu.manage')->name('menu.')->group(function () {
         Route::get('/categorias', Menu\Categories::class)->name('categories');

@@ -43,10 +43,17 @@ class PublicMenuController
             ->filter(fn (Combo $combo) => $combo->isAvailable())
             ->values();
 
+        $isOpen = $schedule->isOpenAt($now);
+        $acceptsDelivery = (bool) Setting::read('accepts_delivery', true);
+        $acceptsPickup = (bool) Setting::read('accepts_pickup', true);
+
         return view('public-menu.index', [
             'establishment' => Establishment::current(),
             'welcome' => Setting::read('welcome_message'),
-            'isOpen' => $schedule->isOpenAt($now),
+            'isOpen' => $isOpen,
+            // Pedido online liberado: aberto agora, recebendo pedidos e com entrega ou retirada.
+            'ordering' => $isOpen && Setting::read('accepts_online_orders', true) && ($acceptsDelivery || $acceptsPickup),
+            'catalog' => $this->catalog($categories),
             'todayLabel' => $schedule->todayLabel($now),
             'week' => $schedule->week(),
             'categories' => $categories,
@@ -54,11 +61,34 @@ class PublicMenuController
             'combos' => $combos,
             'deliveryFee' => Money::cents((int) Setting::read('delivery_fee_cents', 0)),
             'minOrder' => Money::cents((int) Setting::read('min_order_cents', 0)),
-            'acceptsDelivery' => (bool) Setting::read('accepts_delivery', true),
-            'acceptsPickup' => (bool) Setting::read('accepts_pickup', true),
+            'acceptsDelivery' => $acceptsDelivery,
+            'acceptsPickup' => $acceptsPickup,
             // Raiz do cardápio nesta URL (com ou sem o slug no caminho).
             'base' => rtrim($request->url(), '/'),
         ]);
+    }
+
+    /** Dados que o carrinho (JS) precisa para montar a escolha de adicionais. */
+    private function catalog($categories): array
+    {
+        return $categories->flatMap->products->mapWithKeys(fn (Product $product) => [$product->id => [
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->price_cents->cents,
+            'groups' => $product->addonGroups
+                ->filter(fn ($group) => $group->addons->isNotEmpty())
+                ->map(fn ($group) => [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'min' => $group->min_choices,
+                    'max' => $group->max_choices,
+                    'addons' => $group->addons->map(fn ($addon) => [
+                        'id' => $addon->id,
+                        'name' => $addon->name,
+                        'price' => $addon->price_cents->cents,
+                    ])->values(),
+                ])->values(),
+        ]])->all();
     }
 
     public function productImage(ProductImage $image): Response

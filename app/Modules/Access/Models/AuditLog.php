@@ -48,6 +48,8 @@ class AuditLog extends TenantModel
             'combo.created' => 'Criou combo',
             'combo.updated' => 'Alterou combo',
             'combo.deleted' => 'Excluiu combo',
+            'order.cancelled' => 'Cancelou pedido',
+            'order.paid' => 'Marcou pedido como pago',
             default => $this->action,
         };
     }

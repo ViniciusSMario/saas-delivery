@@ -9,5 +9,9 @@
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
     {{ $slot }}
+
+    {{-- Só para ter o Alpine (vem junto do Livewire). As páginas públicas não fazem
+         requisições Livewire: funcionam também em meusistema.com/cardapio/{slug}. --}}
+    @livewireScripts
 </body>
 </html>

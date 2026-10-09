@@ -1,6 +1,10 @@
 @php
     $nav = [
         ['route' => 'dashboard', 'label' => 'Início', 'can' => null],
+        ['section' => 'Pedidos', 'can' => 'orders.view'],
+        ['route' => 'orders.board', 'label' => 'Painel de pedidos', 'can' => 'orders.view', 'match' => ['orders.board', 'orders.show']],
+        ['route' => 'orders.counter', 'label' => 'Venda no balcão', 'can' => 'pos.use'],
+        ['route' => 'orders.index', 'label' => 'Histórico', 'can' => 'orders.view', 'match' => ['orders.index']],
         ['section' => 'Cardápio', 'can' => 'menu.manage'],
         ['route' => 'menu.products.index', 'label' => 'Produtos', 'can' => 'menu.manage'],
         ['route' => 'menu.categories', 'label' => 'Categorias', 'can' => 'menu.manage'],
@@ -26,7 +30,7 @@
 </head>
 <body class="min-h-screen bg-stone-100 text-stone-900 antialiased" x-data="{ menu: false }">
     <div class="lg:flex">
-        <aside class="fixed inset-y-0 left-0 z-30 w-64 -translate-x-full border-r border-stone-200 bg-white transition-transform lg:static lg:min-h-screen lg:translate-x-0"
+        <aside class="print:hidden fixed inset-y-0 left-0 z-30 w-64 -translate-x-full border-r border-stone-200 bg-white transition-transform lg:static lg:min-h-screen lg:translate-x-0"
                :class="menu && 'translate-x-0'">
             <div class="border-b border-stone-200 px-5 py-4">
                 <p class="text-xs font-semibold tracking-widest text-brand-600 uppercase">Estabelecimento</p>
@@ -43,8 +47,8 @@
                         <a href="{{ route($item['route']) }}" wire:navigate
                            @class([
                                'block rounded-lg px-3 py-2 text-sm font-medium',
-                               'bg-brand-50 text-brand-700' => request()->routeIs($item['route'], str_replace('.index', '.*', $item['route'])),
-                               'text-stone-600 hover:bg-stone-50 hover:text-stone-900' => ! request()->routeIs($item['route'], str_replace('.index', '.*', $item['route'])),
+                               'bg-brand-50 text-brand-700' => request()->routeIs(...($item['match'] ?? [$item['route'], str_replace('.index', '.*', $item['route'])])),
+                               'text-stone-600 hover:bg-stone-50 hover:text-stone-900' => ! request()->routeIs(...($item['match'] ?? [$item['route'], str_replace('.index', '.*', $item['route'])])),
                            ])>{{ $item['label'] }}</a>
                     @endif
                 @endforeach
@@ -56,7 +60,7 @@
         <div class="fixed inset-0 z-20 bg-stone-900/30 lg:hidden" x-show="menu" x-cloak @click="menu = false"></div>
 
         <div class="min-w-0 flex-1">
-            <header class="flex items-center justify-between gap-4 border-b border-stone-200 bg-white px-4 py-3 sm:px-6">
+            <header class="print:hidden flex items-center justify-between gap-4 border-b border-stone-200 bg-white px-4 py-3 sm:px-6">
                 <button type="button" class="btn-secondary px-3 lg:hidden" @click="menu = true" aria-label="Abrir menu">☰</button>
 
                 <div class="ml-auto flex items-center gap-3">

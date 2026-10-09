@@ -4,6 +4,25 @@
         <p class="mt-1 text-sm text-stone-500">{{ $establishment->trade_name }}</p>
     </div>
 
+    @can('orders.view')
+        <div class="grid gap-4 sm:grid-cols-3">
+            <a href="{{ route('orders.board') }}" wire:navigate class="card card-body hover:border-brand-500">
+                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Em andamento</p>
+                <p class="mt-2 text-2xl font-semibold">{{ $openOrders }}</p>
+                <p class="btn-link mt-1">Abrir painel</p>
+            </a>
+            <div class="card card-body">
+                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Pedidos hoje</p>
+                <p class="mt-2 text-2xl font-semibold">{{ $ordersToday }}</p>
+            </div>
+            <div class="card card-body">
+                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Vendido hoje</p>
+                <p class="mt-2 text-2xl font-semibold">{{ $salesToday->format() }}</p>
+                <p class="hint">Sem cancelados</p>
+            </div>
+        </div>
+    @endcan
+
     <div class="grid gap-4 sm:grid-cols-3">
         <div class="card card-body">
             <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Hoje</p>

@@ -14,6 +14,9 @@
             @error('welcome_message') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
+        <label class="flex items-center gap-2 text-sm font-medium"><input type="checkbox" wire:model="accepts_online_orders" class="checkbox"> Receber pedidos online pelo cardápio</label>
+        <p class="hint -mt-2">Desligado, o cardápio continua visível, mas sem carrinho. Os pedidos também só entram no horário de funcionamento.</p>
+
         <div class="flex flex-wrap gap-6">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_delivery" class="checkbox"> Aceita entrega</label>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_pickup" class="checkbox"> Aceita retirada no local</label>
@@ -31,6 +34,17 @@
                 @error('delivery_fee') <p class="field-error">{{ $message }}</p> @enderror
             </div>
         </div>
+    </section>
+
+    <section class="card card-body">
+        <h2 class="font-semibold">Formas de pagamento aceitas</h2>
+        <p class="hint">Pagamento na entrega, na retirada ou no balcão.</p>
+        <div class="mt-3 flex flex-wrap gap-6">
+            @foreach ($methods as $method)
+                <label class="flex items-center gap-2 text-sm" wire:key="pm-{{ $method->id }}"><input type="checkbox" wire:model="paymentMethods.{{ $method->id }}" class="checkbox"> {{ $method->name }}</label>
+            @endforeach
+        </div>
+        @error('paymentMethods') <p class="field-error">{{ $message }}</p> @enderror
     </section>
 
     <section class="card card-body">

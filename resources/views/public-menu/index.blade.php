@@ -22,6 +22,11 @@
         @if ($welcome)
             <p class="mx-auto max-w-3xl px-4 pb-4 text-sm text-stone-700">{{ $welcome }}</p>
         @endif
+        @unless ($ordering)
+            <p class="bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
+                {{ $isOpen ? 'Pedidos online indisponíveis no momento.' : 'Estamos fechados agora. Você pode ver o cardápio; os pedidos voltam no próximo horário de funcionamento.' }}
+            </p>
+        @endunless
     </header>
 
     {{-- Busca e categorias --}}
@@ -90,9 +95,15 @@
                                     @endunless
                                 </p>
                             </div>
-                            @if ($combo->image_path)
-                                <img src="{{ $base }}/combos/{{ $combo->id }}/imagem" alt="" loading="lazy" class="size-24 shrink-0 rounded-lg object-cover">
-                            @endif
+                            <div class="flex shrink-0 flex-col items-end justify-between gap-2">
+                                @if ($combo->image_path)
+                                    <img src="{{ $base }}/combos/{{ $combo->id }}/imagem" alt="" loading="lazy" class="size-24 rounded-lg object-cover">
+                                @endif
+                                @if ($ordering)
+                                    <button type="button" class="btn-primary px-3 py-1.5"
+                                            @click="$store.cart.add({ type: 'combo', id: {{ $combo->id }}, name: @js($combo->name), unit: {{ $combo->price_cents->cents }}, addons: [], quantity: 1, notes: '' })">Adicionar</button>
+                                @endif
+                            </div>
                         </article>
                     @endforeach
                 </div>
@@ -149,29 +160,71 @@
                                         @endunless
                                     </div>
 
-                                    @foreach ($product->addonGroups as $group)
-                                        @if ($group->addons->isNotEmpty())
-                                            <div class="rounded-lg bg-stone-50 p-3">
-                                                <p class="text-sm font-semibold">
-                                                    {{ $group->name }}
-                                                    <span class="ml-1 text-xs font-normal text-stone-500">{{ $group->rule() }}{{ $group->isRequired() ? ' · obrigatório' : '' }}</span>
-                                                </p>
-                                                <ul class="mt-2 divide-y divide-stone-200 text-sm">
-                                                    @foreach ($group->addons as $addon)
-                                                        <li class="flex justify-between py-1.5">
-                                                            <span>{{ $addon->name }}</span>
-                                                            <span class="text-stone-600">{{ $addon->price_cents->isZero() ? 'sem custo' : '+ '.$addon->price_cents->format() }}</span>
-                                                        </li>
-                                                    @endforeach
-                                                </ul>
+                                    @php($canOrder = $ordering && $product->is_available)
+                                    <div class="space-y-4" @if ($canOrder) x-data="picker(@js($catalog[$product->id]))" @endif>
+                                        @foreach ($product->addonGroups as $group)
+                                            @if ($group->addons->isNotEmpty())
+                                                <div class="rounded-lg bg-stone-50 p-3">
+                                                    <p class="flex items-center justify-between gap-2 text-sm font-semibold">
+                                                        <span>
+                                                            {{ $group->name }}
+                                                            <span class="ml-1 text-xs font-normal text-stone-500">{{ $group->rule() }}</span>
+                                                        </span>
+                                                        @if ($group->isRequired())
+                                                            <span class="badge bg-stone-800 text-white">obrigatório</span>
+                                                        @endif
+                                                    </p>
+                                                    <ul class="mt-2 divide-y divide-stone-200 text-sm">
+                                                        @foreach ($group->addons as $addon)
+                                                            <li>
+                                                                @if ($canOrder)
+                                                                    <button type="button" class="flex w-full items-center justify-between gap-3 py-2 text-left"
+                                                                            @click="toggle({{ $group->id }}, {{ $addon->id }})"
+                                                                            :class="! has({{ $group->id }}, {{ $addon->id }}) && full({{ $group->id }}) && 'opacity-40'">
+                                                                        <span class="flex items-center gap-2">
+                                                                            <span class="flex size-5 items-center justify-center border border-stone-400 {{ $group->max_choices === 1 ? 'rounded-full' : 'rounded' }}"
+                                                                                  :class="has({{ $group->id }}, {{ $addon->id }}) && 'border-brand-600 bg-brand-600 text-white'">
+                                                                                <span x-show="has({{ $group->id }}, {{ $addon->id }})" class="text-xs">✓</span>
+                                                                            </span>
+                                                                            {{ $addon->name }}
+                                                                        </span>
+                                                                        <span class="text-stone-600">{{ $addon->price_cents->isZero() ? 'sem custo' : '+ '.$addon->price_cents->format() }}</span>
+                                                                    </button>
+                                                                @else
+                                                                    <span class="flex justify-between py-1.5">
+                                                                        <span>{{ $addon->name }}</span>
+                                                                        <span class="text-stone-600">{{ $addon->price_cents->isZero() ? 'sem custo' : '+ '.$addon->price_cents->format() }}</span>
+                                                                    </span>
+                                                                @endif
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+                                            @endif
+                                        @endforeach
+
+                                        @if ($canOrder)
+                                            <div>
+                                                <label class="label" for="obs-{{ $product->id }}">Observações</label>
+                                                <input id="obs-{{ $product->id }}" type="text" x-model="notes" maxlength="200" class="input" placeholder="Ex.: sem cebola">
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex items-center rounded-lg border border-stone-300">
+                                                    <button type="button" class="px-3 py-2" @click="quantity = Math.max(1, quantity - 1)" aria-label="Diminuir">−</button>
+                                                    <span class="w-8 text-center" x-text="quantity"></span>
+                                                    <button type="button" class="px-3 py-2" @click="quantity = Math.min(99, quantity + 1)" aria-label="Aumentar">+</button>
+                                                </div>
+                                                <button type="button" class="btn-primary flex-1" @click="add()" :disabled="missing.length > 0">
+                                                    <span x-show="missing.length === 0">Adicionar · <span x-text="money(total)"></span></span>
+                                                    <span x-show="missing.length > 0" x-text="'Escolha: ' + missing.map(g => g.name).join(', ')"></span>
+                                                </button>
                                             </div>
                                         @endif
-                                    @endforeach
+                                    </div>
 
                                     <form method="dialog">
-                                        <button class="btn-secondary w-full">Fechar</button>
+                                        <button class="btn-secondary w-full">{{ $canOrder ? 'Voltar ao cardápio' : 'Fechar' }}</button>
                                     </form>
-                                    <p class="text-center text-xs text-stone-400">Pedidos online chegam em breve.</p>
                                 </div>
                             </div>
                         </dialog>
@@ -209,6 +262,20 @@
             </div>
         </footer>
     </main>
+
+    @if ($ordering)
+        {{-- Barra do carrinho --}}
+        <div x-data x-cloak x-show="$store.cart.count > 0" class="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 p-3 backdrop-blur">
+            <a href="{{ $base }}/pedido" class="btn-primary mx-auto flex w-full max-w-3xl justify-between py-3">
+                <span>Ver carrinho · <span x-text="$store.cart.count"></span> <span x-text="$store.cart.count === 1 ? 'item' : 'itens'"></span></span>
+                <span x-text="money($store.cart.subtotal)"></span>
+            </a>
+        </div>
+        <div x-data x-cloak x-show="$store.cart.toast" x-transition class="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-stone-900 px-4 py-2 text-sm text-white" x-text="$store.cart.toast"></div>
+        <div class="h-20"></div>
+    @endif
+
+    @include('public-menu.partials.cart-script')
 
     <script>
         // Abrir detalhes (dialog nativo) e busca local, sem ida ao servidor.
