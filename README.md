@@ -28,7 +28,7 @@ docker compose exec app php artisan central:migrate --seed
 | Admin da plataforma | http://admin.localhost:8080 |
 | Estabelecimento | http://&lt;slug&gt;.localhost:8080 |
 | Mailpit (e-mails) | http://localhost:8025 |
-| PostgreSQL | localhost:5432 (usuário `saas` / `secret`, banco `saas`) |
+| PostgreSQL (DBeaver etc.) | localhost:5433, usuário `saas`, senha `secret`, bancos `saas` e `saas_test` |
 
 Use a pasta dentro do Ubuntu (WSL), com a integração WSL do Docker Desktop ligada. O `www-data` dos containers PHP usa o uid/gid 1000, o mesmo do seu usuário; se o seu for outro, rode `UID=$(id -u) GID=$(id -g) docker compose build`. `vendor/` e `node_modules/` ficam em volumes Docker. Rode `composer` e `artisan` sempre dentro do container. Navegadores resolvem `*.localhost` sozinhos, sem editar o `hosts`.
 
