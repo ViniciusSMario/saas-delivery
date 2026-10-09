@@ -71,6 +71,7 @@ class OpeningSchedule
         foreach ([1, 2, 3, 4, 5, 6, 0] as $weekday) {
             $hour = $this->hours->get($weekday);
             $rows[] = [
+                'weekday' => $weekday,
                 'label' => OpeningHour::WEEKDAYS[$weekday],
                 'hours' => (! $hour || $hour->is_closed || ! $hour->opens_at)
                     ? 'Fechado'

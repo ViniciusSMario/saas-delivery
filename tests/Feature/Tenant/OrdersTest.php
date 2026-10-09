@@ -239,6 +239,20 @@ it('aceita o pedido pelo site nos dois formatos de endereço e mostra o acompanh
 
     // O token de A não existe em B.
     $this->get(tenantUrl($this->b, '/cardapio/pedido/'.$order->public_token))->assertNotFound();
+
+    // Situação resumida (aba "Pedidos" do app e atualização automática).
+    $this->getJson(tenantUrl($this->a, '/cardapio/pedido/'.$order->public_token.'/status'))
+        ->assertOk()
+        ->assertJson(['number' => $order->number, 'status' => 'received', 'final' => false, 'total' => 'R$ 40,00']);
+    $this->getJson(tenantUrl($this->b, '/cardapio/pedido/'.$order->public_token.'/status'))->assertNotFound();
+});
+
+it('oferece o manifesto para instalar o cardápio como app', function () {
+    foreach ([tenantUrl($this->a, '/cardapio'), 'http://localhost/cardapio/teste1'] as $base) {
+        $this->get($base.'/manifest.webmanifest')
+            ->assertOk()
+            ->assertJson(['start_url' => $base, 'display' => 'standalone']);
+    }
 });
 
 it('volta para o checkout com o erro quando o pedido é recusado', function () {
@@ -256,8 +270,9 @@ it('mostra o carrinho no cardápio só quando aceita pedidos', function () {
     $this->get(tenantUrl($this->a, '/cardapio'))
         ->assertSee('Ver carrinho')
         ->assertSee('picker(', false)
-        // O botão "Adicionar" do combo precisa estar dentro de um escopo Alpine.
-        ->assertSee('id="combos" data-menu-section class="scroll-mt-32" x-data', false);
+        // Os botões "Adicionar" (combos, folha do produto) ficam dentro do escopo Alpine do app.
+        ->assertSee('x-data="menuApp()"', false)
+        ->assertSee('window.menuCatalog', false);
 
     inTenant($this->a, fn () => OpeningHour::query()->update(['is_closed' => true]));
     $this->get(tenantUrl($this->a, '/cardapio'))->assertDontSee('Ver carrinho')->assertSee('Estamos fechados agora');

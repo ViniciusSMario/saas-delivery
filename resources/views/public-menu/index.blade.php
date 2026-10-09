@@ -1,306 +1,661 @@
 @php
     $productImage = fn ($image) => $base.'/imagens/'.$image->id;
+    $name = $establishment->trade_name ?: tenant()->name;
+    $digits = preg_replace('/\D/', '', (string) $establishment->phone);
+    $whatsapp = strlen($digits) >= 10 ? 'https://wa.me/'.(strlen($digits) <= 11 ? '55' : '').$digits : null;
+    $mapsUrl = $establishment->address() ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($establishment->address()) : null;
+    $combosCatalog = $combos->map(fn ($combo) => [
+        'id' => $combo->id,
+        'name' => $combo->name,
+        'price' => $combo->price_cents->cents,
+        'items' => $combo->items->map(fn ($i) => $i->quantity.'× '.$i->product?->name)->implode(' · '),
+        'description' => $combo->description,
+        'image' => $combo->image_path ? $base.'/combos/'.$combo->id.'/imagem' : null,
+    ])->values();
 @endphp
-<x-layouts.public :title="'Cardápio · '.$establishment->trade_name">
-    {{-- Cabeçalho --}}
-    <header class="bg-white">
-        <div class="mx-auto flex max-w-3xl items-center gap-4 px-4 py-5">
-            @if ($establishment->logo_path)
-                <img src="{{ $base }}/logo" alt="Logo de {{ $establishment->trade_name }}" class="size-16 shrink-0 rounded-xl border border-stone-200 object-contain">
+<x-layouts.public :title="'Cardápio · '.$name">
+    <x-slot:head>
+        <link rel="manifest" href="{{ $base }}/manifest.webmanifest">
+        @if ($establishment->logo_path)
+            <link rel="apple-touch-icon" href="{{ $base }}/logo">
+        @endif
+    </x-slot:head>
+
+    <div x-data="menuApp()" class="pb-40">
+        {{-- ============ ABA CARDÁPIO ============ --}}
+        <div x-show="tab === 'cardapio'">
+            {{-- Capa e cartão do estabelecimento --}}
+            <header class="relative">
+                <div class="relative h-36 overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 pt-safe">
+                    <div class="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]"></div>
+                    <div class="relative flex justify-end gap-2 p-3">
+                        <button type="button" @click="share()" class="flex size-10 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur hover:bg-black/30" aria-label="Compartilhar cardápio">
+                            <x-icon name="share" class="size-5" />
+                        </button>
+                        <a href="#loja" class="flex size-10 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur hover:bg-black/30" aria-label="Informações da loja">
+                            <x-icon name="info" class="size-5" />
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative -mt-14 px-4">
+                    <div class="card p-4">
+                        <div class="flex items-start gap-3">
+                            @if ($establishment->logo_path)
+                                <img src="{{ $base }}/logo" alt="Logo de {{ $name }}" class="-mt-10 size-20 shrink-0 rounded-2xl border-4 border-white bg-white object-contain shadow-md">
+                            @else
+                                <span class="-mt-10 flex size-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-brand-600 text-3xl font-bold text-white shadow-md">{{ mb_strtoupper(mb_substr($name, 0, 1)) }}</span>
+                            @endif
+                            <div class="min-w-0 flex-1">
+                                <h1 class="text-xl leading-tight font-extrabold tracking-tight">{{ $name }}</h1>
+                                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                    <span @class(['badge', 'badge-green' => $isOpen, 'badge-gray' => ! $isOpen])>
+                                        <span @class(['size-1.5 rounded-full', 'bg-emerald-500 animate-pulse' => $isOpen, 'bg-stone-400' => ! $isOpen])></span>
+                                        {{ $isOpen ? 'Aberto agora' : 'Fechado agora' }}
+                                    </span>
+                                    <span class="text-stone-500">{{ $todayLabel }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        @if ($establishment->address())
+                            <p class="mt-3 flex items-center gap-1.5 text-xs text-stone-500">
+                                <x-icon name="pin" class="size-4 text-stone-400" />
+                                <span class="truncate">{{ $establishment->address() }}</span>
+                            </p>
+                        @endif
+
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium text-stone-700">
+                            @if ($acceptsDelivery)
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
+                                    <x-icon name="truck" class="size-4 text-brand-600" />
+                                    {{ $deliveryFee->isZero() ? 'Entrega grátis' : 'Entrega '.$deliveryFee->format() }}
+                                </span>
+                            @endif
+                            @if ($acceptsPickup)
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
+                                    <x-icon name="bag" class="size-4 text-brand-600" /> Retirada no local
+                                </span>
+                            @endif
+                            @unless ($minOrder->isZero())
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
+                                    <x-icon name="cash" class="size-4 text-brand-600" /> Mínimo {{ $minOrder->format() }}
+                                </span>
+                            @endunless
+                        </div>
+
+                        @if ($welcome)
+                            <p class="mt-3 border-t border-stone-100 pt-3 text-sm text-stone-600">{{ $welcome }}</p>
+                        @endif
+                    </div>
+
+                    @unless ($ordering)
+                        <div class="alert-warning mt-3">
+                            <x-icon name="clock" class="mt-0.5 size-4" />
+                            <span>{{ $isOpen ? 'Pedidos online indisponíveis no momento.' : 'Estamos fechados agora. Você pode ver o cardápio; os pedidos voltam no próximo horário de funcionamento.' }}</span>
+                        </div>
+                    @endunless
+                </div>
+            </header>
+
+            {{-- Categorias (fixas no topo, acompanham a rolagem) --}}
+            @if ($categories->count() > 1 || $combos->isNotEmpty())
+                <div class="sticky top-0 z-20 mt-4 border-b border-stone-200/70 bg-stone-50/90 backdrop-blur-lg">
+                    <nav x-ref="chips" class="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-none" aria-label="Categorias">
+                        <a href="#buscar" class="chip size-9 justify-center px-0" aria-label="Buscar no cardápio">
+                            <x-icon name="search" class="size-4" />
+                        </a>
+                        @if ($combos->isNotEmpty())
+                            <button type="button" data-chip="combos" @click="goTo('combos')" class="chip" :class="active === 'combos' && 'chip-active'">Combos</button>
+                        @endif
+                        @foreach ($categories as $category)
+                            <button type="button" data-chip="categoria-{{ $category->id }}" @click="goTo('categoria-{{ $category->id }}')" class="chip"
+                                    :class="active === 'categoria-{{ $category->id }}' && 'chip-active'">{{ $category->name }}</button>
+                        @endforeach
+                    </nav>
+                </div>
             @endif
-            <div class="min-w-0">
-                <h1 class="truncate text-xl font-semibold sm:text-2xl">{{ $establishment->trade_name }}</h1>
-                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <span @class(['badge', 'bg-green-100 text-green-800' => $isOpen, 'bg-stone-200 text-stone-700' => ! $isOpen])>{{ $isOpen ? 'Aberto agora' : 'Fechado agora' }}</span>
-                    <span class="text-stone-500">{{ $todayLabel }}</span>
-                </p>
-                @if ($establishment->address())
-                    <p class="mt-1 truncate text-xs text-stone-500">{{ $establishment->address() }}</p>
+
+            <main class="space-y-8 px-4 pt-5">
+                @if ($categories->isEmpty() && $combos->isEmpty())
+                    <div class="card">
+                        <x-ui.empty icon="utensils" title="Cardápio em preparação" text="O cardápio ainda está sendo montado. Volte em breve!" />
+                    </div>
                 @endif
+
+                {{-- Destaques --}}
+                @if ($featured->isNotEmpty())
+                    <section>
+                        <h2 class="flex items-center gap-2 text-lg font-bold tracking-tight">
+                            <x-icon name="flame" class="size-5 text-brand-600" /> Destaques
+                        </h2>
+                        <div class="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none">
+                            @foreach ($featured as $product)
+                                <button type="button" @click="$dispatch('open-product', {{ $product->id }})"
+                                        class="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-stone-200/80 bg-white text-left shadow-(--shadow-card) transition active:scale-[0.98]">
+                                    @if ($product->images->first())
+                                        <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" class="aspect-[4/3] w-full object-cover">
+                                    @else
+                                        <div class="flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 text-brand-400">
+                                            <x-icon name="utensils" class="size-8" />
+                                        </div>
+                                    @endif
+                                    <div class="p-3">
+                                        <p class="truncate text-sm font-semibold">{{ $product->name }}</p>
+                                        <p class="mt-0.5 text-sm font-bold text-brand-700">{{ $product->price_cents->format() }}</p>
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                {{-- Combos --}}
+                @if ($combos->isNotEmpty())
+                    <section id="combos" data-menu-section class="scroll-mt-20">
+                        <h2 class="text-lg font-bold tracking-tight">Combos</h2>
+                        <div class="mt-3 space-y-3">
+                            @foreach ($combos as $combo)
+                                <article class="card flex gap-3 overflow-hidden p-3">
+                                    @if ($combo->image_path)
+                                        <img src="{{ $base }}/combos/{{ $combo->id }}/imagem" alt="" loading="lazy" class="size-24 shrink-0 rounded-xl object-cover">
+                                    @endif
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <h3 class="font-semibold">{{ $combo->name }}</h3>
+                                            @unless ($combo->savings()->isZero())
+                                                <span class="badge-green shrink-0">−{{ $combo->savings()->format() }}</span>
+                                            @endunless
+                                        </div>
+                                        <p class="mt-0.5 text-xs text-stone-500">{{ $combo->items->map(fn ($i) => $i->quantity.'× '.$i->product?->name)->implode(' · ') }}</p>
+                                        @if ($combo->description)
+                                            <p class="mt-1 line-clamp-2 text-sm text-stone-500">{{ $combo->description }}</p>
+                                        @endif
+                                        <div class="mt-2 flex items-center justify-between gap-2">
+                                            <p class="font-bold">{{ $combo->price_cents->format() }}</p>
+                                            @if ($ordering)
+                                                <button type="button" class="btn-primary btn-sm rounded-full"
+                                                        @click="$store.cart.add({ type: 'combo', id: {{ $combo->id }}, name: @js($combo->name), unit: {{ $combo->price_cents->cents }}, addons: [], quantity: 1, notes: '' })">
+                                                    <x-icon name="plus" class="size-4" /> Adicionar
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                {{-- Categorias e produtos --}}
+                @foreach ($categories as $category)
+                    <section id="categoria-{{ $category->id }}" data-menu-section class="scroll-mt-20">
+                        <h2 class="text-lg font-bold tracking-tight">{{ $category->name }}</h2>
+                        @if ($category->description)
+                            <p class="text-sm text-stone-500">{{ $category->description }}</p>
+                        @endif
+
+                        <div class="card mt-3 divide-y divide-stone-100 overflow-hidden">
+                            @foreach ($category->products as $product)
+                                <button type="button" @click="$dispatch('open-product', {{ $product->id }})"
+                                        class="flex w-full gap-3 p-4 text-left transition hover:bg-stone-50 active:bg-stone-100">
+                                    <div @class(['min-w-0 flex-1', 'opacity-60' => ! $product->is_available])>
+                                        <h3 class="font-semibold text-stone-900">{{ $product->name }}</h3>
+                                        @if ($product->description)
+                                            <p class="mt-1 line-clamp-2 text-sm text-stone-500">{{ $product->description }}</p>
+                                        @endif
+                                        <p class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                                            <span class="font-bold text-stone-900">
+                                                @if ($product->addonGroups->contains(fn ($g) => $g->isRequired()))<span class="font-normal text-stone-500">A partir de</span>@endif
+                                                {{ $product->price_cents->format() }}
+                                            </span>
+                                            @unless ($product->is_available)
+                                                <span class="badge-gray">Esgotado</span>
+                                            @endunless
+                                        </p>
+                                    </div>
+                                    <div class="relative shrink-0">
+                                        @if ($product->images->first())
+                                            <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" @class(['size-24 rounded-xl object-cover', 'grayscale' => ! $product->is_available])>
+                                        @endif
+                                        @if ($ordering && $product->is_available)
+                                            <span @class([
+                                                'flex size-8 items-center justify-center rounded-full bg-white text-brand-600 shadow-md ring-1 ring-stone-200',
+                                                'absolute -right-1 -bottom-1' => $product->images->isNotEmpty(),
+                                                'mt-1' => $product->images->isEmpty(),
+                                            ])>
+                                                <x-icon name="plus" class="size-5" stroke="2.4" />
+                                            </span>
+                                        @endif
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    </section>
+                @endforeach
+
+                <p class="pt-2 pb-4 text-center text-xs text-stone-400">Cardápio digital · {{ config('app.name') }}</p>
+            </main>
+        </div>
+
+        {{-- ============ ABA BUSCAR ============ --}}
+        <div x-show="tab === 'buscar'" x-cloak>
+            <div class="sticky top-0 z-20 bg-stone-50/95 px-4 pt-6 pb-3 backdrop-blur-lg">
+                <h1 class="text-2xl font-extrabold tracking-tight">Buscar</h1>
+                <label class="relative mt-3 block">
+                    <x-icon name="search" class="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-stone-400" />
+                    <input x-ref="search" x-model.debounce.150ms="term" type="search" placeholder="Pizza, bebida, sobremesa..." autocomplete="off"
+                           class="input h-12 rounded-2xl pl-12 text-base" aria-label="Buscar no cardápio">
+                </label>
+            </div>
+
+            <div class="px-4 pt-2">
+                {{-- Sem termo: atalhos para as categorias --}}
+                <div x-show="! term.trim()">
+                    <p class="stat-label mb-3">Categorias</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        @if ($combos->isNotEmpty())
+                            <button type="button" @click="goTo('combos')" class="card flex items-center gap-3 p-4 text-left font-semibold active:scale-[0.98]">
+                                <span class="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><x-icon name="gift" class="size-5" /></span>
+                                Combos
+                            </button>
+                        @endif
+                        @foreach ($categories as $category)
+                            <button type="button" @click="goTo('categoria-{{ $category->id }}')" class="card flex items-center gap-3 p-4 text-left font-semibold active:scale-[0.98]">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><x-icon name="utensils" class="size-5" /></span>
+                                <span class="min-w-0">
+                                    <span class="block truncate">{{ $category->name }}</span>
+                                    <span class="block text-xs font-normal text-stone-500">{{ $category->products->count() }} {{ $category->products->count() === 1 ? 'item' : 'itens' }}</span>
+                                </span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Resultados --}}
+                <div x-show="term.trim()" class="space-y-3">
+                    <template x-for="combo in comboResults" :key="'c' + combo.id">
+                        <div class="card flex items-center gap-3 p-3">
+                            <template x-if="combo.image"><img :src="combo.image" alt="" class="size-16 rounded-xl object-cover"></template>
+                            <div class="min-w-0 flex-1">
+                                <p class="font-semibold" x-text="combo.name"></p>
+                                <p class="truncate text-xs text-stone-500" x-text="combo.items"></p>
+                                <p class="mt-1 text-sm font-bold" x-text="money(combo.price)"></p>
+                            </div>
+                            <button type="button" x-show="ordering" class="btn-icon btn-primary rounded-full" aria-label="Adicionar combo"
+                                    @click="$store.cart.add({ type: 'combo', id: combo.id, name: combo.name, unit: combo.price, addons: [], quantity: 1, notes: '' })">
+                                <x-icon name="plus" class="size-5" />
+                            </button>
+                        </div>
+                    </template>
+                    <template x-for="product in results" :key="product.id">
+                        <button type="button" @click="$dispatch('open-product', product.id)" class="card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99]">
+                            <template x-if="product.images.length"><img :src="product.images[0]" alt="" class="size-16 rounded-xl object-cover"></template>
+                            <template x-if="! product.images.length">
+                                <span class="flex size-16 items-center justify-center rounded-xl bg-stone-100 text-stone-400"><x-icon name="utensils" class="size-6" /></span>
+                            </template>
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate font-semibold" x-text="product.name"></span>
+                                <span class="block text-xs text-stone-500" x-text="product.category"></span>
+                                <span class="mt-1 flex items-center gap-2 text-sm font-bold">
+                                    <span x-text="money(product.price)"></span>
+                                    <span class="badge-gray" x-show="! product.available">Esgotado</span>
+                                </span>
+                            </span>
+                            <x-icon name="chevron-right" class="size-5 text-stone-400" />
+                        </button>
+                    </template>
+                    <div class="card" x-show="! results.length && ! comboResults.length">
+                        <x-ui.empty icon="search" title="Nada encontrado" text="Tente outro nome ou veja as categorias do cardápio." />
+                    </div>
+                </div>
             </div>
         </div>
-        @if ($welcome)
-            <p class="mx-auto max-w-3xl px-4 pb-4 text-sm text-stone-700">{{ $welcome }}</p>
-        @endif
-        @unless ($ordering)
-            <p class="bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
-                {{ $isOpen ? 'Pedidos online indisponíveis no momento.' : 'Estamos fechados agora. Você pode ver o cardápio; os pedidos voltam no próximo horário de funcionamento.' }}
-            </p>
-        @endunless
-    </header>
 
-    {{-- Busca e categorias --}}
-    <div class="sticky top-0 z-10 border-y border-stone-200 bg-white/95 backdrop-blur">
-        <div class="mx-auto max-w-3xl space-y-3 px-4 py-3">
-            <input type="search" id="menu-search" placeholder="Buscar no cardápio" class="input" aria-label="Buscar no cardápio" autocomplete="off">
-            @if ($categories->count() > 1 || $combos->isNotEmpty())
-                <nav class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Categorias">
-                    @if ($combos->isNotEmpty())
-                        <a href="#combos" class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-sm whitespace-nowrap hover:bg-stone-100">Combos</a>
-                    @endif
-                    @foreach ($categories as $category)
-                        <a href="#categoria-{{ $category->id }}" class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-sm whitespace-nowrap hover:bg-stone-100">{{ $category->name }}</a>
-                    @endforeach
-                </nav>
-            @endif
-        </div>
-    </div>
-
-    <main class="mx-auto max-w-3xl space-y-10 px-4 py-6">
-        @if ($categories->isEmpty() && $combos->isEmpty())
-            <div class="card card-body text-center text-stone-500">O cardápio ainda está sendo montado. Volte em breve!</div>
-        @endif
-
-        @if ($featured->isNotEmpty())
-            <section data-menu-section>
-                <h2 class="text-lg font-semibold">Destaques</h2>
-                <div class="-mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2">
-                    @foreach ($featured as $product)
-                        <button type="button" data-open="produto-{{ $product->id }}" data-search="{{ mb_strtolower($product->name.' '.$product->description) }}"
-                                class="w-40 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-white text-left">
-                            @if ($product->images->first())
-                                <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" class="aspect-square w-full object-cover">
-                            @else
-                                <div class="flex aspect-square w-full items-center justify-center bg-stone-100 text-3xl">🍽️</div>
-                            @endif
-                            <div class="p-2">
-                                <p class="truncate text-sm font-medium">{{ $product->name }}</p>
-                                <p class="text-sm text-stone-700">{{ $product->price_cents->format() }}</p>
-                            </div>
-                        </button>
-                    @endforeach
-                </div>
-            </section>
-        @endif
-
-        @if ($combos->isNotEmpty())
-            <section id="combos" data-menu-section class="scroll-mt-32" x-data>
-                <h2 class="text-lg font-semibold">Combos</h2>
-                <div class="mt-3 space-y-3">
-                    @foreach ($combos as $combo)
-                        <article data-search="{{ mb_strtolower($combo->name.' '.$combo->description.' '.$combo->items->map(fn ($i) => $i->product?->name)->implode(' ')) }}"
-                                 class="flex gap-3 rounded-xl border border-stone-200 bg-white p-3">
-                            <div class="min-w-0 flex-1">
-                                <h3 class="font-medium">{{ $combo->name }}</h3>
-                                <p class="mt-1 text-sm text-stone-500">
-                                    {{ $combo->items->map(fn ($i) => $i->quantity.'× '.$i->product?->name)->implode(' · ') }}
-                                </p>
-                                @if ($combo->description)
-                                    <p class="mt-1 line-clamp-2 text-sm text-stone-500">{{ $combo->description }}</p>
-                                @endif
-                                <p class="mt-2 font-semibold">
-                                    {{ $combo->price_cents->format() }}
-                                    @unless ($combo->savings()->isZero())
-                                        <span class="ml-1 text-xs font-medium text-green-700">economize {{ $combo->savings()->format() }}</span>
-                                    @endunless
-                                </p>
-                            </div>
-                            <div class="flex shrink-0 flex-col items-end justify-between gap-2">
-                                @if ($combo->image_path)
-                                    <img src="{{ $base }}/combos/{{ $combo->id }}/imagem" alt="" loading="lazy" class="size-24 rounded-lg object-cover">
-                                @endif
-                                @if ($ordering)
-                                    <button type="button" class="btn-primary px-3 py-1.5"
-                                            @click="$store.cart.add({ type: 'combo', id: {{ $combo->id }}, name: @js($combo->name), unit: {{ $combo->price_cents->cents }}, addons: [], quantity: 1, notes: '' })">Adicionar</button>
-                                @endif
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
-        @endif
-
-        @foreach ($categories as $category)
-            <section id="categoria-{{ $category->id }}" data-menu-section class="scroll-mt-32">
-                <h2 class="text-lg font-semibold">{{ $category->name }}</h2>
-                @if ($category->description)
-                    <p class="text-sm text-stone-500">{{ $category->description }}</p>
-                @endif
-
-                <div class="mt-3 space-y-3">
-                    @foreach ($category->products as $product)
-                        <button type="button" data-open="produto-{{ $product->id }}" data-search="{{ mb_strtolower($product->name.' '.$product->description.' '.$product->code) }}"
-                                @class(['flex w-full gap-3 rounded-xl border border-stone-200 bg-white p-3 text-left transition hover:border-stone-300', 'opacity-60' => ! $product->is_available])>
-                            <div class="min-w-0 flex-1">
-                                <h3 class="font-medium">{{ $product->name }}</h3>
-                                @if ($product->description)
-                                    <p class="mt-1 line-clamp-2 text-sm text-stone-500">{{ $product->description }}</p>
-                                @endif
-                                <p class="mt-2 font-semibold">
-                                    {{ $product->addonGroups->contains(fn ($g) => $g->isRequired()) ? 'A partir de ' : '' }}{{ $product->price_cents->format() }}
-                                    @unless ($product->is_available)
-                                        <span class="badge ml-1 bg-stone-200 text-stone-700">Esgotado</span>
-                                    @endunless
-                                </p>
-                            </div>
-                            @if ($product->images->first())
-                                <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" class="size-24 shrink-0 rounded-lg object-cover">
-                            @endif
-                        </button>
-
-                        {{-- Detalhe do produto --}}
-                        <dialog id="produto-{{ $product->id }}" class="m-auto w-full max-w-lg rounded-2xl p-0 backdrop:bg-stone-900/50">
-                            <div class="max-h-[85vh] overflow-y-auto">
-                                @if ($product->images->isNotEmpty())
-                                    <div class="flex snap-x snap-mandatory overflow-x-auto">
-                                        @foreach ($product->images as $image)
-                                            <img src="{{ $productImage($image) }}" alt="{{ $product->name }}" loading="lazy" class="aspect-[4/3] w-full shrink-0 snap-center object-cover">
-                                        @endforeach
-                                    </div>
-                                @endif
-                                <div class="space-y-4 p-5">
-                                    <div>
-                                        <h3 class="text-lg font-semibold">{{ $product->name }}</h3>
-                                        <p class="mt-1 font-semibold text-stone-800">{{ $product->price_cents->format() }}</p>
-                                        @if ($product->description)
-                                            <p class="mt-2 text-sm whitespace-pre-line text-stone-600">{{ $product->description }}</p>
-                                        @endif
-                                        @unless ($product->is_available)
-                                            <p class="mt-2 text-sm font-medium text-stone-700">Esgotado no momento.</p>
-                                        @endunless
-                                    </div>
-
-                                    @php($canOrder = $ordering && $product->is_available)
-                                    <div class="space-y-4" @if ($canOrder) x-data="picker(@js($catalog[$product->id]))" @endif>
-                                        @foreach ($product->addonGroups as $group)
-                                            @if ($group->addons->isNotEmpty())
-                                                <div class="rounded-lg bg-stone-50 p-3">
-                                                    <p class="flex items-center justify-between gap-2 text-sm font-semibold">
-                                                        <span>
-                                                            {{ $group->name }}
-                                                            <span class="ml-1 text-xs font-normal text-stone-500">{{ $group->rule() }}</span>
-                                                        </span>
-                                                        @if ($group->isRequired())
-                                                            <span class="badge bg-stone-800 text-white">obrigatório</span>
-                                                        @endif
-                                                    </p>
-                                                    <ul class="mt-2 divide-y divide-stone-200 text-sm">
-                                                        @foreach ($group->addons as $addon)
-                                                            <li>
-                                                                @if ($canOrder)
-                                                                    <button type="button" class="flex w-full items-center justify-between gap-3 py-2 text-left"
-                                                                            @click="toggle({{ $group->id }}, {{ $addon->id }})"
-                                                                            :class="! has({{ $group->id }}, {{ $addon->id }}) && full({{ $group->id }}) && 'opacity-40'">
-                                                                        <span class="flex items-center gap-2">
-                                                                            <span class="flex size-5 items-center justify-center border border-stone-400 {{ $group->max_choices === 1 ? 'rounded-full' : 'rounded' }}"
-                                                                                  :class="has({{ $group->id }}, {{ $addon->id }}) && 'border-brand-600 bg-brand-600 text-white'">
-                                                                                <span x-show="has({{ $group->id }}, {{ $addon->id }})" class="text-xs">✓</span>
-                                                                            </span>
-                                                                            {{ $addon->name }}
-                                                                        </span>
-                                                                        <span class="text-stone-600">{{ $addon->price_cents->isZero() ? 'sem custo' : '+ '.$addon->price_cents->format() }}</span>
-                                                                    </button>
-                                                                @else
-                                                                    <span class="flex justify-between py-1.5">
-                                                                        <span>{{ $addon->name }}</span>
-                                                                        <span class="text-stone-600">{{ $addon->price_cents->isZero() ? 'sem custo' : '+ '.$addon->price_cents->format() }}</span>
-                                                                    </span>
-                                                                @endif
-                                                            </li>
-                                                        @endforeach
-                                                    </ul>
-                                                </div>
-                                            @endif
-                                        @endforeach
-
-                                        @if ($canOrder)
-                                            <div>
-                                                <label class="label" for="obs-{{ $product->id }}">Observações</label>
-                                                <input id="obs-{{ $product->id }}" type="text" x-model="notes" maxlength="200" class="input" placeholder="Ex.: sem cebola">
-                                            </div>
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex items-center rounded-lg border border-stone-300">
-                                                    <button type="button" class="px-3 py-2" @click="quantity = Math.max(1, quantity - 1)" aria-label="Diminuir">−</button>
-                                                    <span class="w-8 text-center" x-text="quantity"></span>
-                                                    <button type="button" class="px-3 py-2" @click="quantity = Math.min(99, quantity + 1)" aria-label="Aumentar">+</button>
-                                                </div>
-                                                <button type="button" class="btn-primary flex-1" @click="add()" :disabled="missing.length > 0">
-                                                    <span x-show="missing.length === 0">Adicionar · <span x-text="money(total)"></span></span>
-                                                    <span x-show="missing.length > 0" x-text="'Escolha: ' + missing.map(g => g.name).join(', ')"></span>
-                                                </button>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <form method="dialog">
-                                        <button class="btn-secondary w-full">{{ $canOrder ? 'Voltar ao cardápio' : 'Fechar' }}</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </dialog>
-                    @endforeach
-                </div>
-            </section>
-        @endforeach
-
-        <p id="menu-empty" class="hidden text-center text-sm text-stone-500">Nada encontrado para essa busca.</p>
-
-        {{-- Informações --}}
-        <footer class="grid gap-4 border-t border-stone-200 pt-6 text-sm sm:grid-cols-2">
+        {{-- ============ ABA PEDIDOS ============ --}}
+        <div x-show="tab === 'pedidos'" x-cloak class="space-y-4 px-4 pt-6">
             <div>
-                <h2 class="font-semibold">Horários</h2>
-                <dl class="mt-2 space-y-1">
+                <h1 class="text-2xl font-extrabold tracking-tight">Seus pedidos</h1>
+                <p class="mt-1 text-sm text-stone-500">Pedidos feitos neste aparelho.</p>
+            </div>
+
+            @if ($ordering)
+                <a href="{{ $base }}/pedido" x-show="$store.cart.count > 0" class="card flex items-center gap-3 border-brand-200 bg-brand-50 p-4">
+                    <span class="flex size-10 items-center justify-center rounded-xl bg-brand-600 text-white"><x-icon name="bag" class="size-5" /></span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block font-semibold">Sacola em aberto</span>
+                        <span class="block text-sm text-stone-600"><span x-text="$store.cart.count"></span> <span x-text="$store.cart.count === 1 ? 'item' : 'itens'"></span> · <span x-text="money($store.cart.subtotal)"></span></span>
+                    </span>
+                    <x-icon name="chevron-right" class="size-5 text-brand-600" />
+                </a>
+            @endif
+
+            <template x-if="$store.orders.list.length === 0">
+                <div class="card">
+                    <x-ui.empty icon="bag" title="Nenhum pedido por aqui ainda" text="Quando você fizer um pedido, ele aparece aqui para acompanhar em tempo real.">
+                        <a href="#cardapio" class="btn-primary">Ver cardápio</a>
+                    </x-ui.empty>
+                </div>
+            </template>
+
+            <div class="space-y-3">
+                <template x-for="order in $store.orders.list" :key="order.url">
+                    <a :href="order.url" class="card flex items-center gap-3 p-4 active:scale-[0.99]">
+                        <span class="flex size-11 shrink-0 items-center justify-center rounded-xl"
+                              :class="order.status === 'cancelled' ? 'bg-red-50 text-red-600' : (order.final ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-50 text-brand-600')">
+                            <x-icon name="bag" class="size-5" />
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex items-center gap-2">
+                                <span class="font-bold" x-text="'#' + order.number"></span>
+                                <span x-show="! order.final" class="badge-brand">Em andamento</span>
+                            </span>
+                            <span class="block truncate text-sm text-stone-700" x-text="order.label"></span>
+                            <span class="block text-xs text-stone-500" x-text="[order.placed_at, order.total].filter(Boolean).join(' · ')"></span>
+                        </span>
+                        <x-icon name="chevron-right" class="size-5 text-stone-400" />
+                    </a>
+                </template>
+            </div>
+        </div>
+
+        {{-- ============ ABA LOJA ============ --}}
+        <div x-show="tab === 'loja'" x-cloak class="space-y-4 px-4 pt-6">
+            <div class="flex items-center gap-3">
+                @if ($establishment->logo_path)
+                    <img src="{{ $base }}/logo" alt="" class="size-14 rounded-2xl border border-stone-200 bg-white object-contain">
+                @endif
+                <div class="min-w-0">
+                    <h1 class="truncate text-2xl font-extrabold tracking-tight">{{ $name }}</h1>
+                    <p class="text-sm {{ $isOpen ? 'text-emerald-700' : 'text-stone-500' }}">{{ $isOpen ? 'Aberto agora' : 'Fechado agora' }} · {{ $todayLabel }}</p>
+                </div>
+            </div>
+
+            @if ($establishment->address() || $establishment->phone)
+                <section class="card divide-y divide-stone-100">
+                    @if ($establishment->address())
+                        <div class="flex items-start gap-3 p-4">
+                            <x-icon name="pin" class="mt-0.5 size-5 text-brand-600" />
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm">{{ $establishment->address() }}</p>
+                                <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="btn-link mt-1 inline-block">Como chegar</a>
+                            </div>
+                        </div>
+                    @endif
+                    @if ($establishment->phone)
+                        <div class="flex items-center gap-3 p-4">
+                            <x-icon name="phone" class="size-5 text-brand-600" />
+                            <p class="flex-1 text-sm">{{ $establishment->phone }}</p>
+                            <a href="tel:{{ $digits }}" class="btn-secondary btn-sm">Ligar</a>
+                            @if ($whatsapp)
+                                <a href="{{ $whatsapp }}" target="_blank" rel="noopener" class="btn-success btn-sm">WhatsApp</a>
+                            @endif
+                        </div>
+                    @endif
+                </section>
+            @endif
+
+            <section class="card">
+                <div class="card-header"><h2 class="section-title flex items-center gap-2"><x-icon name="clock" class="size-5 text-brand-600" /> Horários</h2></div>
+                <dl class="divide-y divide-stone-100 text-sm">
                     @foreach ($week as $day)
-                        <div class="flex justify-between"><dt class="text-stone-500">{{ $day['label'] }}</dt><dd>{{ $day['hours'] }}</dd></div>
+                        <div @class(['flex justify-between px-5 py-2.5', 'bg-brand-50/60 font-semibold text-brand-800' => $day['weekday'] === $today])>
+                            <dt>{{ $day['label'] }} @if ($day['weekday'] === $today)<span class="badge-brand ml-1">Hoje</span>@endif</dt>
+                            <dd @class(['text-stone-400' => $day['hours'] === 'Fechado'])>{{ $day['hours'] }}</dd>
+                        </div>
                     @endforeach
                 </dl>
-            </div>
-            <div class="space-y-1">
-                <h2 class="font-semibold">Informações</h2>
-                @if ($acceptsDelivery)
-                    <p>Entrega{{ $deliveryFee->isZero() ? ' grátis' : ': taxa de '.$deliveryFee->format() }}</p>
-                @endif
-                @if ($acceptsPickup)
-                    <p>Retirada no local</p>
-                @endif
-                @unless ($minOrder->isZero())
-                    <p>Pedido mínimo: {{ $minOrder->format() }}</p>
-                @endunless
-                @if ($establishment->phone)
-                    <p>Telefone: <a href="tel:{{ preg_replace('/\D/', '', $establishment->phone) }}" class="text-brand-700 hover:underline">{{ $establishment->phone }}</a></p>
-                @endif
-            </div>
-        </footer>
-    </main>
+            </section>
 
-    @if ($ordering)
-        {{-- Barra do carrinho --}}
-        <div x-data x-cloak x-show="$store.cart.count > 0" class="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 p-3 backdrop-blur">
-            <a href="{{ $base }}/pedido" class="btn-primary mx-auto flex w-full max-w-3xl justify-between py-3">
-                <span>Ver carrinho · <span x-text="$store.cart.count"></span> <span x-text="$store.cart.count === 1 ? 'item' : 'itens'"></span></span>
-                <span x-text="money($store.cart.subtotal)"></span>
-            </a>
+            <section class="card">
+                <div class="card-header"><h2 class="section-title flex items-center gap-2"><x-icon name="truck" class="size-5 text-brand-600" /> Entrega e retirada</h2></div>
+                <ul class="space-y-2 p-5 text-sm">
+                    @if ($acceptsDelivery)
+                        <li class="flex justify-between"><span class="text-stone-500">Entrega</span><span class="font-medium">{{ $deliveryFee->isZero() ? 'Grátis' : 'Taxa de '.$deliveryFee->format() }}</span></li>
+                    @endif
+                    @if ($acceptsPickup)
+                        <li class="flex justify-between"><span class="text-stone-500">Retirada</span><span class="font-medium">Retirada no local</span></li>
+                    @endif
+                    @unless ($minOrder->isZero())
+                        <li class="flex justify-between"><span class="text-stone-500">Pedido mínimo</span><span class="font-medium">{{ $minOrder->format() }}</span></li>
+                    @endunless
+                </ul>
+            </section>
+
+            @if ($paymentMethods->isNotEmpty())
+                <section class="card">
+                    <div class="card-header"><h2 class="section-title flex items-center gap-2"><x-icon name="wallet" class="size-5 text-brand-600" /> Pagamento</h2></div>
+                    <div class="p-5">
+                        <p class="text-xs text-stone-500">Pague na entrega ou na retirada:</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @foreach ($paymentMethods as $method)
+                                <span class="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-sm font-medium">{{ $method->name }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+            @endif
+
+            @if ($establishment->legal_name || $establishment->document)
+                <p class="text-center text-xs text-stone-400">{{ collect([$establishment->legal_name, $establishment->document])->filter()->implode(' · ') }}</p>
+            @endif
         </div>
-        <div x-data x-cloak x-show="$store.cart.toast" x-transition class="fixed inset-x-0 top-4 z-30 mx-auto w-fit rounded-full bg-stone-900 px-4 py-2 text-sm text-white" x-text="$store.cart.toast"></div>
-        <div class="h-20"></div>
-    @endif
 
-    @include('public-menu.partials.cart-script')
+        {{-- Barra do carrinho, acima da navegação --}}
+        @if ($ordering)
+            <div x-cloak x-show="$store.cart.count > 0" x-transition.opacity
+                 class="fixed inset-x-0 z-30 mx-auto max-w-xl px-3" style="bottom: calc(max(env(safe-area-inset-bottom), 0.5rem) + 4.25rem)">
+                <a href="{{ $base }}/pedido" class="flex items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-float transition active:scale-[0.98]">
+                    <span class="relative">
+                        <x-icon name="bag" class="size-6" />
+                        <span class="absolute -top-1.5 -right-2 flex min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-brand-700" x-text="$store.cart.count"></span>
+                    </span>
+                    <span class="flex-1 font-semibold">Ver carrinho</span>
+                    <span class="font-bold" x-text="money($store.cart.subtotal)"></span>
+                </a>
+            </div>
+        @endif
+
+        {{-- Aviso rápido ("adicionado à sacola") --}}
+        <div x-cloak x-show="$store.cart.toast" x-transition
+             class="fixed inset-x-0 top-4 z-[60] mx-auto flex w-fit max-w-[90%] items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-float">
+            <x-icon name="check" class="size-4 text-emerald-400" />
+            <span x-text="$store.cart.toast"></span>
+        </div>
+
+        {{-- Folha de detalhe do produto --}}
+        <div x-data="picker()" @open-product.window="show($event.detail)" @popstate.window="open && hide()">
+            <div x-cloak x-show="open" x-transition.opacity class="fixed inset-0 z-40 bg-stone-950/60" @click="close()"></div>
+            <section x-cloak x-show="open" role="dialog" aria-modal="true" :aria-label="product?.name"
+                     x-transition:enter="transition duration-300 ease-out" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
+                     x-transition:leave="transition duration-200 ease-in" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
+                     class="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92vh] max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl">
+                <template x-if="product">
+                    <div class="flex min-h-0 flex-1 flex-col">
+                        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                            <div class="relative">
+                                <template x-if="product.images.length">
+                                    <div>
+                                        <div class="flex snap-x snap-mandatory overflow-x-auto scrollbar-none" @scroll.debounce.50ms="photo = Math.round($el.scrollLeft / $el.clientWidth)">
+                                            <template x-for="src in product.images" :key="src">
+                                                <img :src="src" :alt="product.name" class="aspect-[4/3] w-full shrink-0 snap-center object-cover">
+                                            </template>
+                                        </div>
+                                        <div class="absolute inset-x-0 bottom-3 flex justify-center gap-1.5" x-show="product.images.length > 1">
+                                            <template x-for="(src, i) in product.images" :key="'dot' + i">
+                                                <span class="h-1.5 rounded-full bg-white transition-all" :class="photo === i ? 'w-5' : 'w-1.5 opacity-60'"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="! product.images.length" class="flex justify-center pt-3"><span class="h-1.5 w-10 rounded-full bg-stone-300"></span></div>
+                                <button type="button" @click="close()" class="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-white/90 text-stone-700 shadow-md backdrop-blur" aria-label="Fechar">
+                                    <x-icon name="x" class="size-5" />
+                                </button>
+                            </div>
+
+                            <div class="space-y-5 p-5">
+                                <div class="pr-8">
+                                    <p class="text-xs font-semibold tracking-wide text-brand-600 uppercase" x-text="product.category"></p>
+                                    <h3 class="mt-1 text-xl leading-tight font-extrabold tracking-tight" x-text="product.name"></h3>
+                                    <p class="mt-2 text-sm whitespace-pre-line text-stone-600" x-show="product.description" x-text="product.description"></p>
+                                    <p class="mt-3 text-lg font-bold" x-text="money(product.price)"></p>
+                                    <p x-show="! product.available" class="alert-warning mt-3">Esgotado no momento.</p>
+                                    <p x-show="product.available && ! ordering" class="mt-3 text-sm text-stone-500">Pedidos online indisponíveis agora.</p>
+                                </div>
+
+                                <template x-for="group in product.groups" :key="group.id">
+                                    <div class="-mx-5">
+                                        <div class="flex items-center justify-between gap-2 bg-stone-100 px-5 py-3">
+                                            <div>
+                                                <p class="font-semibold" x-text="group.name"></p>
+                                                <p class="text-xs text-stone-500" x-text="group.rule"></p>
+                                            </div>
+                                            <template x-if="group.min > 0">
+                                                <span :class="(selected[group.id] || []).length >= group.min ? 'badge-green' : 'badge bg-stone-800 text-white'"
+                                                      x-text="(selected[group.id] || []).length >= group.min ? 'OK' : 'Obrigatório'"></span>
+                                            </template>
+                                        </div>
+                                        <ul class="divide-y divide-stone-100">
+                                            <template x-for="addon in group.addons" :key="addon.id">
+                                                <li>
+                                                    <button type="button" class="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left text-sm"
+                                                            @click="toggle(group.id, addon.id)" :disabled="! canOrder"
+                                                            :class="! has(group.id, addon.id) && full(group.id) && 'opacity-40'">
+                                                        <span class="min-w-0">
+                                                            <span class="block font-medium" x-text="addon.name"></span>
+                                                            <span class="block text-stone-500" x-text="addon.price ? '+ ' + money(addon.price) : 'sem custo'"></span>
+                                                        </span>
+                                                        <span x-show="canOrder" class="flex size-6 shrink-0 items-center justify-center border-2 transition"
+                                                              :class="[group.max === 1 ? 'rounded-full' : 'rounded-md', has(group.id, addon.id) ? 'border-brand-600 bg-brand-600 text-white' : 'border-stone-300']">
+                                                            <x-icon name="check" class="size-4" stroke="3" x-show="has(group.id, addon.id)" />
+                                                        </span>
+                                                    </button>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </template>
+
+                                <div x-show="canOrder">
+                                    <label class="label" for="product-notes">Alguma observação?</label>
+                                    <textarea id="product-notes" x-model="notes" maxlength="200" rows="2" class="input" placeholder="Ex.: sem cebola, ponto da carne..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-stone-100 bg-white p-4" style="padding-bottom: max(env(safe-area-inset-bottom), 1rem)">
+                            <template x-if="canOrder">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-12 items-center rounded-2xl border border-stone-200">
+                                        <button type="button" class="flex size-12 items-center justify-center text-brand-600 disabled:text-stone-300" @click="quantity = Math.max(1, quantity - 1)" :disabled="quantity === 1" aria-label="Diminuir">
+                                            <x-icon name="minus" class="size-5" stroke="2.4" />
+                                        </button>
+                                        <span class="w-6 text-center font-bold" x-text="quantity"></span>
+                                        <button type="button" class="flex size-12 items-center justify-center text-brand-600" @click="quantity = Math.min(99, quantity + 1)" aria-label="Aumentar">
+                                            <x-icon name="plus" class="size-5" stroke="2.4" />
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn-primary btn-lg min-w-0 flex-1 justify-between px-5" @click="add()" :disabled="missing.length > 0">
+                                        <span class="truncate" x-text="missing.length ? 'Selecione: ' + missing[0].name : 'Adicionar'"></span>
+                                        <span x-show="! missing.length" x-text="money(total)"></span>
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="! canOrder">
+                                <button type="button" class="btn-secondary btn-lg w-full" @click="close()">Voltar ao cardápio</button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </section>
+        </div>
+
+        @include('public-menu.partials.bottom-nav', ['menuUrl' => $base, 'current' => null])
+    </div>
 
     <script>
-        // Abrir detalhes (dialog nativo) e busca local, sem ida ao servidor.
-        document.querySelectorAll('[data-open]').forEach((el) => {
-            el.addEventListener('click', () => document.getElementById(el.dataset.open)?.showModal());
-        });
-        document.querySelectorAll('dialog').forEach((dialog) => {
-            dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
-        });
+        window.menuCatalog = @js($catalog);
+        window.menuCombos = @js($combosCatalog);
+        window.menuOrdering = @js($ordering);
 
-        const normalize = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-        document.getElementById('menu-search')?.addEventListener('input', (e) => {
-            const term = normalize(e.target.value.trim());
-            let visible = 0;
-            document.querySelectorAll('[data-menu-section]').forEach((section) => {
-                let shown = 0;
-                section.querySelectorAll('[data-search]').forEach((item) => {
-                    const match = term === '' || normalize(item.dataset.search).includes(term);
-                    item.classList.toggle('hidden', ! match);
-                    shown += match ? 1 : 0;
-                });
-                section.classList.toggle('hidden', shown === 0);
-                visible += shown;
-            });
-            document.getElementById('menu-empty').classList.toggle('hidden', visible > 0);
+        document.addEventListener('alpine:init', () => {
+            // Casca do app: abas pelo #hash (o "voltar" do celular troca de aba), categorias que
+            // acompanham a rolagem e busca local, sem ida ao servidor.
+            Alpine.data('menuApp', () => ({
+                tabs: ['cardapio', 'buscar', 'pedidos', 'loja'],
+                tab: 'cardapio',
+                term: '',
+                active: null,
+                scrolls: {},
+                ordering: window.menuOrdering,
+                init() {
+                    // A rolagem de cada aba é controlada aqui (abrir/fechar a folha não pode pular a tela).
+                    history.scrollRestoration = 'manual';
+                    this.route();
+                    window.addEventListener('hashchange', () => this.route());
+                    this.spy();
+                    this.$store.orders.refresh();
+                },
+                route() {
+                    const hash = location.hash.slice(1);
+                    const next = this.tabs.includes(hash) ? hash : 'cardapio';
+                    if (next === this.tab) return;
+                    this.switchTo(next);
+                },
+                switchTo(next, after = null) {
+                    this.scrolls[this.tab] = window.scrollY;
+                    this.tab = next;
+                    this.$nextTick(() => {
+                        if (after) after(); else window.scrollTo(0, this.scrolls[next] || 0);
+                        if (next === 'buscar') this.$refs.search?.focus();
+                        if (next === 'pedidos') this.$store.orders.refresh();
+                    });
+                },
+                // Toque na aba atual: volta ao topo, como nos apps.
+                reselect(id, event) {
+                    if (this.tab !== id) return;
+                    event.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                goTo(id) {
+                    const scroll = () => {
+                        const el = document.getElementById(id);
+                        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 64, behavior: 'smooth' });
+                    };
+                    if (this.tab === 'cardapio') return scroll();
+                    history.pushState(null, '', '#cardapio');
+                    this.switchTo('cardapio', scroll);
+                },
+                spy() {
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach((entry) => { if (entry.isIntersecting) this.active = entry.target.id; });
+                    }, { rootMargin: '-80px 0px -70% 0px' });
+                    document.querySelectorAll('[data-menu-section][id]').forEach((section) => observer.observe(section));
+                    this.$watch('active', (id) => {
+                        const bar = this.$refs.chips;
+                        const chip = bar?.querySelector(`[data-chip="${id}"]`);
+                        if (chip) bar.scrollTo({ left: chip.offsetLeft - bar.clientWidth / 2 + chip.clientWidth / 2, behavior: 'smooth' });
+                    });
+                },
+                get results() {
+                    const term = normalize(this.term.trim());
+                    if (! term) return [];
+                    return Object.values(window.menuCatalog).filter((p) => normalize(`${p.name} ${p.description || ''} ${p.category}`).includes(term));
+                },
+                get comboResults() {
+                    const term = normalize(this.term.trim());
+                    if (! term) return [];
+                    return window.menuCombos.filter((c) => normalize(`${c.name} ${c.items} ${c.description || ''}`).includes(term));
+                },
+                share() {
+                    const data = { title: @js($name), url: @js($base) };
+                    if (navigator.share) return navigator.share(data).catch(() => {});
+                    navigator.clipboard?.writeText(data.url).then(() => this.$store.cart.notify('Link do cardápio copiado'));
+                },
+            }));
         });
     </script>
+
+    @include('public-menu.partials.cart-script')
 </x-layouts.public>

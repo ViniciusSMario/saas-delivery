@@ -9,9 +9,12 @@ use App\Modules\Menu\Models\Category;
 use App\Modules\Menu\Models\Combo;
 use App\Modules\Menu\Models\Product;
 use App\Modules\Menu\Models\ProductImage;
+use App\Modules\Orders\Models\PaymentMethod;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +30,7 @@ class PublicMenuController
         $timezone = Setting::read('timezone', 'America/Sao_Paulo');
         $now = CarbonImmutable::now($timezone);
         $schedule = OpeningSchedule::load();
+        $base = $this->base($request);
 
         $categories = Category::active()->ordered()
             ->with(['products' => fn ($q) => $q->active()
@@ -53,9 +57,10 @@ class PublicMenuController
             'isOpen' => $isOpen,
             // Pedido online liberado: aberto agora, recebendo pedidos e com entrega ou retirada.
             'ordering' => $isOpen && Setting::read('accepts_online_orders', true) && ($acceptsDelivery || $acceptsPickup),
-            'catalog' => $this->catalog($categories),
+            'catalog' => $this->catalog($categories, $base),
             'todayLabel' => $schedule->todayLabel($now),
             'week' => $schedule->week(),
+            'today' => $now->dayOfWeek,
             'categories' => $categories,
             'featured' => $categories->flatMap->products->where('is_featured', true)->values(),
             'combos' => $combos,
@@ -63,23 +68,49 @@ class PublicMenuController
             'minOrder' => Money::cents((int) Setting::read('min_order_cents', 0)),
             'acceptsDelivery' => $acceptsDelivery,
             'acceptsPickup' => $acceptsPickup,
-            // Raiz do cardápio nesta URL (com ou sem o slug no caminho).
-            'base' => rtrim($request->url(), '/'),
+            'paymentMethods' => PaymentMethod::active()->get(),
+            'base' => $base,
         ]);
     }
 
-    /** Dados que o carrinho (JS) precisa para montar a escolha de adicionais. */
-    private function catalog($categories): array
+    /** Manifesto para "Adicionar à tela inicial": o cardápio abre como um app. */
+    public function manifest(Request $request): JsonResponse
     {
-        return $categories->flatMap->products->mapWithKeys(fn (Product $product) => [$product->id => [
+        $establishment = Establishment::current();
+        $base = $this->base($request, '/manifest.webmanifest');
+        $name = $establishment->trade_name ?: tenant()->name;
+
+        return response()->json([
+            'name' => $name,
+            'short_name' => mb_strimwidth($name, 0, 24, '…'),
+            'start_url' => $base,
+            'scope' => $base.'/',
+            'display' => 'standalone',
+            'background_color' => '#f5f5f4',
+            'theme_color' => '#d4461b',
+            'icons' => $establishment->logo_path
+                ? [['src' => $base.'/logo', 'sizes' => '512x512', 'purpose' => 'any']]
+                : [],
+        ], headers: ['Content-Type' => 'application/manifest+json']);
+    }
+
+    /** Dados que o app do cardápio (JS) usa: detalhe do produto, adicionais e busca. */
+    private function catalog(Collection $categories, string $base): array
+    {
+        return $categories->flatMap(fn (Category $category) => $category->products->map(fn (Product $product) => [
             'id' => $product->id,
             'name' => $product->name,
+            'description' => $product->description,
+            'category' => $category->name,
             'price' => $product->price_cents->cents,
+            'available' => (bool) $product->is_available,
+            'images' => $product->images->map(fn (ProductImage $image) => $base.'/imagens/'.$image->id)->values(),
             'groups' => $product->addonGroups
                 ->filter(fn ($group) => $group->addons->isNotEmpty())
                 ->map(fn ($group) => [
                     'id' => $group->id,
                     'name' => $group->name,
+                    'rule' => $group->rule(),
                     'min' => $group->min_choices,
                     'max' => $group->max_choices,
                     'addons' => $group->addons->map(fn ($addon) => [
@@ -88,7 +119,7 @@ class PublicMenuController
                         'price' => $addon->price_cents->cents,
                     ])->values(),
                 ])->values(),
-        ]])->all();
+        ]))->keyBy('id')->all();
     }
 
     public function productImage(ProductImage $image): Response
@@ -111,5 +142,13 @@ class PublicMenuController
         abort_unless(Storage::disk('tenant')->exists($path), 404);
 
         return Storage::disk('tenant')->response($path, headers: ['Cache-Control' => 'public, max-age=3600']);
+    }
+
+    /** Raiz do cardápio nesta URL (com ou sem o slug no caminho). */
+    private function base(Request $request, string $suffix = ''): string
+    {
+        $url = rtrim($request->url(), '/');
+
+        return $suffix !== '' && str_ends_with($url, $suffix) ? substr($url, 0, -strlen($suffix)) : $url;
     }
 }

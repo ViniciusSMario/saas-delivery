@@ -11,6 +11,7 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -99,6 +100,25 @@ class PublicOrderController
             'establishment' => Establishment::current(),
             'menuUrl' => Str::beforeLast($this->base($request, '/pedido/'.$token), '/pedido'),
             'timezone' => Setting::read('timezone', 'America/Sao_Paulo'),
+        ]);
+    }
+
+    /** Situação resumida para a aba "Pedidos" do cardápio e a atualização automática. */
+    public function status(string $token): JsonResponse
+    {
+        abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
+
+        $order = Order::where('public_token', $token)->withCount('items')->firstOrFail();
+        $timezone = Setting::read('timezone', 'America/Sao_Paulo');
+
+        return response()->json([
+            'number' => $order->number,
+            'status' => $order->status->value,
+            'label' => $order->status->customerLabel($order->fulfillment),
+            'final' => $order->status->isFinal(),
+            'total' => $order->total_cents->format(),
+            'items' => $order->items_count,
+            'placed_at' => $order->created_at->timezone($timezone)->format('d/m \à\s H:i'),
         ]);
     }
 
