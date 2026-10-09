@@ -5,6 +5,7 @@ namespace App\Modules\Reports;
 use App\Modules\Cash\Models\CashSession;
 use App\Modules\Cash\MovementType;
 use App\Modules\Establishment\Models\Setting;
+use App\Modules\Menu\Models\Combo;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
@@ -125,11 +126,34 @@ class SalesReport
             ->limit($limit)
             ->get();
 
-        $recipes = Recipe::with(['items.stockItem.unit', 'items.unit'])->whereIn('product_id', $rows->pluck('product_id')->filter())->get()->keyBy('product_id');
+        $combos = Combo::withTrashed()->with('items')->whereKey($rows->pluck('combo_id')->filter())->get()->keyBy('id');
+        $productIds = $rows->pluck('product_id')->filter()->merge($combos->flatMap->items->pluck('product_id'))->unique();
+        $recipes = Recipe::with(['items.stockItem.unit', 'items.unit'])->whereIn('product_id', $productIds)->get()->keyBy('product_id');
 
-        return $rows->map(function ($row) use ($recipes) {
-            $recipe = $row->product_id ? $recipes->get($row->product_id) : null;
-            $cost = $recipe ? $recipe->cost()->multiply((int) $row->qty) : null;
+        // Custo unitário: ficha do produto, ou soma das fichas dos itens do combo (todas precisam existir).
+        $unitCost = function ($row) use ($recipes, $combos): ?Money {
+            if ($row->product_id) {
+                return $recipes->get($row->product_id)?->cost();
+            }
+
+            $combo = $combos->get($row->combo_id);
+            $total = Money::zero();
+
+            foreach ($combo?->items ?? [] as $item) {
+                $recipe = $recipes->get($item->product_id) ?? null;
+
+                if (! $recipe) {
+                    return null;
+                }
+
+                $total = $total->add($recipe->cost()->multiply($item->quantity));
+            }
+
+            return $combo ? $total : null;
+        };
+
+        return $rows->map(function ($row) use ($unitCost) {
+            $cost = $unitCost($row)?->multiply((int) $row->qty);
             $revenue = Money::cents((int) $row->revenue);
 
             return [

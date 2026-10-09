@@ -15,7 +15,9 @@ Entregue até agora:
 
 - **Fase 6 (Estoque):** insumos, movimentações (compra, venda, perda, ajuste), ficha técnica com custo e margem, e baixa automática na venda.
 
-Próxima: clientes, financeiro e dashboard (fase 7).
+- **Fase 7 (Clientes, financeiro e dashboard):** cadastro de clientes com histórico e LGPD, contas a pagar e receber integradas ao caixa e ao estoque, painel do dia e relatórios com exportação CSV.
+
+Próxima: operação da plataforma (fase 8): backup e restauração por tenant, exclusão com carência e cadastro self-service com planos e cobrança.
 
 ## Subir o ambiente
 
@@ -104,6 +106,15 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Consumo** (`/estoque/consumo`): entradas, vendas, perdas e ajustes por período, com o custo do que saiu. Insumos abaixo do mínimo aparecem no Início.
 - **Demonstração:** `docker compose exec app php artisan tenants:seed --tenant=empresa1 --class="Database\Seeders\Tenant\DemoStockSeeder"` (aditivo: não mexe no que já existe).
 
+## Clientes, financeiro e relatórios
+
+- **Clientes** (`/clientes`, `customers.manage`): lista com total gasto e ticket médio; ficha com endereços, observações (aparecem no PDV) e pedidos. No PDV, o telefone preenche nome e endereço. "Apagar dados pessoais" (LGPD) anonimiza o cliente e os pedidos dele, mantendo os valores.
+- **Financeiro** (`/financeiro`; `finance.view` para ver, `finance.manage` para lançar): contas (caixa da loja, banco/Pix, maquininha), contas a pagar e a receber com categoria, vencimento, baixa e repetição mensal, saldos, vencidos e próximos 7 dias.
+  - Fechamento do caixa: cada forma de pagamento vira um recebimento já baixado na conta ligada a ela (configurável em `/financeiro/contas`). Não duplica.
+  - Entrada de estoque: opção "gerar conta a pagar".
+- **Relatórios** (`/relatorios`, `reports.view`): vendas por dia e canal, recebido por forma de pagamento, produtos mais vendidos com custo e margem pela ficha (combos inclusive), horários de pico, cancelamentos, descontos e taxa retirada (por quem), caixas fechados. Exportação CSV (`;`, abre no Excel). "Venda" = pedido online/balcão não cancelado + conta de mesa fechada, sem contar duas vezes os lançamentos de mesa. As consultas vão direto no schema do tenant (`App\Modules\Reports\SalesReport`).
+- **Início:** painel do dia conforme o perfil: vendas, pedidos e ticket médio contra o mesmo dia da semana passada, canais, recebido, pedidos em andamento, mesas ocupadas, contas vencendo e estoque baixo.
+
 ## Comandos
 
 | Comando | O que faz |
@@ -148,4 +159,4 @@ Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/
 - **Livewire:** `/livewire/update`, upload e preview passam pelo grupo `tenant`. No `admin.localhost`, existe uma rota de update própria no grupo `platform`, registrada antes da do tenant.
 - **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers,Tables,Cash,Stock}` (negócio; não pode usar `Platform`), `app/Support` (Money, Quantity), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers,Tables,Cash,Stock,Finance,Reports}` (negócio; não pode usar `Platform`), `app/Support` (Money, Quantity), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
