@@ -8,11 +8,11 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
-            <a href="{{ route('orders.board') }}" class="btn-link" wire:navigate>← Painel</a>
+            <a href="{{ route('orders.board') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Painel</a>
             <h1 class="page-title mt-1">Pedido #{{ $order->number }} <span class="ml-2 text-base font-medium text-stone-500">{{ $order->status->label() }}</span></h1>
         </div>
         <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="window.print()" class="btn-secondary">Imprimir</button>
+            <button type="button" onclick="window.print()" class="btn-secondary"><x-icon name="printer" class="size-4" /> Imprimir</button>
             @can('orders.manage')
                 @if ($order->payments->contains('status', PaymentStatus::Pending) && $order->status !== OrderStatus::Cancelled)
                     <button type="button" wire:click="markPaid" class="btn-secondary">Marcar como pago</button>
@@ -81,7 +81,7 @@
 
         <div class="space-y-6">
             <section class="card card-body space-y-1 text-sm">
-                <h2 class="font-semibold">{{ $order->fulfillment->label() }} · {{ $order->source->label() }}</h2>
+                <h2 class="section-title">{{ $order->fulfillment->label() }} · {{ $order->source->label() }}</h2>
                 <p>{{ $order->customer_name ?? 'Sem identificação' }}</p>
                 @if ($order->customer_phone)
                     <p><a href="https://wa.me/55{{ $order->customer_phone }}" target="_blank" class="btn-link">{{ Customer::formatPhone($order->customer_phone) }}</a></p>
@@ -94,7 +94,7 @@
             </section>
 
             <section class="card card-body space-y-1 text-sm">
-                <h2 class="font-semibold">Pagamento</h2>
+                <h2 class="section-title">Pagamento</h2>
                 @foreach ($order->payments as $payment)
                     <p>{{ $payment->method->name }} · {{ $payment->amount_cents->format() }} · <span @class(['font-medium', 'text-green-700' => $payment->status === PaymentStatus::Paid, 'text-amber-700' => $payment->status === PaymentStatus::Pending])>{{ $payment->status->label() }}</span></p>
                     @if ($payment->change())
@@ -104,7 +104,7 @@
             </section>
 
             <section class="card card-body text-sm print:hidden">
-                <h2 class="font-semibold">Histórico</h2>
+                <h2 class="section-title">Histórico</h2>
                 <ol class="mt-2 space-y-1">
                     @foreach ($order->history as $entry)
                         <li class="flex justify-between gap-2">

@@ -17,7 +17,9 @@ Entregue até agora:
 
 - **Fase 7 (Clientes, financeiro e dashboard):** cadastro de clientes com histórico e LGPD, contas a pagar e receber integradas ao caixa e ao estoque, painel do dia e relatórios com exportação CSV.
 
-Próxima: operação da plataforma (fase 8): backup e restauração por tenant, exclusão com carência e cadastro self-service com planos e cobrança.
+- **Fase 8 (Interface):** cardápio online como app web (mobile first, navegação inferior, folha de produto, busca, "meus pedidos" e instalável na tela inicial) e painel padronizado (design system, ícones, barra lateral, cozinha com tempo de espera e tela cheia).
+
+Próxima: operação da plataforma (fase 9): backup e restauração por tenant, exclusão com carência e cadastro self-service com planos e cobrança.
 
 ## Subir o ambiente
 
@@ -65,7 +67,8 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 ## Cardápio
 
 - **Gestão** (permissão `menu.manage`, perfis Dono e Gerente): `/produtos`, `/categorias`, `/adicionais` e `/combos` no endereço do estabelecimento.
-- **Vitrine pública:** `http://<slug>.localhost:8080/cardapio` ou `http://localhost:8080/cardapio/<slug>`. Mostra se está aberto agora, conforme o horário e o fuso do estabelecimento (turnos depois da meia-noite incluídos). Também tem destaques, combos, categorias, busca e detalhe do produto com adicionais. Pedido online chega na fase 4.
+- **Vitrine pública:** `http://<slug>.localhost:8080/cardapio` ou `http://localhost:8080/cardapio/<slug>`. Mostra se está aberto agora, conforme o horário e o fuso do estabelecimento (turnos depois da meia-noite incluídos).
+- **App do cardápio:** feito para o celular, com quatro abas na barra inferior (`#cardapio`, `#buscar`, `#pedidos`, `#loja`). O "voltar" do celular troca de aba e fecha a folha do produto. As categorias acompanham a rolagem. A busca roda no navegador, sem ida ao servidor. A aba Pedidos lista os pedidos feitos naquele aparelho (`localStorage`) com a situação atualizada por `/pedido/{token}/status`. O manifesto (`/cardapio/manifest.webmanifest`) permite "Adicionar à tela inicial". No computador, o app aparece como uma coluna centralizada.
 - **Dinheiro** sempre em centavos (`bigint`), com `App\Support\Money` e o cast `MoneyCast`. O formulário aceita "39,90", "1.234,56" ou "R$ 9,90".
 - **Busca** por parte do nome usa índice trigram (`pg_trgm`, schema `extensions`); o código do produto é buscado por igualdade. O código é único entre os produtos não excluídos.
 - **Produto excluído** é soft delete: sai do cardápio, mas pedidos antigos continuam apontando para ele. **Esgotado** mantém o produto visível, sem permitir pedido. Combo com item indisponível sai do cardápio.
@@ -114,6 +117,13 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
   - Entrada de estoque: opção "gerar conta a pagar".
 - **Relatórios** (`/relatorios`, `reports.view`): vendas por dia e canal, recebido por forma de pagamento, produtos mais vendidos com custo e margem pela ficha (combos inclusive), horários de pico, cancelamentos, descontos e taxa retirada (por quem), caixas fechados. Exportação CSV (`;`, abre no Excel). "Venda" = pedido online/balcão não cancelado + conta de mesa fechada, sem contar duas vezes os lançamentos de mesa. As consultas vão direto no schema do tenant (`App\Modules\Reports\SalesReport`).
 - **Início:** painel do dia conforme o perfil: vendas, pedidos e ticket médio contra o mesmo dia da semana passada, canais, recebido, pedidos em andamento, mesas ocupadas, contas vencendo e estoque baixo.
+
+## Interface
+
+- **Design system** em `resources/css/app.css`: cor da marca (`brand-*`), fonte Inter, sombras, e as classes `card`, `btn-*`, `input`, `badge-*`, `table`, `alert-*`, `tab`, `chip` e `stat-*`. Mudar ali muda o sistema inteiro.
+- **Componentes:** `<x-icon name="..."/>` (ícones de traço, lista em `components/icon.blade.php`), `<x-ui.page-header>`, `<x-ui.stat>` e `<x-ui.empty>`.
+- **Layouts:** `layouts.app` (painel com barra lateral; gaveta no celular), `layouts.public` (casca do app do cardápio), `layouts.guest` (login) e `layouts.platform` (admin). Telas de operação (cozinha, PDV, mesas) usam a largura toda com `#[Layout('components.layouts.app', ['wide' => true])]`.
+- **Cozinha** (`/pedidos`): o cartão muda de cor com o tempo de espera (10 e 20 minutos). Tem tela cheia para TV ou tablet e aviso sonoro de pedido novo.
 
 ## Comandos
 

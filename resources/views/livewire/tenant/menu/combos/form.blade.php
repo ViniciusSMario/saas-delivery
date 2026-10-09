@@ -1,10 +1,10 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('menu.combos.index') }}" class="btn-link" wire:navigate>← Combos</a>
+            <a href="{{ route('menu.combos.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Combos</a>
             <h1 class="page-title mt-1">{{ $comboId ? 'Editar combo' : 'Novo combo' }}</h1>
         </div>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 
     <section class="card card-body grid gap-4 sm:grid-cols-3">
@@ -26,7 +26,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Itens</h2>
+        <h2 class="section-title">Itens</h2>
         @error('items') <p class="field-error">{{ $message }}</p> @enderror
 
         <div class="mt-4 space-y-2">
@@ -63,7 +63,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Foto</h2>
+        <h2 class="section-title">Foto</h2>
         <div class="mt-3 flex flex-wrap items-center gap-4">
             @if ($image && $image->isPreviewable() && ! $errors->has('image'))
                 <img src="{{ $image->temporaryUrl() }}" alt="" class="size-24 rounded-lg object-cover">

@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-lg font-semibold">Verificação em duas etapas</h2>
+    <h2 class="section-title text-lg">Verificação em duas etapas</h2>
 
     @if ($setup)
         <p class="mt-1 text-sm text-stone-500">Primeiro acesso: escaneie o QR code com um app autenticador (Google Authenticator, Authy, 1Password...) e digite o código gerado.</p>

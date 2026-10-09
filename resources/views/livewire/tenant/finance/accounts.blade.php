@@ -1,12 +1,12 @@
 <div class="space-y-6">
     <div>
-        <a href="{{ route('finance.index') }}" class="btn-link" wire:navigate>← Financeiro</a>
+        <a href="{{ route('finance.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Financeiro</a>
         <h1 class="page-title mt-1">Contas financeiras</h1>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
         <section class="card card-body">
-            <h2 class="font-semibold">Contas</h2>
+            <h2 class="section-title">Contas</h2>
             <ul class="mt-2 divide-y divide-stone-100 text-sm">
                 @foreach ($accounts as $account)
                     <li class="flex justify-between py-2" wire:key="a-{{ $account->id }}">
@@ -40,7 +40,7 @@
         </section>
 
         <form wire:submit="saveMapping" class="card card-body space-y-3">
-            <h2 class="font-semibold">Para onde vai cada forma de pagamento</h2>
+            <h2 class="section-title">Para onde vai cada forma de pagamento</h2>
             <p class="hint">No fechamento do caixa, o recebido de cada forma vira um lançamento já baixado nesta conta.</p>
             @foreach ($methods as $method)
                 <div class="flex items-center justify-between gap-3" wire:key="m-{{ $method->id }}">
@@ -53,7 +53,7 @@
                     </select>
                 </div>
             @endforeach
-            <button type="submit" class="btn-primary">Salvar</button>
+            <button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar</button>
         </form>
     </div>
 </div>

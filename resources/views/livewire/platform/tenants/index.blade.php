@@ -21,7 +21,7 @@
             </p>
         </div>
         @can('platform.manage-tenants')
-            <a href="{{ route('platform.tenants.create') }}" class="btn-primary" wire:navigate>Novo estabelecimento</a>
+            <a href="{{ route('platform.tenants.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo estabelecimento</a>
         @endcan
     </div>
 
@@ -37,7 +37,7 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr>
                     <th>Estabelecimento</th>
                     <th>Status</th>
@@ -45,7 +45,7 @@
                     <th class="text-right">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @forelse ($tenants as $tenant)
                     @php($domain = $tenant->domains->first()?->domain)
                     <tr wire:key="tenant-{{ $tenant->id }}">
@@ -72,7 +72,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="py-8 text-center text-stone-500">Nenhum estabelecimento encontrado.</td></tr>
+                    <tr><td colspan="4"><x-ui.empty icon="store" title="Nenhum estabelecimento encontrado" /></td></tr>
                 @endforelse
             </tbody>
         </table>

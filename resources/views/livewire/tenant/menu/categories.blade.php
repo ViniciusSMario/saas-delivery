@@ -27,10 +27,10 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr><th class="w-20">Ordem</th><th>Categoria</th><th>Produtos</th><th class="text-right">Ações</th></tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @forelse ($categories as $category)
                     <tr wire:key="cat-{{ $category->id }}">
                         <td class="whitespace-nowrap">
@@ -56,7 +56,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="py-8 text-center text-stone-500">Crie a primeira categoria acima (ex.: Pizzas, Bebidas, Sobremesas).</td></tr>
+                    <tr><td colspan="4"><x-ui.empty icon="table" title="Crie a primeira categoria acima (ex.: Pizzas, Bebidas, Sobremesas)" /></td></tr>
                 @endforelse
             </tbody>
         </table>

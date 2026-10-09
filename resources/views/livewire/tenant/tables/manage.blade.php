@@ -6,7 +6,7 @@
 
     <div class="grid gap-6 lg:grid-cols-2">
         <form wire:submit="save" class="card card-body space-y-3">
-            <h2 class="font-semibold">{{ $editingId ? 'Editar mesa' : 'Nova mesa' }}</h2>
+            <h2 class="section-title">{{ $editingId ? 'Editar mesa' : 'Nova mesa' }}</h2>
             <div class="grid grid-cols-3 gap-3">
                 <div>
                     <label for="name" class="label">Número/nome</label>
@@ -26,13 +26,13 @@
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="is_active" class="checkbox"> Ativa</label>
             @endif
             <div class="flex gap-2">
-                <button type="submit" class="btn-primary">Salvar</button>
+                <button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar</button>
                 @if ($editingId)<button type="button" wire:click="cancel" class="btn-secondary">Cancelar</button>@endif
             </div>
         </form>
 
         <form wire:submit="createRange" class="card card-body space-y-3">
-            <h2 class="font-semibold">Criar várias</h2>
+            <h2 class="section-title">Criar várias</h2>
             <p class="text-sm text-stone-500">Usa os lugares e a área do formulário ao lado. Mesas que já existem são mantidas.</p>
             <div class="flex gap-2">
                 <input wire:model="range" type="text" class="input max-w-40" placeholder="1-20" aria-label="Intervalo">
@@ -44,8 +44,8 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50"><tr><th>Mesa</th><th>Lugares</th><th>Área</th><th>Comandas</th><th></th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Mesa</th><th>Lugares</th><th>Área</th><th>Comandas</th><th></th></tr></thead>
+            <tbody>
                 @forelse ($tables as $table)
                     <tr wire:key="tb-{{ $table->id }}">
                         <td class="font-medium">{{ $table->name }} @unless ($table->is_active)<span class="badge ml-1 bg-stone-200 text-stone-600">inativa</span>@endunless</td>
@@ -55,7 +55,7 @@
                         <td class="text-right"><button type="button" wire:click="edit({{ $table->id }})" class="btn-link">Editar</button></td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-6 text-center text-stone-500">Nenhuma mesa ainda.</td></tr>
+                    <tr><td colspan="5"><x-ui.empty icon="table" title="Nenhuma mesa ainda" /></td></tr>
                 @endforelse
             </tbody>
         </table>

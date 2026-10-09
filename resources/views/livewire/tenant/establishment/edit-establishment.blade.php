@@ -20,11 +20,11 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="page-title">Estabelecimento</h1>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar alterações</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar alterações</button>
     </div>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Dados cadastrais</h2>
+        <h2 class="section-title">Dados cadastrais</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-4">
             @foreach ($fields as [$key, $label, $span])
                 <div class="{{ $span }}">
@@ -37,7 +37,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Endereço</h2>
+        <h2 class="section-title">Endereço</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-4">
             @foreach ($address as [$key, $label, $span])
                 <div class="{{ $span }}">
@@ -50,7 +50,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Logo</h2>
+        <h2 class="section-title">Logo</h2>
         <div class="mt-4 flex flex-wrap items-center gap-6">
             <div class="flex size-24 items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
                 @if ($logo && ! $errors->has('logo') && $logo->isPreviewable())
@@ -73,7 +73,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Horário de funcionamento</h2>
+        <h2 class="section-title">Horário de funcionamento</h2>
         <div class="mt-4 divide-y divide-stone-100">
             @foreach ($weekdays as $day => $label)
                 <div class="flex flex-wrap items-center gap-3 py-2" wire:key="day-{{ $day }}">
@@ -95,6 +95,6 @@
     </section>
 
     <div class="flex justify-end">
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar alterações</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar alterações</button>
     </div>
 </form>

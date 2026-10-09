@@ -1,7 +1,7 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('stock.index') }}" class="btn-link" wire:navigate>← Estoque</a>
+            <a href="{{ route('stock.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Estoque</a>
             <h1 class="page-title mt-1">Fichas técnicas</h1>
             <p class="text-sm text-stone-500">{{ $withRecipe }} de {{ $products->count() }} produtos com ficha. Sem ficha, a venda não baixa estoque.</p>
         </div>
@@ -9,8 +9,8 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50"><tr><th>Produto</th><th class="text-right">Preço</th><th class="text-right">Custo (ficha)</th><th class="text-right">Margem</th><th></th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Produto</th><th class="text-right">Preço</th><th class="text-right">Custo (ficha)</th><th class="text-right">Margem</th><th></th></tr></thead>
+            <tbody>
                 @foreach ($products as $row)
                     <tr wire:key="p-{{ $row['product']->id }}">
                         <td>
@@ -30,7 +30,7 @@
     </div>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Adicionais</h2>
+        <h2 class="section-title">Adicionais</h2>
         <p class="hint">Ex.: "Bacon extra" consome 50 g de bacon. Opções sem ficha não baixam estoque.</p>
         <div class="mt-3 grid gap-4 sm:grid-cols-2">
             @foreach ($groups as $group)

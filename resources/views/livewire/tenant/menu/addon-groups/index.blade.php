@@ -4,7 +4,7 @@
             <h1 class="page-title">Adicionais e opções</h1>
             <p class="mt-1 text-sm text-stone-500">Um grupo pode ser usado em vários produtos (ex.: a mesma "Borda" em todas as pizzas).</p>
         </div>
-        <a href="{{ route('menu.addon-groups.create') }}" class="btn-primary" wire:navigate>Novo grupo</a>
+        <a href="{{ route('menu.addon-groups.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo grupo</a>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
@@ -12,7 +12,7 @@
             <div wire:key="group-{{ $group->id }}" class="card card-body">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <h2 class="font-semibold">
+                        <h2 class="section-title">
                             {{ $group->name }}
                             @unless ($group->is_active)<span class="badge ml-1 bg-stone-200 text-stone-600">inativo</span>@endunless
                         </h2>

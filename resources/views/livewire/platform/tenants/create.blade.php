@@ -1,11 +1,11 @@
 <form wire:submit="save" class="space-y-6">
     <div>
-        <a href="{{ route('platform.tenants.index') }}" class="btn-link" wire:navigate>← Estabelecimentos</a>
+        <a href="{{ route('platform.tenants.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Estabelecimentos</a>
         <h1 class="page-title mt-1">Novo estabelecimento</h1>
     </div>
 
     <section class="card card-body space-y-4">
-        <h2 class="font-semibold">Estabelecimento</h2>
+        <h2 class="section-title">Estabelecimento</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label for="name" class="label">Nome</label>
@@ -40,7 +40,7 @@
     </section>
 
     <section class="card card-body space-y-4">
-        <h2 class="font-semibold">Dono</h2>
+        <h2 class="section-title">Dono</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label for="owner_name" class="label">Nome</label>

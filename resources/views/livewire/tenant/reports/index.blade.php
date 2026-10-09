@@ -1,27 +1,32 @@
 @php $max = 1; @endphp
 <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="page-title">Relatórios</h1>
-        <div class="flex flex-wrap items-center gap-2 text-sm">
+    <x-ui.page-header title="Relatórios" subtitle="Vendas, produtos, caixas e estoque no período escolhido." />
+
+    <div class="card flex flex-wrap items-center gap-2 p-3">
+        <div class="flex flex-wrap gap-1 rounded-xl bg-stone-100 p-1 text-sm">
             @foreach (['today' => 'Hoje', 'week' => '7 dias', 'month' => 'Este mês', 'last_month' => 'Mês passado'] as $key => $label)
-                <button type="button" wire:click="preset('{{ $key }}')" class="btn-secondary px-3 py-1.5">{{ $label }}</button>
+                <button type="button" wire:click="preset('{{ $key }}')" class="rounded-lg px-3 py-1.5 font-semibold text-stone-600 transition hover:bg-white hover:text-stone-900 hover:shadow-sm">{{ $label }}</button>
             @endforeach
+        </div>
+        <div class="ml-auto flex items-center gap-2 text-sm text-stone-500">
+            <x-icon name="calendar" class="size-4" />
             <input wire:model.live="from" type="date" class="input w-auto" aria-label="De">
+            <span>até</span>
             <input wire:model.live="to" type="date" class="input w-auto" aria-label="Até">
         </div>
     </div>
 
     {{-- Resumo do período --}}
-    <div class="grid gap-4 sm:grid-cols-4">
-        <div class="card card-body"><p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Vendas</p><p class="mt-1 text-xl font-semibold">{{ $summary['revenue']->format() }}</p></div>
-        <div class="card card-body"><p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Pedidos / contas</p><p class="mt-1 text-xl font-semibold">{{ $summary['count'] }}</p></div>
-        <div class="card card-body"><p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Ticket médio</p><p class="mt-1 text-xl font-semibold">{{ $summary['average']->format() }}</p></div>
-        <div class="card card-body"><p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Taxa de serviço · descontos</p><p class="mt-1 text-xl font-semibold">{{ $summary['service_fee']->format() }} · {{ $summary['discounts']->format() }}</p></div>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <x-ui.stat label="Vendas" :value="$summary['revenue']->format()" icon="trending" tone="brand" />
+        <x-ui.stat label="Pedidos / contas" :value="$summary['count']" icon="orders" tone="blue" />
+        <x-ui.stat label="Ticket médio" :value="$summary['average']->format()" icon="cash" tone="green" />
+        <x-ui.stat label="Taxa de serviço · descontos" :value="$summary['service_fee']->format().' · '.$summary['discounts']->format()" icon="tag" tone="violet" />
     </div>
 
-    <nav class="flex flex-wrap gap-2 border-b border-stone-200">
+    <nav class="flex flex-wrap gap-1 border-b border-stone-200">
         @foreach ($tabs as $key => $label)
-            <button type="button" wire:click="$set('tab', '{{ $key }}')" @class(['-mb-px border-b-2 px-3 py-2 text-sm font-medium', 'border-brand-600 text-brand-700' => $tab === $key, 'border-transparent text-stone-500 hover:text-stone-800' => $tab !== $key])>{{ $label }}</button>
+            <button type="button" wire:click="$set('tab', '{{ $key }}')" @class(['tab', 'tab-active' => $tab === $key])>{{ $label }}</button>
         @endforeach
     </nav>
 
@@ -29,13 +34,13 @@
         <div class="grid gap-6 lg:grid-cols-3">
             <section class="card overflow-x-auto lg:col-span-2">
                 <div class="flex items-center justify-between px-5 pt-5">
-                    <h2 class="font-semibold">Por dia</h2>
+                    <h2 class="section-title">Por dia</h2>
                     <a href="{{ route('reports.export', ['type' => 'vendas'] + $query) }}" class="btn-link text-sm">Exportar CSV</a>
                 </div>
                 @php($max = max(1, $daily->max(fn ($d) => $d['total']->cents)))
-                <table class="table mt-3">
-                    <thead class="bg-stone-50"><tr><th>Dia</th><th class="w-1/3"></th><th class="text-right">Pedidos</th><th class="text-right">Ticket</th><th class="text-right">Vendas</th></tr></thead>
-                    <tbody class="divide-y divide-stone-100">
+                <table class="table">
+                    <thead><tr><th>Dia</th><th class="w-1/3"></th><th class="text-right">Pedidos</th><th class="text-right">Ticket</th><th class="text-right">Vendas</th></tr></thead>
+                    <tbody>
                         @foreach ($daily as $day)
                             <tr>
                                 <td class="whitespace-nowrap">{{ $day['date']->locale('pt_BR')->isoFormat('ddd, DD/MM') }}</td>
@@ -50,7 +55,7 @@
             </section>
             <div class="space-y-6">
                 <section class="card card-body">
-                    <h2 class="font-semibold">Por canal</h2>
+                    <h2 class="section-title">Por canal</h2>
                     <dl class="mt-2 space-y-1 text-sm">
                         @foreach ($summary['channels'] as $channel)
                             <div class="flex justify-between"><dt>{{ $channel['label'] }} ({{ $channel['count'] }})</dt><dd class="font-medium">{{ $channel['total']->format() }}</dd></div>
@@ -58,7 +63,7 @@
                     </dl>
                 </section>
                 <section class="card card-body">
-                    <h2 class="font-semibold">Recebido por forma de pagamento</h2>
+                    <h2 class="section-title">Recebido por forma de pagamento</h2>
                     <dl class="mt-2 space-y-1 text-sm">
                         @forelse ($methods as $row)
                             <div class="flex justify-between"><dt>{{ $row['method'] }}</dt><dd class="font-medium">{{ $row['total']->format() }}</dd></div>
@@ -73,12 +78,12 @@
     @elseif ($tab === 'products')
         <section class="card overflow-x-auto">
             <div class="flex items-center justify-between px-5 pt-5">
-                <h2 class="font-semibold">Mais vendidos</h2>
+                <h2 class="section-title">Mais vendidos</h2>
                 <a href="{{ route('reports.export', ['type' => 'produtos'] + $query) }}" class="btn-link text-sm">Exportar CSV</a>
             </div>
-            <table class="table mt-3">
-                <thead class="bg-stone-50"><tr><th>Produto</th><th class="text-right">Qtd.</th><th class="text-right">Faturamento</th><th class="text-right">Custo (ficha)</th><th class="text-right">Margem</th></tr></thead>
-                <tbody class="divide-y divide-stone-100">
+            <table class="table">
+                <thead><tr><th>Produto</th><th class="text-right">Qtd.</th><th class="text-right">Faturamento</th><th class="text-right">Custo (ficha)</th><th class="text-right">Margem</th></tr></thead>
+                <tbody>
                     @forelse ($products as $row)
                         <tr>
                             <td class="font-medium">{{ $row['name'] }}</td>
@@ -88,7 +93,7 @@
                             <td class="text-right">{{ $row['margin'] !== null ? number_format($row['margin'], 1, ',', '.').'%' : '—' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-6 text-center text-stone-500">Nenhuma venda no período.</td></tr>
+                        <tr><td colspan="5"><x-ui.empty icon="trending" title="Nenhuma venda no período" /></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -97,7 +102,7 @@
     @elseif ($tab === 'hours')
         @php($max = max(1, max($hours)))
         <section class="card card-body">
-            <h2 class="font-semibold">Pedidos por hora</h2>
+            <h2 class="section-title">Pedidos por hora</h2>
             <div class="mt-4 flex h-48 items-end gap-1">
                 @foreach ($hours as $hour => $count)
                     <div class="flex flex-1 flex-col items-center gap-1" title="{{ $hour }}h: {{ $count }} pedido(s)">
@@ -111,9 +116,9 @@
     @elseif ($tab === 'losses')
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="card overflow-x-auto">
-                <h2 class="px-5 pt-5 font-semibold">Cancelamentos ({{ $cancellations->count() }})</h2>
-                <table class="table mt-3">
-                    <tbody class="divide-y divide-stone-100">
+                <div class="card-header"><h2 class="section-title">Cancelamentos ({{ $cancellations->count() }})</h2></div>
+                <table class="table">
+                    <tbody>
                         @forelse ($cancellations as $order)
                             <tr>
                                 <td class="whitespace-nowrap text-stone-500">{{ $order->cancelled_at->timezone($timezone)->format('d/m H:i') }}</td>
@@ -127,9 +132,9 @@
                 </table>
             </section>
             <section class="card overflow-x-auto">
-                <h2 class="px-5 pt-5 font-semibold">Descontos e taxa de serviço retirada</h2>
-                <table class="table mt-3">
-                    <tbody class="divide-y divide-stone-100">
+                <div class="card-header"><h2 class="section-title">Descontos e taxa de serviço retirada</h2></div>
+                <table class="table">
+                    <tbody>
                         @forelse ($discounts as $row)
                             <tr>
                                 <td class="whitespace-nowrap text-stone-500">{{ $row['when']?->timezone($timezone)->format('d/m H:i') }}</td>
@@ -146,8 +151,8 @@
     @elseif ($tab === 'cash')
         <section class="card overflow-x-auto">
             <table class="table">
-                <thead class="bg-stone-50"><tr><th>Caixa</th><th>Operador</th><th>Período</th><th class="text-right">Diferença</th><th></th></tr></thead>
-                <tbody class="divide-y divide-stone-100">
+                <thead><tr><th>Caixa</th><th>Operador</th><th>Período</th><th class="text-right">Diferença</th><th></th></tr></thead>
+                <tbody>
                     @forelse ($sessions as $session)
                         <tr>
                             <td>{{ $session->register->name }}</td>
@@ -157,7 +162,7 @@
                             <td class="text-right"><a href="{{ route('cash.report', $session) }}" class="btn-link" wire:navigate>Relatório</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-6 text-center text-stone-500">Nenhum caixa fechado no período.</td></tr>
+                        <tr><td colspan="5"><x-ui.empty icon="wallet" title="Nenhum caixa fechado no período" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

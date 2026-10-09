@@ -20,10 +20,10 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr><th>Pedido</th><th>Cliente</th><th>Status</th><th>Pagamento</th><th class="text-right">Total</th></tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @forelse ($orders as $order)
                     @php($payment = $order->payments->first())
                     <tr wire:key="o-{{ $order->id }}">
@@ -40,7 +40,7 @@
                         <td class="text-right font-medium whitespace-nowrap">{{ $order->total_cents->format() }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-8 text-center text-stone-500">Nenhum pedido neste dia.</td></tr>
+                    <tr><td colspan="5"><x-ui.empty icon="orders" title="Nenhum pedido neste dia" /></td></tr>
                 @endforelse
             </tbody>
         </table>

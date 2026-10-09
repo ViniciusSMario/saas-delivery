@@ -4,8 +4,8 @@
 @endphp
 <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <a href="{{ route('cash.current') }}" class="btn-link" wire:navigate>← Caixa</a>
-        <button type="button" onclick="window.print()" class="btn-secondary">Imprimir</button>
+        <a href="{{ route('cash.current') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Caixa</a>
+        <button type="button" onclick="window.print()" class="btn-secondary"><x-icon name="printer" class="size-4" /> Imprimir</button>
     </div>
 
     <section class="card card-body">
@@ -19,8 +19,8 @@
         @if ($session->notes)<p class="mt-2 text-sm">Obs.: {{ $session->notes }}</p>@endif
 
         <table class="table mt-4">
-            <thead class="bg-stone-50"><tr><th>Forma de pagamento</th><th class="text-right">Esperado</th><th class="text-right">Contado</th><th class="text-right">Diferença</th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Forma de pagamento</th><th class="text-right">Esperado</th><th class="text-right">Contado</th><th class="text-right">Diferença</th></tr></thead>
+            <tbody>
                 @foreach ($methods as $method)
                     @php
                         $exp = $expected[$method->code] ?? $zero;
@@ -47,10 +47,10 @@
     </section>
 
     <section class="card overflow-x-auto">
-        <h2 class="px-5 pt-5 font-semibold sm:px-6">Movimentos ({{ $movements->count() }})</h2>
-        <table class="table mt-3">
-            <thead class="bg-stone-50"><tr><th>Hora</th><th>Tipo</th><th>Forma</th><th>Origem</th><th>Por</th><th class="text-right">Valor</th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+        <div class="card-header"><h2 class="section-title">Movimentos ({{ $movements->count() }})</h2></div>
+        <table class="table">
+            <thead><tr><th>Hora</th><th>Tipo</th><th>Forma</th><th>Origem</th><th>Por</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>
                 @foreach ($movements as $movement)
                     <tr>
                         <td class="text-stone-500">{{ $movement->created_at->timezone($tz)->format('H:i') }}</td>

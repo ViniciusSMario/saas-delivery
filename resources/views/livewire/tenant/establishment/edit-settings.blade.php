@@ -1,11 +1,11 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="page-title">Configurações</h1>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 
     <section class="card card-body space-y-4">
-        <h2 class="font-semibold">Cardápio online</h2>
+        <h2 class="section-title">Cardápio online</h2>
 
         <div>
             <label for="welcome_message" class="label">Mensagem de boas-vindas</label>
@@ -37,7 +37,7 @@
     </section>
 
     <section class="card card-body space-y-3">
-        <h2 class="font-semibold">Mesas</h2>
+        <h2 class="section-title">Mesas</h2>
         <div class="flex flex-wrap items-center gap-4">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="service_fee_enabled" class="checkbox"> Cobrar taxa de serviço nas comandas</label>
             <label class="flex items-center gap-2 text-sm">
@@ -49,13 +49,13 @@
     </section>
 
     <section class="card card-body space-y-2">
-        <h2 class="font-semibold">Estoque</h2>
+        <h2 class="section-title">Estoque</h2>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="stock_auto_sold_out" class="checkbox"> Marcar o produto como esgotado quando um insumo da ficha técnica zerar</label>
         <p class="hint">Desligado, a venda continua mesmo com estoque negativo, e o insumo fica em alerta.</p>
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Formas de pagamento aceitas</h2>
+        <h2 class="section-title">Formas de pagamento aceitas</h2>
         <p class="hint">Pagamento na entrega, na retirada ou no balcão.</p>
         <div class="mt-3 flex flex-wrap gap-6">
             @foreach ($methods as $method)
@@ -66,7 +66,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Regional</h2>
+        <h2 class="section-title">Regional</h2>
         <div class="mt-4 max-w-md">
             <label for="timezone" class="label">Fuso horário</label>
             <select wire:model="timezone" id="timezone" class="input">

@@ -1,11 +1,11 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('stock.recipes') }}" class="btn-link" wire:navigate>← Fichas técnicas</a>
+            <a href="{{ route('stock.recipes') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Fichas técnicas</a>
             <h1 class="page-title mt-1">Ficha técnica · {{ $owner->name }}</h1>
             <p class="text-sm text-stone-500">{{ $ownerType === 'addon' ? 'Adicional: consumo extra por unidade do item.' : 'O que uma unidade do produto consome.' }}</p>
         </div>
-        <button type="submit" class="btn-primary">Salvar ficha</button>
+        <button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar ficha</button>
     </div>
 
     @if ($items->isEmpty())

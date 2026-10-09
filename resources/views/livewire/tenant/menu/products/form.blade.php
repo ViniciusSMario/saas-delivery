@@ -1,10 +1,10 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('menu.products.index') }}" class="btn-link" wire:navigate>← Produtos</a>
+            <a href="{{ route('menu.products.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Produtos</a>
             <h1 class="page-title mt-1">{{ $productId ? 'Editar produto' : 'Novo produto' }}</h1>
         </div>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 
     <section class="card card-body grid gap-4 sm:grid-cols-6">
@@ -45,7 +45,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Fotos</h2>
+        <h2 class="section-title">Fotos</h2>
         <p class="hint">Até {{ $maxImages }} fotos (JPG, PNG ou WEBP, até 4 MB cada). A primeira é a capa.</p>
 
         <div class="mt-4 flex flex-wrap gap-3">
@@ -84,7 +84,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Adicionais e opções</h2>
+        <h2 class="section-title">Adicionais e opções</h2>
         <p class="hint">Grupos como "Escolha a borda" ou "Adicionais". Crie e edite os grupos em <a href="{{ route('menu.addon-groups.index') }}" class="btn-link text-xs" wire:navigate>Adicionais</a>.</p>
 
         @if ($selectedGroups->isNotEmpty())
@@ -119,6 +119,6 @@
     </section>
 
     <div class="flex justify-end">
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 </form>

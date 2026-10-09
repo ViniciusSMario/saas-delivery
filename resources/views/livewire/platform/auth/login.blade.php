@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-lg font-semibold">Entrar</h2>
+    <h2 class="section-title text-lg">Entrar</h2>
     <p class="mt-1 text-sm text-stone-500">Acesso restrito à equipe. Depois da senha, vamos pedir o código do autenticador.</p>
 
     <form wire:submit="login" class="mt-6 space-y-4">

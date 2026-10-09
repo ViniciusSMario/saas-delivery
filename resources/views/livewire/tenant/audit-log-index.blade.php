@@ -6,7 +6,7 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr>
                     <th>Quando</th>
                     <th>Quem</th>
@@ -14,7 +14,7 @@
                     <th>Detalhes</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @forelse ($logs as $log)
                     <tr wire:key="log-{{ $log->id }}">
                         <td class="whitespace-nowrap text-stone-500">{{ $log->created_at->timezone($timezone)->format('d/m/Y H:i') }}</td>
@@ -39,7 +39,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="py-8 text-center text-stone-500">Nenhum registro ainda.</td></tr>
+                    <tr><td colspan="4"><x-ui.empty icon="list" title="Nenhum registro ainda" /></td></tr>
                 @endforelse
             </tbody>
         </table>

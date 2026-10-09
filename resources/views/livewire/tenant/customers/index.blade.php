@@ -20,8 +20,8 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50"><tr><th>Cliente</th><th class="text-right">Pedidos</th><th class="text-right">Total gasto</th><th class="text-right">Ticket médio</th><th>Último pedido</th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Cliente</th><th class="text-right">Pedidos</th><th class="text-right">Total gasto</th><th class="text-right">Ticket médio</th><th>Último pedido</th></tr></thead>
+            <tbody>
                 @forelse ($customers as $customer)
                     <tr wire:key="c-{{ $customer->id }}">
                         <td>
@@ -34,7 +34,7 @@
                         <td class="text-stone-500">{{ $customer->last_order_at?->timezone($tz)->format('d/m/Y') ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-8 text-center text-stone-500">Nenhum cliente encontrado.</td></tr>
+                    <tr><td colspan="5"><x-ui.empty icon="users" title="Nenhum cliente encontrado" /></td></tr>
                 @endforelse
             </tbody>
         </table>

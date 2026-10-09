@@ -1,6 +1,6 @@
 <form wire:submit="save" class="space-y-6">
     <div>
-        <a href="{{ route('finance.index') }}" class="btn-link" wire:navigate>← Financeiro</a>
+        <a href="{{ route('finance.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Financeiro</a>
         <h1 class="page-title mt-1">{{ $entryId ? 'Editar lançamento' : ($kind === 'payable' ? 'Nova conta a pagar' : 'Nova conta a receber') }}</h1>
     </div>
 
@@ -44,5 +44,5 @@
         </div>
     </section>
 
-    <div class="flex justify-end"><button type="submit" class="btn-primary">Salvar</button></div>
+    <div class="flex justify-end"><button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar</button></div>
 </form>

@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-lg font-semibold">Esqueci minha senha</h2>
+    <h2 class="section-title text-lg">Esqueci minha senha</h2>
 
     @if ($sent)
         <div class="alert-success mt-4">Se o e-mail estiver cadastrado neste estabelecimento, você vai receber um link para definir uma nova senha.</div>

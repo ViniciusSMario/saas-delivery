@@ -165,7 +165,7 @@
                     @endforeach
                     @if ($change)<p class="font-medium text-green-700">Troco: {{ $change }}</p>@endif
                     @if ($command->cancel_reason)<p class="text-stone-600">{{ $command->cancel_reason }}</p>@endif
-                    <button type="button" onclick="window.print()" class="btn-secondary mt-2 w-full print:hidden">Imprimir conta</button>
+                    <button type="button" onclick="window.print()" class="btn-secondary mt-2 w-full print:hidden"><x-icon name="printer" class="size-4" /> Imprimir conta</button>
                 </div>
             @endif
         </section>

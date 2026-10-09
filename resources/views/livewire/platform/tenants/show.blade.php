@@ -1,7 +1,7 @@
 @php($port = parse_url(config('app.url'), PHP_URL_PORT))
 <div class="space-y-6">
     <div>
-        <a href="{{ route('platform.tenants.index') }}" class="btn-link" wire:navigate>← Estabelecimentos</a>
+        <a href="{{ route('platform.tenants.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Estabelecimentos</a>
         <h1 class="page-title mt-1">{{ $tenant->name }}</h1>
     </div>
 
@@ -28,7 +28,7 @@
 
     @can('platform.manage-tenants')
         <section class="card card-body">
-            <h2 class="font-semibold">Situação</h2>
+            <h2 class="section-title">Situação</h2>
             @if ($tenant->status->value === 'active')
                 <p class="mt-1 text-sm text-stone-500">Suspender bloqueia o app e o cardápio; nenhum dado é apagado.</p>
                 <div class="mt-4 flex flex-wrap items-end gap-3">
@@ -48,12 +48,12 @@
     @endcan
 
     <section class="card overflow-x-auto">
-        <h2 class="px-5 pt-5 font-semibold sm:px-6">Eventos</h2>
-        <table class="table mt-3">
-            <thead class="bg-stone-50">
+        <div class="card-header"><h2 class="section-title">Eventos</h2></div>
+        <table class="table">
+            <thead>
                 <tr><th>Quando</th><th>Evento</th><th>Quem</th><th>Detalhes</th></tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @foreach ($events as $event)
                     <tr wire:key="event-{{ $event->id }}">
                         <td class="whitespace-nowrap text-stone-500">{{ $event->created_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</td>

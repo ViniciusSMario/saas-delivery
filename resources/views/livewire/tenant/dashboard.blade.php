@@ -75,7 +75,7 @@
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <x-ui.stat label="Vendas hoje" :value="$sales['revenue']->format()" icon="trending" tone="brand"
                        :trend="$revenueVar" :hint="$revenueVar !== null ? 'vs. semana passada' : 'Semana passada: '.$lastWeek['revenue']->format()" />
-            <x-ui.stat label="Pedidos / contas" :value="$sales['count']" icon="orders" tone="blue" :trend="$countVar" hint="vs. semana passada" />
+            <x-ui.stat label="Pedidos / contas" :value="$sales['count']" icon="orders" tone="blue" :trend="$countVar" :hint="$countVar !== null ? 'vs. semana passada' : 'Semana passada: '.$lastWeek['count']" />
             <x-ui.stat label="Ticket médio" :value="$sales['average']->format()" icon="cash" tone="green" :hint="'Semana passada: '.$lastWeek['average']->format()" />
             <div class="card card-body">
                 <p class="stat-label">Agora</p>

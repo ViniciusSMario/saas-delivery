@@ -1,10 +1,10 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('users.index') }}" class="btn-link" wire:navigate>← Usuários</a>
+            <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Usuários</a>
             <h1 class="page-title mt-1">{{ $userId ? 'Editar usuário' : 'Novo usuário' }}</h1>
         </div>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 
     <section class="card card-body space-y-4">
@@ -35,7 +35,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Perfis</h2>
+        <h2 class="section-title">Perfis</h2>
         <p class="hint">As permissões do usuário são a soma dos perfis marcados.</p>
         @error('roleIds') <p class="field-error">{{ $message }}</p> @enderror
 

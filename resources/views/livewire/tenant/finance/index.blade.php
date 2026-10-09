@@ -1,37 +1,28 @@
 <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="page-title">Financeiro</h1>
-        <div class="flex gap-2">
-            @can('finance.manage')
-                <a href="{{ route('finance.accounts') }}" class="btn-secondary" wire:navigate>Contas</a>
-                <a href="{{ route('finance.create', ['tipo' => 'payable']) }}" class="btn-secondary" wire:navigate>+ A pagar</a>
-                <a href="{{ route('finance.create', ['tipo' => 'receivable']) }}" class="btn-primary" wire:navigate>+ A receber</a>
-            @endcan
-        </div>
-    </div>
+    <x-ui.page-header title="Financeiro" subtitle="Contas, saldos, contas a pagar e a receber.">
+        @can('finance.manage')
+            <a href="{{ route('finance.accounts') }}" class="btn-secondary" wire:navigate><x-icon name="building" class="size-4" /> Contas</a>
+            <a href="{{ route('finance.create', ['tipo' => 'payable']) }}" class="btn-secondary" wire:navigate><x-icon name="minus" class="size-4" /> A pagar</a>
+            <a href="{{ route('finance.create', ['tipo' => 'receivable']) }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> A receber</a>
+        @endcan
+    </x-ui.page-header>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @foreach ($accounts as $account)
-            <div class="card card-body" wire:key="acc-{{ $account->id }}">
-                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">{{ $account->name }}</p>
-                <p @class(['mt-1 text-xl font-semibold', 'text-red-700' => $account->balance()->cents < 0])>{{ $account->balance()->format() }}</p>
-            </div>
+            <x-ui.stat :label="$account->name" :value="$account->balance()->format()" icon="wallet" :tone="$account->balance()->cents < 0 ? 'red' : 'green'" wire:key="acc-{{ $account->id }}" />
         @endforeach
     </div>
 
     <div class="grid gap-4 sm:grid-cols-3">
-        <button type="button" wire:click="$set('status', 'overdue')" class="card card-body text-left hover:border-red-400">
-            <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">A pagar vencido</p>
-            <p @class(['mt-1 text-xl font-semibold', 'text-red-700' => ! $overduePayable->isZero()])>{{ $overduePayable->format() }}</p>
+        <button type="button" wire:click="$set('status', 'overdue')" class="card card-body flex items-start gap-4 text-left transition hover:border-red-300 hover:shadow-md">
+            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><x-icon name="alert" class="size-5" /></span>
+            <span>
+                <span class="stat-label block">A pagar vencido</span>
+                <span @class(['stat-value block', 'text-red-600' => ! $overduePayable->isZero()])>{{ $overduePayable->format() }}</span>
+            </span>
         </button>
-        <div class="card card-body">
-            <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">A pagar em 7 dias</p>
-            <p class="mt-1 text-xl font-semibold">{{ $next7Payable->format() }}</p>
-        </div>
-        <div class="card card-body">
-            <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">A receber em aberto</p>
-            <p class="mt-1 text-xl font-semibold">{{ $openReceivable->format() }}</p>
-        </div>
+        <x-ui.stat label="A pagar em 7 dias" :value="$next7Payable->format()" icon="calendar" tone="amber" />
+        <x-ui.stat label="A receber em aberto" :value="$openReceivable->format()" icon="trending" tone="blue" />
     </div>
 
     <div class="flex flex-wrap items-center gap-3">
@@ -54,8 +45,8 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50"><tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Situação</th><th class="text-right">Valor</th><th></th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Situação</th><th class="text-right">Valor</th><th></th></tr></thead>
+            <tbody>
                 @forelse ($entries as $entry)
                     @php($label = $entry->statusLabel($today))
                     <tr wire:key="e-{{ $entry->id }}">
@@ -83,7 +74,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="py-8 text-center text-stone-500">Nenhum lançamento.</td></tr>
+                    <tr><td colspan="6"><x-ui.empty icon="trending" title="Nenhum lançamento" /></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -91,7 +82,7 @@
     {{ $entries->links() }}
 
     @if ($paying)
-        <div class="fixed inset-0 z-40 flex items-end justify-center bg-stone-900/40 p-4 sm:items-center" wire:click.self="$set('payingId', null)">
+        <div class="fixed inset-0 z-40 flex items-end justify-center bg-stone-950/50 p-4 backdrop-blur-sm sm:items-center" wire:click.self="$set('payingId', null)">
             <form wire:submit="pay" class="card w-full max-w-sm space-y-4 p-5">
                 <div>
                     <h3 class="text-lg font-semibold">{{ $paying->kind === 'payable' ? 'Registrar pagamento' : 'Registrar recebimento' }}</h3>

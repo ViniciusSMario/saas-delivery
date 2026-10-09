@@ -1,10 +1,10 @@
 <form wire:submit="save" class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('menu.addon-groups.index') }}" class="btn-link" wire:navigate>← Adicionais</a>
+            <a href="{{ route('menu.addon-groups.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Adicionais</a>
             <h1 class="page-title mt-1">{{ $groupId ? 'Editar grupo' : 'Novo grupo de adicionais' }}</h1>
         </div>
-        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled"><x-icon name="check" class="size-4" /> Salvar</button>
     </div>
 
     <section class="card card-body grid gap-4 sm:grid-cols-4">
@@ -28,7 +28,7 @@
     </section>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Opções</h2>
+        <h2 class="section-title">Opções</h2>
         @error('addons') <p class="field-error">{{ $message }}</p> @enderror
 
         <div class="mt-4 space-y-2">

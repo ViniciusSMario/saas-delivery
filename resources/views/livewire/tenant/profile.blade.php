@@ -2,7 +2,7 @@
     <h1 class="page-title">Minha conta</h1>
 
     <form wire:submit="saveName" class="card card-body space-y-4">
-        <h2 class="font-semibold">Dados</h2>
+        <h2 class="section-title">Dados</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label for="name" class="label">Nome</label>
@@ -15,11 +15,11 @@
                 <p class="hint">Para trocar o e-mail, peça a quem administra os usuários.</p>
             </div>
         </div>
-        <div><button type="submit" class="btn-primary">Salvar</button></div>
+        <div><button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar</button></div>
     </form>
 
     <form wire:submit="savePassword" class="card card-body space-y-4">
-        <h2 class="font-semibold">Alterar senha</h2>
+        <h2 class="section-title">Alterar senha</h2>
         <div class="grid gap-4 sm:grid-cols-3">
             <div>
                 <label for="current_password" class="label">Senha atual</label>

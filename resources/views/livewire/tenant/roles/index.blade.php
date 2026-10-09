@@ -4,7 +4,7 @@
             <h1 class="page-title">Perfis e permissões</h1>
             <p class="mt-1 text-sm text-stone-500">Cada perfil agrupa permissões. Um usuário pode ter mais de um perfil.</p>
         </div>
-        <a href="{{ route('roles.create') }}" class="btn-primary" wire:navigate>Novo perfil</a>
+        <a href="{{ route('roles.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo perfil</a>
     </div>
 
     @if (session('error'))
@@ -13,14 +13,14 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr>
                     <th>Perfil</th>
                     <th>Usuários</th>
                     <th class="text-right">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @foreach ($roles as $role)
                     <tr wire:key="role-{{ $role->id }}">
                         <td>

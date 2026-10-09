@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-lg font-semibold">Entrar</h2>
+    <h2 class="section-title text-lg">Entrar</h2>
     <p class="mt-1 text-sm text-stone-500">Use o e-mail cadastrado neste estabelecimento.</p>
 
     @if (session('status'))

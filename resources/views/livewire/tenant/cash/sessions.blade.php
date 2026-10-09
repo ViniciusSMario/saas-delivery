@@ -6,7 +6,7 @@
     </div>
 
     <section class="card card-body">
-        <h2 class="font-semibold">Abertos agora</h2>
+        <h2 class="section-title">Abertos agora</h2>
         <ul class="mt-3 divide-y divide-stone-100 text-sm">
             @forelse ($open as $session)
                 <li class="flex flex-wrap items-center justify-between gap-2 py-2" wire:key="open-{{ $session->id }}">
@@ -20,10 +20,10 @@
     </section>
 
     <section class="card overflow-x-auto">
-        <h2 class="px-5 pt-5 font-semibold sm:px-6">Fechados</h2>
-        <table class="table mt-3">
-            <thead class="bg-stone-50"><tr><th>Caixa</th><th>Operador</th><th>Período</th><th class="text-right">Diferença</th><th></th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+        <div class="card-header"><h2 class="section-title">Fechados</h2></div>
+        <table class="table">
+            <thead><tr><th>Caixa</th><th>Operador</th><th>Período</th><th class="text-right">Diferença</th><th></th></tr></thead>
+            <tbody>
                 @forelse ($sessions as $session)
                     <tr wire:key="s-{{ $session->id }}">
                         <td>{{ $session->register->name }}</td>
@@ -33,7 +33,7 @@
                         <td class="text-right"><a href="{{ route('cash.report', $session) }}" class="btn-link" wire:navigate>Relatório</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-6 text-center text-stone-500">Nenhum caixa fechado ainda.</td></tr>
+                    <tr><td colspan="5"><x-ui.empty icon="wallet" title="Nenhum caixa fechado ainda" /></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -41,7 +41,7 @@
     {{ $sessions->links() }}
 
     <section class="card card-body">
-        <h2 class="font-semibold">Caixas cadastrados</h2>
+        <h2 class="section-title">Caixas cadastrados</h2>
         <p class="mt-1 text-sm text-stone-600">{{ $registers->pluck('name')->implode(', ') }}</p>
         <form wire:submit="addRegister" class="mt-3 flex flex-wrap gap-2">
             <input wire:model="newRegister" type="text" class="input max-w-xs" placeholder="Ex.: Caixa 2" aria-label="Nome do caixa">

@@ -4,15 +4,15 @@
             <h1 class="page-title">Combos</h1>
             <p class="mt-1 text-sm text-stone-500">Um combo só aparece no cardápio quando todos os produtos dele estão disponíveis.</p>
         </div>
-        <a href="{{ route('menu.combos.create') }}" class="btn-primary" wire:navigate>Novo combo</a>
+        <a href="{{ route('menu.combos.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo combo</a>
     </div>
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50">
+            <thead>
                 <tr><th>Combo</th><th class="text-right">Preço</th><th class="text-right">Avulso</th><th class="text-right">Ações</th></tr>
             </thead>
-            <tbody class="divide-y divide-stone-100">
+            <tbody>
                 @forelse ($combos as $combo)
                     <tr wire:key="combo-{{ $combo->id }}">
                         <td>
@@ -31,7 +31,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="py-8 text-center text-stone-500">Nenhum combo ainda.</td></tr>
+                    <tr><td colspan="4"><x-ui.empty icon="gift" title="Nenhum combo ainda" /></td></tr>
                 @endforelse
             </tbody>
         </table>

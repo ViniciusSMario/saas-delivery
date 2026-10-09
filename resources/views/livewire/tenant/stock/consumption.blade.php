@@ -1,7 +1,7 @@
 @php use App\Support\Quantity; @endphp
 <div class="space-y-6">
     <div>
-        <a href="{{ route('stock.index') }}" class="btn-link" wire:navigate>← Estoque</a>
+        <a href="{{ route('stock.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Estoque</a>
         <h1 class="page-title mt-1">Consumo de estoque</h1>
         <p class="text-sm text-stone-500">Custo do que saiu (vendas + perdas): {{ $totalCost->format() }} · só perdas: {{ $lossCost->format() }}</p>
     </div>
@@ -13,8 +13,8 @@
 
     <div class="card overflow-x-auto">
         <table class="table">
-            <thead class="bg-stone-50"><tr><th>Insumo</th><th class="text-right">Entradas</th><th class="text-right">Vendas</th><th class="text-right">Perdas</th><th class="text-right">Ajustes</th><th class="text-right">Custo saído</th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+            <thead><tr><th>Insumo</th><th class="text-right">Entradas</th><th class="text-right">Vendas</th><th class="text-right">Perdas</th><th class="text-right">Ajustes</th><th class="text-right">Custo saído</th></tr></thead>
+            <tbody>
                 @forelse ($rows as $row)
                     @php($u = $row['item']->unit->code)
                     <tr wire:key="c-{{ $row['item']->id }}">
@@ -26,7 +26,7 @@
                         <td class="text-right whitespace-nowrap">{{ $row['cost']->format() }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="py-6 text-center text-stone-500">Nenhuma movimentação no período.</td></tr>
+                    <tr><td colspan="6"><x-ui.empty icon="activity" title="Nenhuma movimentação no período" /></td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -4,14 +4,14 @@
 @endphp
 <div class="space-y-6">
     <div>
-        <a href="{{ route('stock.index') }}" class="btn-link" wire:navigate>← Estoque</a>
+        <a href="{{ route('stock.index') }}" class="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-800" wire:navigate><x-icon name="chevron-left" class="size-4" /> Estoque</a>
         <h1 class="page-title mt-1">{{ $item->name }}</h1>
         <p class="text-sm text-stone-500">Saldo {{ Quantity::format($item->quantity) }} {{ $item->unit->code }} · custo médio {{ $item->averageCost()->format() }}/{{ $item->unit->code }} · valor {{ $item->stockValue()->format() }}</p>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
         <form wire:submit="save" class="card card-body space-y-3">
-            <h2 class="font-semibold">Dados</h2>
+            <h2 class="section-title">Dados</h2>
             <div>
                 <label for="name" class="label">Nome</label>
                 <input wire:model="name" id="name" type="text" class="input">
@@ -24,11 +24,11 @@
             </div>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="isActive" class="checkbox"> Ativo</label>
             <p class="hint">A unidade não muda depois do cadastro (o histórico depende dela).</p>
-            <button type="submit" class="btn-primary">Salvar</button>
+            <button type="submit" class="btn-primary"><x-icon name="check" class="size-4" /> Salvar</button>
         </form>
 
         <section class="card card-body lg:col-span-2">
-            <h2 class="font-semibold">Usado em</h2>
+            <h2 class="section-title">Usado em</h2>
             <p class="mt-2 text-sm text-stone-600">
                 @forelse ($usedIn as $recipe)
                     @if ($recipe->product)
@@ -44,10 +44,10 @@
     </div>
 
     <section class="card overflow-x-auto">
-        <h2 class="px-5 pt-5 font-semibold">Movimentações</h2>
-        <table class="table mt-3">
-            <thead class="bg-stone-50"><tr><th>Quando</th><th>Tipo</th><th>Origem</th><th>Por</th><th class="text-right">Quantidade</th><th class="text-right">Saldo</th></tr></thead>
-            <tbody class="divide-y divide-stone-100">
+        <div class="card-header"><h2 class="section-title">Movimentações</h2></div>
+        <table class="table">
+            <thead><tr><th>Quando</th><th>Tipo</th><th>Origem</th><th>Por</th><th class="text-right">Quantidade</th><th class="text-right">Saldo</th></tr></thead>
+            <tbody>
                 @forelse ($movements as $movement)
                     <tr wire:key="m-{{ $movement->id }}">
                         <td class="whitespace-nowrap text-stone-500">{{ $movement->created_at->timezone($tz)->format('d/m H:i') }}</td>
@@ -63,7 +63,7 @@
                         <td class="text-right whitespace-nowrap">{{ Quantity::format($movement->balance_after) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="py-6 text-center text-stone-500">Nenhuma movimentação.</td></tr>
+                    <tr><td colspan="6"><x-ui.empty icon="activity" title="Nenhuma movimentação" /></td></tr>
                 @endforelse
             </tbody>
         </table>

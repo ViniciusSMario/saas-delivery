@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-lg font-semibold">Definir senha</h2>
+    <h2 class="section-title text-lg">Definir senha</h2>
     <p class="mt-1 text-sm text-stone-500">Mínimo de 8 caracteres, com letras e números.</p>
 
     <form wire:submit="save" class="mt-6 space-y-4">
