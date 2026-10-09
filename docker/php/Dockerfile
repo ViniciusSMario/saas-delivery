@@ -6,7 +6,7 @@ ARG UID=1000
 ARG GID=1000
 
 COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions pdo_pgsql pgsql intl zip bcmath pcntl redis opcache \
+RUN install-php-extensions pdo_pgsql pgsql intl zip bcmath pcntl redis opcache gd \
     && apk add --no-cache git unzip postgresql17-client shadow \
     && groupmod -o -g ${GID} www-data && usermod -o -u ${UID} -g ${GID} www-data
 

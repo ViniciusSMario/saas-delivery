@@ -8,6 +8,7 @@ use App\Tenancy\Jobs\TenantAware;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Features\SupportFileUploads\FilePreviewController;
 use Livewire\Features\SupportFileUploads\FileUploadController;
 use Livewire\Livewire;
 
@@ -51,6 +52,7 @@ class TenancyServiceProvider extends ServiceProvider
         Livewire::setUpdateRoute(fn ($handle) => Route::post('/livewire/update', $handle)->middleware('tenant'));
 
         FileUploadController::$defaultMiddleware = ['tenant'];
+        FilePreviewController::$middleware = ['tenant'];
         config(['livewire.temporary_file_upload.disk' => 'tenant']);
     }
 }

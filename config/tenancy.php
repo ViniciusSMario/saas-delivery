@@ -7,6 +7,9 @@ return [
         'trim', explode(',', (string) env('TENANCY_CENTRAL_DOMAINS', 'localhost'))
     ))),
 
+    // Admin da plataforma (equipe do SaaS). Nunca é resolvido como tenant.
+    'platform_domain' => env('TENANCY_PLATFORM_DOMAIN', 'admin.localhost'),
+
     // Cada tenant ganha <slug>.<base_domain> no provisionamento.
     'base_domain' => env('TENANCY_BASE_DOMAIN', 'localhost'),
 

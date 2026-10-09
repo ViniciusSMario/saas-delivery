@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
@@ -8,4 +9,93 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-brand-50: oklch(0.97 0.02 40);
+    --color-brand-100: oklch(0.94 0.05 40);
+    --color-brand-500: oklch(0.65 0.18 38);
+    --color-brand-600: oklch(0.58 0.18 36);
+    --color-brand-700: oklch(0.5 0.16 34);
+}
+
+/* Base dos botões; @utility para poder ser usada em @apply (Tailwind 4). */
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@layer components {
+    .card {
+        @apply rounded-xl border border-stone-200 bg-white shadow-xs;
+    }
+
+    .card-body {
+        @apply p-5 sm:p-6;
+    }
+
+    .label {
+        @apply mb-1 block text-sm font-medium text-stone-700;
+    }
+
+    .input {
+        @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs placeholder:text-stone-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500;
+    }
+
+    .checkbox {
+        @apply size-4 rounded border-stone-300 accent-brand-600;
+    }
+
+    .field-error {
+        @apply mt-1 text-sm text-red-600;
+    }
+
+    .hint {
+        @apply mt-1 text-xs text-stone-500;
+    }
+
+    .btn-primary {
+        @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500;
+    }
+
+    .btn-secondary {
+        @apply btn border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 focus:ring-stone-300;
+    }
+
+    .btn-danger {
+        @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    }
+
+    .btn-link {
+        @apply text-sm font-medium text-brand-700 hover:underline;
+    }
+
+    .badge {
+        @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+    }
+
+    .table {
+        @apply min-w-full divide-y divide-stone-200 text-sm;
+    }
+
+    .table th {
+        @apply px-4 py-3 text-left text-xs font-semibold tracking-wide text-stone-500 uppercase;
+    }
+
+    .table td {
+        @apply px-4 py-3 align-middle text-stone-700;
+    }
+
+    .page-title {
+        @apply text-xl font-semibold text-stone-900 sm:text-2xl;
+    }
+
+    .alert-success {
+        @apply rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800;
+    }
+
+    .alert-error {
+        @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
+    }
 }

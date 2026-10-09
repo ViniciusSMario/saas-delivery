@@ -23,8 +23,8 @@ it('não mostra em B um dado criado em A', function () {
     expect(inTenant($this->b, fn () => Setting::whereRaw('value::text like ?', ["%{$secret}%"])->exists()))->toBeFalse()
         ->and(inTenant($this->a, fn () => Setting::read('welcome_message')))->toBe($secret);
 
-    $this->get(tenantUrl($this->a))->assertOk()->assertSee($secret);
-    $this->get(tenantUrl($this->b))->assertOk()->assertDontSee($secret);
+    $this->get(tenantUrl($this->a, '/cardapio'))->assertOk()->assertSee($secret);
+    $this->get(tenantUrl($this->b, '/login'))->assertOk()->assertDontSee($secret);
     $this->get(tenantUrl($this->b, '/cardapio'))->assertOk()->assertDontSee($secret);
     $this->get('http://localhost/cardapio/teste2')->assertOk()->assertDontSee($secret);
 });
@@ -60,7 +60,7 @@ it('recusa em B a sessão criada em A', function () {
     $this->withSession([
         'tenant_id' => $this->a->id,
         'dado_de_a' => 'nao-pode-vazar',
-    ])->get(tenantUrl($this->b))->assertOk();
+    ])->get(tenantUrl($this->b, '/cardapio'))->assertOk();
 
     expect(session('dado_de_a'))->toBeNull()
         ->and(session('tenant_id'))->toBe($this->b->id);
@@ -68,7 +68,7 @@ it('recusa em B a sessão criada em A', function () {
 
 it('mantém a sessão do próprio tenant', function () {
     $this->withSession(['tenant_id' => $this->a->id, 'carrinho' => 'x'])
-        ->get(tenantUrl($this->a))
+        ->get(tenantUrl($this->a, '/cardapio'))
         ->assertOk()
         ->assertSessionHas('carrinho', 'x');
 });
@@ -85,7 +85,7 @@ it('volta ao estado fechado depois de run() e depois da requisição', function 
     inTenant($this->a, fn () => expect(Setting::count())->toBeGreaterThan(0));
     expect(fn () => Setting::count())->toThrow(QueryException::class);
 
-    $this->get(tenantUrl($this->a))->assertOk();
+    $this->get(tenantUrl($this->a, '/login'))->assertOk();
     expect(app(TenantContext::class)->check())->toBeFalse();
     expect(fn () => Setting::count())->toThrow(QueryException::class);
 });
@@ -129,7 +129,7 @@ it('não aceita requisição Livewire fora de um tenant', function () {
 });
 
 it('resolve e ativa o tenant antes de iniciar a sessão', function () {
-    $route = app('router')->getRoutes()->getByName('tenant.home');
+    $route = app('router')->getRoutes()->getByName('dashboard');
     $stack = app('router')->gatherRouteMiddleware($route);
 
     expect(array_slice($stack, 0, 2))->toBe([

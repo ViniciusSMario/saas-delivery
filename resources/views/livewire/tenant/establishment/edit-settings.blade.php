@@ -1,0 +1,48 @@
+<form wire:submit="save" class="space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h1 class="page-title">Configurações</h1>
+        <button type="submit" class="btn-primary" wire:loading.attr="disabled">Salvar</button>
+    </div>
+
+    <section class="card card-body space-y-4">
+        <h2 class="font-semibold">Cardápio online</h2>
+
+        <div>
+            <label for="welcome_message" class="label">Mensagem de boas-vindas</label>
+            <input wire:model="welcome_message" id="welcome_message" type="text" maxlength="160" class="input">
+            <p class="hint">Aparece no topo do cardápio público.</p>
+            @error('welcome_message') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="flex flex-wrap gap-6">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_delivery" class="checkbox"> Aceita entrega</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_pickup" class="checkbox"> Aceita retirada no local</label>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label for="min_order" class="label">Pedido mínimo (R$)</label>
+                <input wire:model="min_order" id="min_order" type="text" inputmode="decimal" class="input">
+                @error('min_order') <p class="field-error">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="delivery_fee" class="label">Taxa de entrega padrão (R$)</label>
+                <input wire:model="delivery_fee" id="delivery_fee" type="text" inputmode="decimal" class="input">
+                @error('delivery_fee') <p class="field-error">{{ $message }}</p> @enderror
+            </div>
+        </div>
+    </section>
+
+    <section class="card card-body">
+        <h2 class="font-semibold">Regional</h2>
+        <div class="mt-4 max-w-md">
+            <label for="timezone" class="label">Fuso horário</label>
+            <select wire:model="timezone" id="timezone" class="input">
+                @foreach ($timezones as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('timezone') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+    </section>
+</form>

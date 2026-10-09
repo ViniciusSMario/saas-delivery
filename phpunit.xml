@@ -41,6 +41,7 @@
         <env name="SESSION_STORE" value="sessions" force="true"/>
         <env name="TENANCY_CENTRAL_DOMAINS" value="localhost" force="true"/>
         <env name="TENANCY_BASE_DOMAIN" value="localhost" force="true"/>
+        <env name="TENANCY_PLATFORM_DOMAIN" value="admin.localhost" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

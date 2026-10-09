@@ -11,6 +11,14 @@ arch('a camada de tenancy não depende de módulos de negócio')
     ->expect('App\Tenancy')
     ->not->toUse('App\Modules');
 
+arch('telas do estabelecimento não usam a plataforma')
+    ->expect('App\Livewire\Tenant')
+    ->not->toUse('App\Platform');
+
+arch('módulos de negócio não dependem da camada de interface')
+    ->expect('App\Modules')
+    ->not->toUse(['App\Livewire', 'App\Http\Controllers']);
+
 arch('não há debug esquecido')
     ->expect(['dd', 'dump', 'ray', 'var_dump'])
     ->not->toBeUsed();
@@ -58,7 +66,7 @@ it('módulos não usam nome de schema qualificado', function () {
     expect($offenders)->toBe([]);
 });
 
-it('models de módulo estendem TenantModel', function () {
+it('models de módulo vivem na conexão do tenant', function () {
     $models = collect(phpFilesIn('app/Modules'))
         ->keys()
         ->filter(fn (string $path) => str_contains($path, '/Models/'))
@@ -67,6 +75,9 @@ it('models de módulo estendem TenantModel', function () {
     expect($models)->not->toBeEmpty();
 
     foreach ($models as $class) {
-        expect(is_subclass_of($class, TenantModel::class))->toBeTrue("{$class} deve estender TenantModel");
+        // TenantModel, ou um Authenticatable (User) que fixa a conexão "tenant".
+        $usesTenant = is_subclass_of($class, TenantModel::class) || (new $class)->getConnectionName() === 'tenant';
+
+        expect($usesTenant)->toBeTrue("{$class} deve usar a conexão tenant (estenda TenantModel)");
     }
 });

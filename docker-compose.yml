@@ -82,6 +82,8 @@ services:
     volumes:
       - ./:/var/www/html
       - node_modules:/var/www/html/node_modules
+      # O Tailwind lê as views de paginação do Livewire/Laravel em vendor/.
+      - vendor:/var/www/html/vendor:ro
 
 volumes:
   pgdata:

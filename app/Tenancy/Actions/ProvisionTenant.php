@@ -6,7 +6,9 @@ use App\Tenancy\Enums\TenantStatus;
 use App\Tenancy\Exceptions\InvalidTenantData;
 use App\Tenancy\Models\Tenant;
 use App\Tenancy\SchemaManager;
+use App\Tenancy\TenantContext;
 use App\Tenancy\TenantMigrator;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -21,11 +23,22 @@ class ProvisionTenant
     public function __construct(
         private readonly SchemaManager $schemas,
         private readonly TenantMigrator $migrator,
+        private readonly TenantContext $context,
     ) {
     }
 
-    public function handle(string $slug, string $name, ?string $domain = null, ?string $document = null, ?int $planId = null): Tenant
-    {
+    /**
+     * @param  (Closure(Tenant): void)|null  $initialize  configuração inicial, executada dentro do
+     *                                                   tenant antes da ativação (falhou = rollback)
+     */
+    public function handle(
+        string $slug,
+        string $name,
+        ?string $domain = null,
+        ?string $document = null,
+        ?int $planId = null,
+        ?Closure $initialize = null,
+    ): Tenant {
         $slug = mb_strtolower(trim($slug));
         $domain = mb_strtolower(trim($domain ?? $slug.'.'.config('tenancy.base_domain')));
 
@@ -50,6 +63,10 @@ class ProvisionTenant
             $this->schemas->create($tenant->schema_name);
             $this->migrator->migrate($tenant);
             $this->migrator->seed($tenant);
+
+            if ($initialize) {
+                $this->context->run($tenant, $initialize);
+            }
         } catch (Throwable $e) {
             $this->schemas->drop($tenant->schema_name);
             $tenant->update(['status' => TenantStatus::Failed]);
@@ -84,7 +101,7 @@ class ProvisionTenant
             throw new InvalidTenantData("O domínio [{$domain}] já está em uso.");
         }
 
-        if (in_array($domain, config('tenancy.central_domains'), true)) {
+        if (in_array($domain, [...config('tenancy.central_domains'), config('tenancy.platform_domain')], true)) {
             throw new InvalidTenantData("O domínio [{$domain}] é um domínio central.");
         }
     }

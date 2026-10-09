@@ -19,7 +19,7 @@ it('provisiona um tenant ativo, com schema gerado pelo sistema, migrado e com se
     expect($tenant->status)->toBe(TenantStatus::Active)
         ->and($tenant->schema_name)->toMatch(SchemaManager::PATTERN)->not->toContain('pizzaria')
         ->and($tenant->primaryDomain())->toBe('pizzaria-nova.localhost')
-        ->and($tenant->schema_version)->toBe('2026_10_09_000100_create_settings_table')
+        ->and($tenant->schema_version)->toBe(latestTenantMigration())
         ->and(app(SchemaManager::class)->exists($tenant->schema_name))->toBeTrue()
         ->and(inTenant($tenant, fn () => Setting::read('currency')))->toBe('BRL')
         ->and($tenant->events()->pluck('type')->all())->toContain('created', 'activated');
@@ -71,7 +71,7 @@ it('continua migrando os outros tenants quando um falha', function () {
     expect(inTenant($healthy, fn () => Schema::hasColumn('settings', 'key')))->toBeTrue()
         ->and(inTenant($broken, fn () => Schema::hasColumn('settings', 'key')))->toBeFalse()
         ->and($broken->events()->where('type', 'migrated_failed')->exists())->toBeTrue()
-        ->and($healthy->fresh()->schema_version)->toBe('2026_10_09_000100_create_settings_table');
+        ->and($healthy->fresh()->schema_version)->toBe(latestTenantMigration());
 
     // Corrigido o problema, o tenant volta a migrar normalmente.
     inTenant($broken, fn () => DB::statement('drop table settings'));

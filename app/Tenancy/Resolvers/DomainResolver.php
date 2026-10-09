@@ -12,7 +12,7 @@ class DomainResolver implements TenantResolver
     {
         $host = mb_strtolower($request->getHost());
 
-        if (in_array($host, config('tenancy.central_domains'), true)) {
+        if (in_array($host, [...config('tenancy.central_domains'), config('tenancy.platform_domain')], true)) {
             return null;
         }
 
