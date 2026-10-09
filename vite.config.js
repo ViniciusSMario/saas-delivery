@@ -11,8 +11,14 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Roda no container "node"; o navegador acessa por localhost:5173.
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        hmr: { host: 'localhost' },
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            usePolling: true,
+            ignored: ['**/storage/framework/views/**', '**/vendor/**'],
         },
     },
 });
