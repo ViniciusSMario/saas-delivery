@@ -34,7 +34,9 @@ class SetPasswordNotification extends Notification
         $establishment = tenant()->name;
         $minutes = config('auth.passwords.users.expire');
 
-        $message = (new MailMessage)->greeting("Olá, {$notifiable->name}!");
+        $message = (new MailMessage)
+            ->greeting("Olá, {$notifiable->name}!")
+            ->salutation("Equipe {$establishment}");
 
         if ($this->invitation) {
             return $message
