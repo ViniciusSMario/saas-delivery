@@ -5,10 +5,10 @@
         'preparing' => 'Iniciar preparo',
         'ready' => 'Marcar pronto',
         'dispatched' => 'Saiu para entrega',
-        'completed' => $order->fulfillment === Fulfillment::Delivery ? 'Entregue' : 'Concluir',
+        'completed' => match ($order->fulfillment) { Fulfillment::Delivery => 'Entregue', Fulfillment::Table => 'Servido', default => 'Concluir' },
         default => null,
     };
-    $fulfillmentStyle = ['delivery' => 'bg-sky-100 text-sky-800', 'pickup' => 'bg-violet-100 text-violet-800', 'counter' => 'bg-stone-200 text-stone-700'];
+    $fulfillmentStyle = ['delivery' => 'bg-sky-100 text-sky-800', 'pickup' => 'bg-violet-100 text-violet-800', 'counter' => 'bg-stone-200 text-stone-700', 'table' => 'bg-emerald-100 text-emerald-800'];
 @endphp
 
 <div class="space-y-4" wire:poll.10s

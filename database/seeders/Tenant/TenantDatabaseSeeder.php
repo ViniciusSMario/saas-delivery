@@ -3,6 +3,7 @@
 namespace Database\Seeders\Tenant;
 
 use App\Modules\Access\DefaultRoles;
+use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Establishment\Models\OpeningHour;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Models\PaymentMethod;
@@ -22,6 +23,8 @@ class TenantDatabaseSeeder extends Seeder
             'accepts_pickup' => true,
             'min_order_cents' => 0,
             'delivery_fee_cents' => 0,
+            'service_fee_enabled' => true,
+            'service_fee_percent' => 10,
         ];
 
         foreach ($defaults as $key => $value) {
@@ -31,5 +34,6 @@ class TenantDatabaseSeeder extends Seeder
         DefaultRoles::seed();
         OpeningHour::seedDefaults();
         PaymentMethod::seedDefaults();
+        CashRegister::seedDefault();
     }
 }

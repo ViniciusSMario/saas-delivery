@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Actions;
 
 use App\Modules\Access\Models\User;
 use App\Modules\Access\Permission;
+use App\Modules\Cash\CashLedger;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
@@ -33,6 +34,10 @@ class PlaceOrder
 
     public const MAX_QUANTITY = 99;
 
+    public function __construct(private readonly CashLedger $ledger)
+    {
+    }
+
     /**
      * @param  array{
      *     lines: list<array{type: string, id: int, quantity: int, addons?: list<int>, notes?: string|null}>,
@@ -48,8 +53,14 @@ class PlaceOrder
     public function handle(array $input, OrderSource $source, ?User $actor = null): Order
     {
         $online = $source === OrderSource::Online;
+        $table = $source === OrderSource::Table;
         $fulfillment = Fulfillment::tryFrom($input['fulfillment'] ?? '')
             ?? $this->fail('fulfillment', 'Escolha entrega ou retirada.');
+
+        // Mesa só por comanda; comanda só com pedido de mesa.
+        if ($table !== ($fulfillment === Fulfillment::Table) || $table !== ! empty($input['command_id'])) {
+            $this->fail('fulfillment', 'Tipo de pedido inválido.');
+        }
 
         if ($online) {
             $this->assertAcceptingOnlineOrders($fulfillment);
@@ -74,10 +85,15 @@ class PlaceOrder
             }
         }
 
-        [$method, $changeFor] = $this->payment($input['payment_method'] ?? '', $input['change_for'] ?? null, $total);
+        // Pedido de mesa não tem pagamento próprio: a conta é da comanda.
+        [$method, $changeFor] = $table ? [null, null] : $this->payment($input['payment_method'] ?? '', $input['change_for'] ?? null, $total);
+
+        // Balcão: pago na hora, então precisa do caixa aberto do operador.
+        $paidNow = $fulfillment === Fulfillment::Counter;
+        $cashSession = $paidNow ? $this->ledger->requireSession($actor) : null;
 
         $order = DB::connection('tenant')->transaction(function () use (
-            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $total, $method, $changeFor, $input, $actor
+            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession
         ) {
             $customerModel = $customer['phone'] ? $this->rememberCustomer($customer, $address) : null;
 
@@ -87,6 +103,7 @@ class PlaceOrder
                 'fulfillment' => $fulfillment,
                 'status' => OrderStatus::Received,
                 'customer_id' => $customerModel?->id,
+                'command_id' => $input['command_id'] ?? null,
                 'customer_name' => $customer['name'],
                 'customer_phone' => $customer['phone'],
                 'address_zip_code' => $address['zip_code'] ?? null,
@@ -122,15 +139,20 @@ class PlaceOrder
 
             $order->history()->create(['from_status' => null, 'to_status' => OrderStatus::Received, 'user_id' => $actor?->id]);
 
-            // Balcão: pago na hora. Entrega/retirada: recebido na entrega ou no balcão.
-            $paidNow = $fulfillment === Fulfillment::Counter;
-            $order->payments()->create([
-                'payment_method_id' => $method->id,
-                'amount_cents' => $total,
-                'change_for_cents' => $changeFor,
-                'status' => $paidNow ? PaymentStatus::Paid : PaymentStatus::Pending,
-                'paid_at' => $paidNow ? now() : null,
-            ]);
+            // Balcão: pago na hora (entra no caixa). Entrega/retirada: recebido na conclusão.
+            if ($method) {
+                $payment = $order->payments()->create([
+                    'payment_method_id' => $method->id,
+                    'amount_cents' => $total,
+                    'change_for_cents' => $changeFor,
+                    'status' => $paidNow ? PaymentStatus::Paid : PaymentStatus::Pending,
+                    'paid_at' => $paidNow ? now() : null,
+                ]);
+
+                if ($cashSession && ! $total->isZero()) {
+                    $this->ledger->recordOrderPayment($payment, $actor, $cashSession);
+                }
+            }
 
             return $order->refresh();
         });

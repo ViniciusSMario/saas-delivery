@@ -326,6 +326,10 @@ it('vende no balcão com adicionais, pagamento na hora e desconto só com permis
     $caixa = createTenantUser($this->a, ['caixa']);
     $gerente = createTenantUser($this->a, ['gerente']);
     activateTenant($this->a);
+    // Venda de balcão é paga na hora: precisa do caixa aberto de cada operador.
+    $ledger = app(App\Modules\Cash\CashLedger::class);
+    $ledger->open(App\Modules\Cash\Models\CashRegister::create(['name' => 'Caixa '.Str::random(5)]), $caixa, Money::zero());
+    $ledger->open(App\Modules\Cash\Models\CashRegister::create(['name' => 'Caixa '.Str::random(5)]), $gerente, Money::zero());
 
     $counter = Livewire::actingAs($caixa)->test(Counter::class)
         ->call('addProduct', $menu['pizza']->id)

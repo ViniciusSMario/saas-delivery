@@ -1,9 +1,11 @@
 @php
     $nav = [
         ['route' => 'dashboard', 'label' => 'Início', 'can' => null],
-        ['section' => 'Pedidos', 'can' => 'orders.view'],
+        ['section' => 'Atendimento', 'can' => ['orders.view', 'pos.use', 'tables.manage', 'cash.operate']],
         ['route' => 'orders.board', 'label' => 'Painel de pedidos', 'can' => 'orders.view', 'match' => ['orders.board', 'orders.show']],
-        ['route' => 'orders.counter', 'label' => 'Venda no balcão', 'can' => 'pos.use'],
+        ['route' => 'tables.map', 'label' => 'Mesas', 'can' => 'tables.manage', 'match' => ['tables.map', 'tables.command']],
+        ['route' => 'orders.counter', 'label' => 'PDV', 'can' => 'pos.use'],
+        ['route' => 'cash.current', 'label' => 'Caixa', 'can' => 'cash.operate', 'match' => ['cash.*']],
         ['route' => 'orders.index', 'label' => 'Histórico', 'can' => 'orders.view', 'match' => ['orders.index']],
         ['section' => 'Cardápio', 'can' => 'menu.manage'],
         ['route' => 'menu.products.index', 'label' => 'Produtos', 'can' => 'menu.manage'],

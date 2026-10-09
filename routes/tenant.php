@@ -15,6 +15,8 @@ use App\Livewire\Tenant\Establishment\EditEstablishment;
 use App\Livewire\Tenant\Establishment\EditSettings;
 use App\Livewire\Tenant\Menu;
 use App\Livewire\Tenant\Orders;
+use App\Livewire\Tenant\Tables;
+use App\Livewire\Tenant\Cash;
 use App\Livewire\Tenant\Profile;
 use App\Livewire\Tenant\Roles;
 use App\Livewire\Tenant\Users;
@@ -53,6 +55,14 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/pedidos/historico', Orders\Index::class)->middleware('can:orders.view')->name('orders.index');
     Route::get('/pedidos/{order}', Orders\Show::class)->whereNumber('order')->middleware('can:orders.view')->name('orders.show');
     Route::get('/balcao', Orders\Counter::class)->middleware('can:pos.use')->name('orders.counter');
+
+    Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');
+    Route::get('/mesas/cadastro', Tables\Manage::class)->middleware('can:establishment.manage')->name('tables.manage');
+    Route::get('/comandas/{command}', Tables\CommandPage::class)->whereNumber('command')->middleware('can:tables.manage')->name('tables.command');
+
+    Route::get('/caixa', Cash\Current::class)->middleware('can:cash.operate')->name('cash.current');
+    Route::get('/caixa/sessoes', Cash\Sessions::class)->middleware('can:cash.manage')->name('cash.sessions');
+    Route::get('/caixa/sessoes/{session}', Cash\Report::class)->whereNumber('session')->middleware('can:cash.operate')->name('cash.report');
 
     Route::middleware('can:menu.manage')->name('menu.')->group(function () {
         Route::get('/categorias', Menu\Categories::class)->name('categories');

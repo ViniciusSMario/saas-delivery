@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Actions;
 
 use App\Modules\Access\Audit;
 use App\Modules\Access\Models\User;
+use App\Modules\Cash\CashLedger;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Events\OrderStatusChanged;
@@ -17,6 +18,10 @@ use Illuminate\Validation\ValidationException;
  */
 class ChangeOrderStatus
 {
+    public function __construct(private readonly CashLedger $ledger)
+    {
+    }
+
     public function handle(Order $order, OrderStatus $to, ?User $actor = null, ?string $reason = null): Order
     {
         $reason = trim((string) $reason) ?: null;
@@ -40,14 +45,19 @@ class ChangeOrderStatus
 
             if ($to === OrderStatus::Completed) {
                 $locked->completed_at = now();
-                // Entrega/retirada: o pagamento é recebido na conclusão.
-                $locked->payments()->where('status', PaymentStatus::Pending)->update(['status' => PaymentStatus::Paid, 'paid_at' => now()]);
+                // Entrega/retirada: o pagamento é recebido na conclusão e entra no caixa aberto.
+                $this->receivePending($locked, $actor);
             }
 
             if ($to === OrderStatus::Cancelled) {
                 $locked->cancelled_at = now();
                 $locked->cancel_reason = mb_substr($reason, 0, 255);
-                $locked->payments()->where('status', PaymentStatus::Paid)->update(['status' => PaymentStatus::Refunded]);
+
+                foreach ($locked->payments()->where('status', PaymentStatus::Paid)->get() as $payment) {
+                    $this->ledger->refundOrderPayment($payment, $actor);
+                    $payment->update(['status' => PaymentStatus::Refunded]);
+                }
+
                 Audit::record('order.cancelled', $locked, ['numero' => $locked->number, 'motivo' => $reason], $actor);
             }
 
@@ -68,10 +78,22 @@ class ChangeOrderStatus
             throw ValidationException::withMessages(['status' => 'Pedido cancelado não pode ser marcado como pago.']);
         }
 
-        $updated = $order->payments()->where('status', PaymentStatus::Pending)->update(['status' => PaymentStatus::Paid, 'paid_at' => now()]);
+        $updated = DB::connection('tenant')->transaction(fn () => $this->receivePending($order, $actor));
 
         if ($updated) {
             Audit::record('order.paid', $order, ['numero' => $order->number], $actor);
         }
+    }
+
+    private function receivePending(Order $order, ?User $actor): int
+    {
+        $pending = $order->payments()->where('status', PaymentStatus::Pending)->with('method')->get();
+
+        foreach ($pending as $payment) {
+            $payment->update(['status' => PaymentStatus::Paid, 'paid_at' => now()]);
+            $this->ledger->recordOrderPayment($payment, $actor);
+        }
+
+        return $pending->count();
     }
 }

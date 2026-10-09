@@ -36,6 +36,18 @@
         </div>
     </section>
 
+    <section class="card card-body space-y-3">
+        <h2 class="font-semibold">Mesas</h2>
+        <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="service_fee_enabled" class="checkbox"> Cobrar taxa de serviço nas comandas</label>
+            <label class="flex items-center gap-2 text-sm">
+                <input wire:model="service_fee_percent" type="number" min="0" max="30" class="input w-20"> %
+            </label>
+        </div>
+        <p class="hint">Quem tem permissão de desconto pode tirar a taxa no fechamento da conta.</p>
+        @error('service_fee_percent') <p class="field-error">{{ $message }}</p> @enderror
+    </section>
+
     <section class="card card-body">
         <h2 class="font-semibold">Formas de pagamento aceitas</h2>
         <p class="hint">Pagamento na entrega, na retirada ou no balcão.</p>

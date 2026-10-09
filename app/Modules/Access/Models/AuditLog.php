@@ -50,6 +50,17 @@ class AuditLog extends TenantModel
             'combo.deleted' => 'Excluiu combo',
             'order.cancelled' => 'Cancelou pedido',
             'order.paid' => 'Marcou pedido como pago',
+            'cash.opened' => 'Abriu o caixa',
+            'cash.withdrawal' => 'Fez sangria',
+            'cash.deposit' => 'Fez suprimento',
+            'cash.closed' => 'Fechou o caixa',
+            'cash.register_created' => 'Cadastrou caixa',
+            'command.closed' => 'Fechou conta',
+            'command.cancelled' => 'Cancelou comanda',
+            'command.transferred' => 'Trocou comanda de mesa',
+            'command.merged' => 'Juntou comandas',
+            'table.created' => 'Cadastrou mesa',
+            'table.updated' => 'Alterou mesa',
             default => $this->action,
         };
     }

@@ -21,6 +21,10 @@ class EditSettings extends Component
 
     public bool $accepts_pickup = true;
 
+    public bool $service_fee_enabled = true;
+
+    public int $service_fee_percent = 10;
+
     /** @var array<int, bool> id da forma de pagamento => ativa */
     public array $paymentMethods = [];
 
@@ -44,6 +48,8 @@ class EditSettings extends Component
         $this->accepts_delivery = (bool) Setting::read('accepts_delivery', true);
         $this->paymentMethods = PaymentMethod::orderBy('position')->pluck('is_active', 'id')->map(fn ($v) => (bool) $v)->all();
         $this->accepts_pickup = (bool) Setting::read('accepts_pickup', true);
+        $this->service_fee_enabled = (bool) Setting::read('service_fee_enabled', true);
+        $this->service_fee_percent = (int) Setting::read('service_fee_percent', 10);
         $this->min_order = $this->toMoney((int) Setting::read('min_order_cents', 0));
         $this->delivery_fee = $this->toMoney((int) Setting::read('delivery_fee_cents', 0));
     }
@@ -57,6 +63,8 @@ class EditSettings extends Component
             'accepts_delivery' => ['boolean'],
             'paymentMethods' => ['array', fn ($a, $v, $fail) => in_array(true, (array) $v, true) ? null : $fail('Deixe pelo menos uma forma de pagamento ativa.')],
             'accepts_pickup' => ['boolean'],
+            'service_fee_enabled' => ['boolean'],
+            'service_fee_percent' => ['required', 'integer', 'min:0', 'max:30'],
             'min_order' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
             'delivery_fee' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
         ];
@@ -83,6 +91,8 @@ class EditSettings extends Component
             'accepts_online_orders' => $this->accepts_online_orders,
             'accepts_delivery' => $this->accepts_delivery,
             'accepts_pickup' => $this->accepts_pickup,
+            'service_fee_enabled' => $this->service_fee_enabled,
+            'service_fee_percent' => $this->service_fee_percent,
             'min_order_cents' => $this->toCents($this->min_order),
             'delivery_fee_cents' => $this->toCents($this->delivery_fee),
         ];
