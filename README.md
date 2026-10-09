@@ -11,7 +11,9 @@ Entregue até agora:
 
 - **Fase 4 (Pedidos e balcão):** pedido online pelo cardápio (carrinho, checkout e acompanhamento), venda de balcão e painel de pedidos com status.
 
-Próxima: mesas e PDV (fase 5): mesas, comandas, PDV com busca rápida e caixa.
+- **Fase 5 (Mesas e PDV):** mesas e comandas, PDV com busca rápida e caixa (abertura, sangria, suprimento, fechamento com conferência).
+
+Próxima: estoque (fase 6): insumos, movimentações, ficha técnica e baixa automática na venda.
 
 ## Subir o ambiente
 
@@ -78,6 +80,19 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Configurações:** liga/desliga pedidos online e escolhe as formas de pagamento aceitas.
 - Fica para fases seguintes: pagamento online, taxa por bairro, mesas e comandas, caixa (abertura e fechamento) e baixa de estoque.
 
+## Mesas, PDV e caixa
+
+- **Mesas** (`/mesas`, permissão `tables.manage`): mapa do salão (livre / ocupada com valor / conta pedida), atualizado a cada 15 s. Cadastro em `/mesas/cadastro`, inclusive em lote ("1-20").
+- **Comanda** (`/comandas/<id>`): de uma mesa ou avulsa ("Cartão 15"). Cada lançamento vira um pedido de mesa (`orders.command_id`) e aparece no painel da cozinha. Dá para pedir a conta, reabrir, trocar de mesa, juntar comandas e cancelar itens com motivo.
+- **Fechamento:** taxa de serviço configurável (padrão 10%; tirar exige `orders.discount`), desconto, valor por pessoa e pagamento dividido em várias formas. Só dinheiro pode passar do total (troco). O fechamento trava a comanda (`SELECT ... FOR UPDATE`) e conclui os itens que ainda estavam na cozinha.
+- **Caixa** (`/caixa`, permissão `cash.operate`): abertura com fundo de troco, sangria e suprimento com motivo, e fechamento com conferência por forma de pagamento, mostrando sobra ou falta. Há relatório imprimível. Um caixa físico só tem uma sessão aberta, e cada operador só abre um caixa (índices únicos parciais). A gerência (`cash.manage`) vê todos em `/caixa/sessoes`, cadastra caixas e pode fechar o caixa de outro.
+- **Livro do caixa** (`cash_movements`): tudo entra aqui.
+  - Venda de balcão: exige caixa aberto e entra no caixa do operador.
+  - Entrega/retirada concluída: entra no caixa aberto (o do operador ou o mais recente).
+  - Fechamento de comanda: entra no caixa de quem fechou.
+  - Cancelamento de venda já paga: gera estorno.
+- **PDV** (`/balcao`): `/` foca a busca, Enter adiciona o primeiro resultado (código exato tem prioridade). Mostra as contas pedidas aguardando pagamento.
+
 ## Comandos
 
 | Comando | O que faz |
@@ -122,4 +137,4 @@ Os testes rodam contra PostgreSQL e Redis reais (banco `saas_test`, Redis DB 14/
 - **Livewire:** `/livewire/update`, upload e preview passam pelo grupo `tenant`. No `admin.localhost`, existe uma rota de update própria no grupo `platform`, registrada antes da do tenant.
 - **Role do PostgreSQL por tenant:** está preparado (`config('tenancy.database_roles')`, ponto marcado em `SchemaManager::switchTo`), mas não ativado.
 
-Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers}` (negócio; não pode usar `Platform`), `app/Support` (Money), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
+Estrutura: `app/Tenancy` (camada de tenancy), `app/Platform` (admin da plataforma, onboarding), `app/Modules/{Access,Establishment,Menu,Orders,Customers,Tables,Cash}` (negócio; não pode usar `Platform`), `app/Support` (Money), `app/Livewire/{Tenant,Platform}` (telas), `database/migrations/{central,tenant}`.
