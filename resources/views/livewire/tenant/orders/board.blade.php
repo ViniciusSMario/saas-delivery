@@ -8,12 +8,24 @@
         'completed' => match ($order->fulfillment) { Fulfillment::Delivery => 'Entregue', Fulfillment::Table => 'Servido', default => 'Concluir' },
         default => null,
     };
-    $fulfillmentStyle = ['delivery' => 'bg-sky-100 text-sky-800', 'pickup' => 'bg-violet-100 text-violet-800', 'counter' => 'bg-stone-200 text-stone-700', 'table' => 'bg-emerald-100 text-emerald-800'];
+    $fulfillmentStyle = [
+        'delivery' => ['badge-blue', 'truck'],
+        'pickup' => ['badge-violet', 'bag'],
+        'counter' => ['badge-gray', 'pos'],
+        'table' => ['badge-green', 'table'],
+    ];
+    $columnStyle = [
+        'received' => ['bg-sky-500', 'bell'],
+        'preparing' => ['bg-amber-500', 'flame'],
+        'ready' => ['bg-emerald-500', 'check'],
+        'dispatched' => ['bg-violet-500', 'truck'],
+    ];
 @endphp
 
-<div class="space-y-4" wire:poll.10s
+<div class="space-y-5 bg-stone-100 [&:fullscreen]:overflow-y-auto [&:fullscreen]:p-6" wire:poll.10s x-ref="board"
      x-data="{
          sound: false,
+         full: false,
          beep() {
              if (! this.sound) return;
              try {
@@ -31,87 +43,125 @@
              document.title = '(' + count + ') ' + original;
              setTimeout(() => document.title = original, 8000);
          },
+         toggleFull() {
+             if (document.fullscreenElement) document.exitFullscreen(); else this.$refs.board.requestFullscreen?.();
+         },
      }"
+     @fullscreenchange.document="full = !! document.fullscreenElement"
      @new-order.window="beep(); flash($event.detail.count)">
 
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="page-title">Painel de pedidos</h1>
-            <p class="mt-1 text-sm text-stone-500">Atualiza sozinho a cada 10 segundos · {{ $todayDone }} concluídos/cancelados hoje</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <button type="button" class="btn-secondary" @click="sound = ! sound; beep()" x-text="sound ? '🔔 Som ligado' : '🔕 Ligar som'"></button>
-            <a href="{{ route('orders.index') }}" class="btn-secondary" wire:navigate>Histórico</a>
-            @can('pos.use')
-                <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate>Venda no balcão</a>
-            @endcan
-        </div>
-    </div>
+    <x-ui.page-header title="Painel de pedidos">
+        <x-slot:subtitle>
+            <span class="inline-flex items-center gap-1.5"><span class="size-2 animate-pulse rounded-full bg-emerald-500"></span> Ao vivo · atualiza a cada 10 s</span>
+            <span class="text-stone-300">•</span> {{ $todayDone }} concluídos/cancelados hoje
+        </x-slot:subtitle>
 
-    @error('board') <div class="alert-error">{{ $message }}</div> @enderror
+        <button type="button" class="btn-secondary" @click="sound = ! sound; beep()" :class="sound && 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">
+            <span x-show="sound"><x-icon name="bell" class="size-4" /></span>
+            <span x-show="! sound"><x-icon name="bell-off" class="size-4" /></span>
+            <span x-text="sound ? 'Som ligado' : 'Ligar som'">Ligar som</span>
+        </button>
+        <button type="button" class="btn-secondary" @click="toggleFull()">
+            <x-icon name="expand" class="size-4" /> <span x-text="full ? 'Sair da tela cheia' : 'Tela cheia'">Tela cheia</span>
+        </button>
+        <a href="{{ route('orders.index') }}" class="btn-secondary" wire:navigate x-show="! full"><x-icon name="clock" class="size-4" /> Histórico</a>
+        @can('pos.use')
+            <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate x-show="! full"><x-icon name="plus" class="size-4" /> Venda no balcão</a>
+        @endcan
+    </x-ui.page-header>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    @error('board') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
+
+    <div class="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
         @foreach ($columns as $column)
             @php($list = $orders->get($column->value, collect()))
-            <section class="rounded-xl bg-stone-200/60 p-3">
-                <h2 class="flex items-center justify-between px-1 text-sm font-semibold text-stone-700">
+            @php([$columnColor, $columnIcon] = $columnStyle[$column->value] ?? ['bg-stone-500', 'list'])
+            <section class="flex min-h-40 flex-col rounded-2xl bg-stone-200/50 p-2.5">
+                <h2 class="flex items-center gap-2 px-1.5 pt-1 pb-3 text-sm font-bold text-stone-800">
+                    <span class="flex size-7 items-center justify-center rounded-lg text-white {{ $columnColor }}"><x-icon :name="$columnIcon" class="size-4" stroke="2.2" /></span>
                     {{ $column->label() }}
-                    <span class="badge bg-white text-stone-700">{{ $list->count() }}</span>
+                    <span class="ml-auto rounded-full bg-white px-2.5 py-0.5 text-xs font-bold text-stone-700 shadow-xs">{{ $list->count() }}</span>
                 </h2>
 
-                <div class="mt-3 space-y-3">
+                <div class="space-y-2.5">
                     @forelse ($list as $order)
-                        <article wire:key="order-{{ $order->id }}" class="card p-3 text-sm">
-                            <div class="flex items-start justify-between gap-2">
-                                <a href="{{ route('orders.show', $order) }}" class="text-base font-bold hover:underline" wire:navigate>#{{ $order->number }}</a>
-                                <span class="text-xs text-stone-500" title="{{ $order->created_at->timezone('America/Sao_Paulo')->format('d/m H:i') }}">{{ $order->created_at->locale('pt_BR')->diffForHumans(short: true) }}</span>
+                        @php($minutes = (int) abs($order->created_at->diffInMinutes(now())))
+                        @php([$badge, $badgeIcon] = $fulfillmentStyle[$order->fulfillment->value] ?? ['badge-gray', 'orders'])
+                        <article wire:key="order-{{ $order->id }}" @class([
+                            'overflow-hidden rounded-xl border-l-4 bg-white text-sm shadow-(--shadow-card)',
+                            'border-l-stone-300' => $minutes < 10,
+                            'border-l-amber-400' => $minutes >= 10 && $minutes < 20,
+                            'border-l-red-500' => $minutes >= 20,
+                        ])>
+                            <div class="p-3.5">
+                                <div class="flex items-start justify-between gap-2">
+                                    <a href="{{ route('orders.show', $order) }}" class="text-xl font-extrabold tracking-tight hover:text-brand-700" wire:navigate>#{{ $order->number }}</a>
+                                    <span title="{{ $order->created_at->timezone('America/Sao_Paulo')->format('d/m H:i') }}" @class([
+                                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
+                                        'bg-stone-100 text-stone-600' => $minutes < 10,
+                                        'bg-amber-100 text-amber-800' => $minutes >= 10 && $minutes < 20,
+                                        'bg-red-100 text-red-700' => $minutes >= 20,
+                                    ])>
+                                        <x-icon name="clock" class="size-3.5" /> {{ $minutes < 60 ? $minutes.' min' : intdiv($minutes, 60).'h'.str_pad($minutes % 60, 2, '0', STR_PAD_LEFT) }}
+                                    </span>
+                                </div>
+                                <p class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                    <span class="{{ $badge }}"><x-icon :name="$badgeIcon" class="size-3.5" /> {{ $order->fulfillment->label() }}</span>
+                                    @if ($order->source->value === 'online')<span class="badge-brand">online</span>@endif
+                                    <span class="truncate text-xs font-medium text-stone-600">{{ $order->customer_name }}</span>
+                                </p>
+
+                                <ul class="mt-3 space-y-1.5 border-t border-dashed border-stone-200 pt-3">
+                                    @foreach ($order->items as $item)
+                                        <li class="flex gap-2">
+                                            <span class="flex h-5 min-w-6 items-center justify-center rounded-md bg-stone-900 px-1 text-xs font-bold text-white">{{ $item->quantity }}</span>
+                                            <span class="min-w-0">
+                                                <span class="font-semibold text-stone-900">{{ $item->name }}</span>
+                                                @if ($item->addons->isNotEmpty())<span class="block text-xs text-stone-500">{{ $item->addons->pluck('name')->implode(', ') }}</span>@endif
+                                                @if ($item->notes)<span class="mt-0.5 block rounded bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-800">Obs.: {{ $item->notes }}</span>@endif
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                @if ($order->notes)
+                                    <p class="mt-3 flex items-start gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-medium text-amber-900">
+                                        <x-icon name="alert" class="size-3.5 shrink-0" /> {{ $order->notes }}
+                                    </p>
+                                @endif
                             </div>
-                            <p class="mt-1 flex flex-wrap items-center gap-1">
-                                <span class="badge {{ $fulfillmentStyle[$order->fulfillment->value] }}">{{ $order->fulfillment->label() }}</span>
-                                @if ($order->source->value === 'online')<span class="badge bg-brand-100 text-brand-700">online</span>@endif
-                                <span class="truncate text-stone-600">{{ $order->customer_name }}</span>
-                            </p>
 
-                            <ul class="mt-2 space-y-0.5">
-                                @foreach ($order->items as $item)
-                                    <li>
-                                        <span class="font-medium">{{ $item->quantity }}×</span> {{ $item->name }}
-                                        @if ($item->addons->isNotEmpty())<span class="block pl-5 text-xs text-stone-500">{{ $item->addons->pluck('name')->implode(', ') }}</span>@endif
-                                        @if ($item->notes)<span class="block pl-5 text-xs font-medium text-amber-700">Obs.: {{ $item->notes }}</span>@endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                            @if ($order->notes)
-                                <p class="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{{ $order->notes }}</p>
-                            @endif
-
-                            <div class="mt-3 flex items-center justify-between gap-2">
-                                <span class="font-semibold">{{ $order->total_cents->format() }}</span>
-                                <div class="flex gap-1">
+                            <div class="flex items-center gap-2 border-t border-stone-100 bg-stone-50/70 px-3.5 py-2.5">
+                                <span class="font-bold tabular-nums">{{ $order->total_cents->format() }}</span>
+                                <div class="ml-auto flex gap-1.5">
                                     @can('orders.cancel')
-                                        <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-secondary px-2 py-1 text-xs text-red-700">Cancelar</button>
+                                        <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
                                     @endcan
                                     @can('orders.manage')
                                         @if ($label = $nextLabel($order))
-                                            <button type="button" wire:click="advance({{ $order->id }})" wire:loading.attr="disabled" class="btn-primary px-2 py-1 text-xs">{{ $label }}</button>
+                                            <button type="button" wire:click="advance({{ $order->id }})" wire:loading.attr="disabled" class="btn-primary btn-sm">
+                                                {{ $label }} <x-icon name="chevron-right" class="size-3.5" />
+                                            </button>
                                         @endif
                                     @endcan
                                 </div>
                             </div>
 
                             @if ($cancellingId === $order->id)
-                                <form wire:submit="cancel" class="mt-3 space-y-2 border-t border-stone-100 pt-3">
+                                <form wire:submit="cancel" class="space-y-2 border-t border-red-100 bg-red-50/50 p-3.5">
                                     <input wire:model="cancelReason" type="text" class="input" placeholder="Motivo do cancelamento" maxlength="255" autofocus>
                                     @error('cancelReason') <p class="field-error">{{ $message }}</p> @enderror
                                     <div class="flex justify-end gap-2">
-                                        <button type="button" wire:click="$set('cancellingId', null)" class="btn-secondary px-2 py-1 text-xs">Voltar</button>
-                                        <button type="submit" class="btn-danger px-2 py-1 text-xs">Confirmar cancelamento</button>
+                                        <button type="button" wire:click="$set('cancellingId', null)" class="btn-secondary btn-sm">Voltar</button>
+                                        <button type="submit" class="btn-danger btn-sm">Confirmar cancelamento</button>
                                     </div>
                                 </form>
                             @endif
                         </article>
                     @empty
-                        <p class="px-1 py-6 text-center text-xs text-stone-500">Nenhum pedido.</p>
+                        <div class="flex flex-col items-center gap-1 rounded-xl border-2 border-dashed border-stone-300/70 px-3 py-8 text-center text-xs text-stone-500">
+                            <x-icon :name="$columnIcon" class="size-5 text-stone-400" />
+                            Nenhum pedido
+                        </div>
                     @endforelse
                 </div>
             </section>

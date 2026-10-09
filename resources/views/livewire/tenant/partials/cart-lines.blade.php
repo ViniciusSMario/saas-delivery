@@ -1,20 +1,27 @@
 {{-- Itens escolhidos ainda não enviados. Espera: $cart. --}}
-<ul class="max-h-72 divide-y divide-stone-100 overflow-y-auto text-sm">
+<ul class="-mx-1 max-h-80 divide-y divide-stone-100 overflow-y-auto px-1 text-sm">
     @forelse ($cart as $line)
-        <li wire:key="line-{{ $line['key'] }}" class="flex gap-2 py-2">
+        <li wire:key="line-{{ $line['key'] }}" class="flex items-center gap-3 py-2.5">
             <div class="min-w-0 flex-1">
-                <p class="font-medium">{{ $line['name'] }}</p>
+                <p class="font-semibold">{{ $line['name'] }}</p>
                 @if ($line['addons'])<p class="text-xs text-stone-500">{{ implode(', ', array_column($line['addons'], 'name')) }}</p>@endif
-                @if ($line['notes'])<p class="text-xs text-amber-700">Obs.: {{ $line['notes'] }}</p>@endif
+                @if ($line['notes'])<p class="text-xs font-medium text-amber-700">Obs.: {{ $line['notes'] }}</p>@endif
+                <p class="mt-0.5 font-bold tabular-nums">{{ \App\Support\Money::cents(($line['unit'] + array_sum(array_column($line['addons'], 'price'))) * $line['quantity'])->format() }}</p>
             </div>
-            <div class="flex items-center gap-1">
-                <button type="button" wire:click="setQuantity('{{ $line['key'] }}', {{ $line['quantity'] - 1 }})" class="btn-secondary px-2 py-0.5" aria-label="Diminuir">−</button>
-                <span class="w-6 text-center">{{ $line['quantity'] }}</span>
-                <button type="button" wire:click="setQuantity('{{ $line['key'] }}', {{ $line['quantity'] + 1 }})" class="btn-secondary px-2 py-0.5" aria-label="Aumentar">+</button>
+            <div class="flex h-8 items-center rounded-lg border border-stone-200 text-brand-600">
+                <button type="button" wire:click="setQuantity('{{ $line['key'] }}', {{ $line['quantity'] - 1 }})" class="flex size-8 items-center justify-center" aria-label="{{ $line['quantity'] === 1 ? 'Remover' : 'Diminuir' }}">
+                    <x-icon :name="$line['quantity'] === 1 ? 'trash' : 'minus'" class="size-3.5" stroke="2.2" />
+                </button>
+                <span class="w-6 text-center font-bold text-stone-900">{{ $line['quantity'] }}</span>
+                <button type="button" wire:click="setQuantity('{{ $line['key'] }}', {{ $line['quantity'] + 1 }})" class="flex size-8 items-center justify-center" aria-label="Aumentar">
+                    <x-icon name="plus" class="size-3.5" stroke="2.2" />
+                </button>
             </div>
-            <p class="w-20 text-right whitespace-nowrap">{{ \App\Support\Money::cents(($line['unit'] + array_sum(array_column($line['addons'], 'price'))) * $line['quantity'])->format() }}</p>
         </li>
     @empty
-        <li class="py-6 text-center text-stone-500">{{ $empty ?? 'Toque nos produtos para adicionar.' }}</li>
+        <li class="flex flex-col items-center gap-2 py-8 text-center text-stone-500">
+            <span class="flex size-11 items-center justify-center rounded-2xl bg-stone-100 text-stone-400"><x-icon name="bag" class="size-5" /></span>
+            {{ $empty ?? 'Toque nos produtos para adicionar.' }}
+        </li>
     @endforelse
 </ul>

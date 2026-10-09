@@ -9,43 +9,39 @@
 @endphp
 
 <div class="space-y-6">
-    <div class="flex flex-wrap items-start justify-between gap-3 print:hidden">
-        <div>
-            <a href="{{ route('tables.map') }}" class="btn-link" wire:navigate>← Mesas</a>
-            <h1 class="page-title mt-1">
-                {{ $command->displayName() }}
-                <span class="ml-1 text-base font-medium text-stone-500">#{{ $command->number }} · {{ $command->people }} {{ $command->people === 1 ? 'pessoa' : 'pessoas' }}</span>
-            </h1>
-            <p class="text-sm text-stone-500">{{ $command->status->label() }} · aberta às {{ $command->created_at->timezone($tz)->format('H:i') }}</p>
-        </div>
+    <x-ui.page-header :title="$command->displayName()" :back="route('tables.map')" back-label="Mesas" class="print:hidden">
+        <x-slot:subtitle>
+            <span @class(['badge mr-1', 'badge-amber' => $command->status === CommandStatus::Closing, 'badge-brand' => $command->status === CommandStatus::Open, 'badge-gray' => ! $isOpen])>{{ $command->status->label() }}</span>
+            Comanda #{{ $command->number }} · {{ $command->people }} {{ $command->people === 1 ? 'pessoa' : 'pessoas' }} · aberta às {{ $command->created_at->timezone($tz)->format('H:i') }}
+        </x-slot:subtitle>
         @if ($isOpen)
-            <div class="flex flex-wrap gap-2">
-                @if ($command->status === CommandStatus::Open)
-                    <button type="button" wire:click="$toggle('adding')" class="btn-primary">{{ $adding ? 'Fechar lançamento' : 'Lançar itens' }}</button>
-                    @if ($orders->isNotEmpty())
-                        <button type="button" wire:click="requestBill" class="btn-secondary">Pedir conta</button>
-                    @endif
-                @else
-                    <button type="button" wire:click="reopen" class="btn-secondary">Reabrir para lançar</button>
+            @if ($command->status === CommandStatus::Open)
+                @if ($orders->isNotEmpty())
+                    <button type="button" wire:click="requestBill" class="btn-secondary"><x-icon name="file" class="size-4" /> Pedir conta</button>
                 @endif
-            </div>
+                <button type="button" wire:click="$toggle('adding')" class="btn-primary">
+                    <x-icon :name="$adding ? 'x' : 'plus'" class="size-4" /> {{ $adding ? 'Fechar lançamento' : 'Lançar itens' }}
+                </button>
+            @else
+                <button type="button" wire:click="reopen" class="btn-secondary"><x-icon name="refresh" class="size-4" /> Reabrir para lançar</button>
+            @endif
         @endif
-    </div>
+    </x-ui.page-header>
 
     @error('command') <div class="alert-error">{{ $message }}</div> @enderror
     @error('status') <div class="alert-error">{{ $message }}</div> @enderror
 
     {{-- Lançamento --}}
     @if ($isOpen && $adding && $command->status === CommandStatus::Open)
-        <section class="grid gap-6 lg:grid-cols-[1fr_22rem]">
+        <section class="grid gap-6 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/30 p-4 xl:grid-cols-[1fr_22rem]">
             @include('livewire.tenant.partials.product-picker')
-            <div class="card card-body h-fit space-y-3 lg:sticky lg:top-4">
-                <h2 class="font-semibold">Para enviar</h2>
+            <div class="card card-body h-fit space-y-3 xl:sticky xl:top-6">
+                <h2 class="section-title flex items-center gap-2"><x-icon name="flame" class="size-5 text-brand-600" /> Para enviar</h2>
                 @error('cart') <div class="alert-error">{{ $message }}</div> @enderror
                 @include('livewire.tenant.partials.cart-lines', ['empty' => 'Toque nos produtos para lançar.'])
                 <input wire:model="sendNotes" type="text" class="input" placeholder="Observação para a cozinha" aria-label="Observação">
-                <p class="text-right text-sm font-semibold">{{ $cartSubtotal->format() }}</p>
-                <button type="button" wire:click="send" class="btn-primary w-full" @disabled(! $cart) wire:loading.attr="disabled">Enviar para a cozinha</button>
+                <p class="flex justify-between text-sm font-semibold"><span class="text-stone-500">Subtotal</span><span class="tabular-nums">{{ $cartSubtotal->format() }}</span></p>
+                <button type="button" wire:click="send" class="btn-primary w-full" @disabled(! $cart) wire:loading.attr="disabled"><x-icon name="flame" class="size-4" /> Enviar para a cozinha</button>
             </div>
         </section>
         @include('livewire.tenant.partials.addon-modal')
@@ -54,10 +50,10 @@
     <div class="grid gap-6 lg:grid-cols-[1fr_24rem]">
         {{-- Itens lançados --}}
         <section class="card">
-            <h2 class="px-5 pt-5 font-semibold">Consumo</h2>
+            <div class="card-header"><h2 class="section-title">Consumo</h2></div>
             @forelse ($orders as $order)
                 @php($cancelled = $order->status === OrderStatus::Cancelled)
-                <div wire:key="o-{{ $order->id }}" @class(['border-t border-stone-100 px-5 py-3 text-sm', 'opacity-50' => $cancelled])>
+                <div wire:key="o-{{ $order->id }}" @class(['border-b border-stone-100 px-5 py-3 text-sm last:border-b-0', 'opacity-50' => $cancelled])>
                     <div class="flex items-center justify-between gap-2 text-xs text-stone-500">
                         <span>{{ $order->created_at->timezone($tz)->format('H:i') }} · pedido #{{ $order->number }} · {{ $order->status->label() }}{{ $order->createdBy ? ' · '.$order->createdBy->name : '' }}</span>
                         @if ($isOpen && ! $cancelled)
@@ -88,13 +84,13 @@
                     @endif
                 </div>
             @empty
-                <p class="px-5 py-6 text-sm text-stone-500">Nada lançado ainda.</p>
+                <x-ui.empty icon="utensils" title="Nada lançado ainda" text="Use “Lançar itens” para enviar pedidos desta mesa para a cozinha." />
             @endforelse
         </section>
 
         {{-- Conta --}}
         <section class="card card-body h-fit space-y-3">
-            <h2 class="font-semibold">Conta</h2>
+            <h2 class="section-title flex items-center gap-2"><x-icon name="cash" class="size-5 text-brand-600" /> Conta</h2>
             <div class="space-y-1 text-sm">
                 <div class="flex justify-between"><span>Consumo</span><span>{{ $totals['subtotal']->format() }}</span></div>
                 <div class="flex items-center justify-between">
@@ -119,7 +115,7 @@
                     <div class="flex justify-between text-green-700"><span>Desconto</span><span>- {{ $totals['discount']->format() }}</span></div>
                 @endif
                 @error('discount') <p class="field-error">{{ $message }}</p> @enderror
-                <div class="flex justify-between border-t border-stone-100 pt-2 text-lg font-semibold"><span>Total</span><span>{{ $totals['total']->format() }}</span></div>
+                <div class="flex items-baseline justify-between border-t border-stone-100 pt-2"><span class="font-semibold">Total</span><span class="text-2xl font-extrabold tracking-tight tabular-nums">{{ $totals['total']->format() }}</span></div>
                 @if ($command->people > 1)
                     <p class="text-right text-xs text-stone-500">{{ $command->people }} pessoas · {{ $perPerson->format() }} cada</p>
                 @endif
@@ -158,7 +154,7 @@
                         </div>
                         @error('payments') <p class="field-error">{{ $message }}</p> @enderror
                         @error('cash') <p class="field-error">{{ $message }}</p> @enderror
-                        <button type="button" wire:click="close" wire:confirm="Fechar a conta de {{ $command->displayName() }}?" class="btn-primary w-full" @disabled(! $hasCash || $orders->isEmpty())>Fechar conta</button>
+                        <button type="button" wire:click="close" wire:confirm="Fechar a conta de {{ $command->displayName() }}?" class="btn-success btn-lg w-full" @disabled(! $hasCash || $orders->isEmpty())><x-icon name="check" class="size-5" /> Fechar conta</button>
                     </div>
                 @endcan
             @else

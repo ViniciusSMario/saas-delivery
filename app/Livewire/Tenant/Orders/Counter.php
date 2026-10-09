@@ -15,6 +15,7 @@ use App\Modules\Tables\Models\Command;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -22,6 +23,7 @@ use Livewire\Component;
  * PDV: venda de balcão (paga na hora, no caixa do operador), pedido por telefone
  * e atalho para receber comandas com a conta pedida.
  */
+#[Layout('components.layouts.app', ['wide' => true])]
 #[Title('PDV')]
 class Counter extends Component
 {

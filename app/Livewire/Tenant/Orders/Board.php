@@ -8,6 +8,7 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -15,6 +16,7 @@ use Livewire\Component;
  * Painel da cozinha/atendimento: pedidos em andamento por status.
  * Atualiza por wire:poll (o documento deixa Reverb para quando o polling não bastar).
  */
+#[Layout('components.layouts.app', ['wide' => true])]
 #[Title('Painel de pedidos')]
 class Board extends Component
 {

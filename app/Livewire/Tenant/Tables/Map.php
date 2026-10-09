@@ -7,10 +7,12 @@ use App\Modules\Tables\Models\Command;
 use App\Modules\Tables\Models\DiningTable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /** Mapa do salão: mesas livres, ocupadas e com a conta pedida. */
+#[Layout('components.layouts.app', ['wide' => true])]
 #[Title('Mesas')]
 class Map extends Component
 {

@@ -6,36 +6,61 @@
 
         return round(($current - $previous) / $previous * 100);
     };
+    $shortcuts = [
+        ['can' => 'orders.view', 'route' => 'orders.board', 'label' => 'Painel de pedidos', 'text' => 'Cozinha e expedição', 'icon' => 'flame', 'tone' => 'bg-brand-50 text-brand-600'],
+        ['can' => 'pos.use', 'route' => 'orders.counter', 'label' => 'PDV', 'text' => 'Venda no balcão', 'icon' => 'pos', 'tone' => 'bg-sky-50 text-sky-600'],
+        ['can' => 'tables.manage', 'route' => 'tables.map', 'label' => 'Mesas', 'text' => 'Comandas e contas', 'icon' => 'table', 'tone' => 'bg-violet-50 text-violet-600'],
+        ['can' => 'cash.operate', 'route' => 'cash.current', 'label' => 'Caixa', 'text' => 'Abertura e sangrias', 'icon' => 'wallet', 'tone' => 'bg-emerald-50 text-emerald-600'],
+    ];
 @endphp
 <div class="space-y-6" wire:poll.60s>
-    <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-            <h1 class="page-title">Olá, {{ str(auth()->user()->name)->before(' ') }}!</h1>
-            <p class="mt-1 text-sm text-stone-500">
-                {{ $establishment->trade_name }} · {{ $now->locale('pt_BR')->isoFormat('dddd, D [de] MMMM') }} ·
-                @if (! $today || $today->is_closed) fechado hoje @else {{ substr($today->opens_at, 0, 5) }} às {{ substr($today->closes_at, 0, 5) }} @endif
-            </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            @can('pos.use')<a href="{{ route('orders.counter') }}" class="btn-secondary" wire:navigate>PDV</a>@endcan
-            @can('tables.manage')<a href="{{ route('tables.map') }}" class="btn-secondary" wire:navigate>Mesas</a>@endcan
-            @can('orders.view')<a href="{{ route('orders.board') }}" class="btn-primary" wire:navigate>Painel de pedidos</a>@endcan
-        </div>
-    </div>
+    <x-ui.page-header :title="'Olá, '.str(auth()->user()->name)->before(' ').'!'">
+        <a href="{{ url('/cardapio') }}" target="_blank" class="btn-secondary">
+            <x-icon name="external" class="size-4" /> Ver cardápio
+        </a>
+        @can('orders.view')
+            <a href="{{ route('orders.board') }}" class="btn-primary" wire:navigate>
+                <x-icon name="flame" class="size-4" /> Painel de pedidos
+            </a>
+        @endcan
+    </x-ui.page-header>
 
+    <p class="-mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-stone-500">
+        <span>{{ $establishment->trade_name }}</span>
+        <span class="text-stone-300">•</span>
+        <span>{{ ucfirst($now->locale('pt_BR')->isoFormat('dddd, D [de] MMMM')) }}</span>
+        <span class="text-stone-300">•</span>
+        @if (! $today || $today->is_closed)
+            <span class="badge-gray">Fechado hoje</span>
+        @else
+            <span class="badge-green">{{ substr($today->opens_at, 0, 5) }} às {{ substr($today->closes_at, 0, 5) }}</span>
+        @endif
+    </p>
+
+    {{-- Alertas --}}
     @if ($lowStock->isNotEmpty())
-        <a href="{{ route('stock.index', ['onlyLow' => 1]) }}" wire:navigate class="alert-error block">
-            <span class="font-semibold">Estoque baixo:</span>
-            {{ $lowStock->map(fn ($i) => $i->name.' ('.\App\Support\Quantity::format($i->quantity).' '.$i->unit->code.')')->implode(', ') }}
+        <a href="{{ route('stock.index', ['onlyLow' => 1]) }}" wire:navigate class="alert-warning transition hover:border-amber-300">
+            <x-icon name="alert" class="mt-0.5 size-4" />
+            <span>
+                <span class="font-semibold">Estoque baixo:</span>
+                <span class="font-normal">{{ $lowStock->map(fn ($i) => $i->name.' ('.\App\Support\Quantity::format($i->quantity).' '.$i->unit->code.')')->implode(', ') }}</span>
+            </span>
+            <x-icon name="chevron-right" class="ml-auto size-4" />
         </a>
     @endif
 
     @isset($overdue)
         @unless ($overdue->isZero() && $dueToday->isZero())
-            <a href="{{ route('finance.index', ['status' => 'overdue']) }}" wire:navigate class="alert-error block">
-                <span class="font-semibold">Contas a pagar:</span>
-                @unless ($dueToday->isZero()) {{ $dueToday->format() }} vencem hoje @endunless
-                @unless ($overdue->isZero()) {{ $dueToday->isZero() ? '' : '·' }} {{ $overdue->format() }} vencidas @endunless
+            <a href="{{ route('finance.index', ['status' => 'overdue']) }}" wire:navigate class="alert-error transition hover:border-red-300">
+                <x-icon name="calendar" class="mt-0.5 size-4" />
+                <span>
+                    <span class="font-semibold">Contas a pagar:</span>
+                    <span class="font-normal">
+                        @unless ($dueToday->isZero()) {{ $dueToday->format() }} vencem hoje @endunless
+                        @unless ($overdue->isZero()) {{ $dueToday->isZero() ? '' : '·' }} {{ $overdue->format() }} vencidas @endunless
+                    </span>
+                </span>
+                <x-icon name="chevron-right" class="ml-auto size-4" />
             </a>
         @endunless
     @endisset
@@ -44,75 +69,104 @@
         @php
             $revenueVar = $variation($sales['revenue']->cents, $lastWeek['revenue']->cents);
             $countVar = $variation($sales['count'], $lastWeek['count']);
+            $channelTotal = max(1, collect($sales['channels'])->sum(fn ($c) => $c['total']->cents));
+            $methodTotal = max(1, collect($methods)->sum(fn ($m) => $m['total']->cents));
         @endphp
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <x-ui.stat label="Vendas hoje" :value="$sales['revenue']->format()" icon="trending" tone="brand"
+                       :trend="$revenueVar" :hint="$revenueVar !== null ? 'vs. semana passada' : 'Semana passada: '.$lastWeek['revenue']->format()" />
+            <x-ui.stat label="Pedidos / contas" :value="$sales['count']" icon="orders" tone="blue" :trend="$countVar" hint="vs. semana passada" />
+            <x-ui.stat label="Ticket médio" :value="$sales['average']->format()" icon="cash" tone="green" :hint="'Semana passada: '.$lastWeek['average']->format()" />
             <div class="card card-body">
-                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Vendas hoje</p>
-                <p class="mt-1 text-2xl font-semibold">{{ $sales['revenue']->format() }}</p>
-                @if ($revenueVar !== null)
-                    <p @class(['text-xs', 'text-green-700' => $revenueVar >= 0, 'text-red-700' => $revenueVar < 0])>{{ $revenueVar >= 0 ? '+' : '' }}{{ $revenueVar }}% vs. semana passada</p>
-                @else
-                    <p class="hint">Semana passada: {{ $lastWeek['revenue']->format() }}</p>
-                @endif
-            </div>
-            <div class="card card-body">
-                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Pedidos / contas</p>
-                <p class="mt-1 text-2xl font-semibold">{{ $sales['count'] }}</p>
-                @if ($countVar !== null)
-                    <p @class(['text-xs', 'text-green-700' => $countVar >= 0, 'text-red-700' => $countVar < 0])>{{ $countVar >= 0 ? '+' : '' }}{{ $countVar }}% vs. semana passada</p>
-                @endif
-            </div>
-            <div class="card card-body">
-                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Ticket médio</p>
-                <p class="mt-1 text-2xl font-semibold">{{ $sales['average']->format() }}</p>
-                <p class="hint">Semana passada: {{ $lastWeek['average']->format() }}</p>
-            </div>
-            <div class="card card-body">
-                <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Agora</p>
-                <p class="mt-1 text-sm">
-                    @isset($openOrders)<span class="block"><strong>{{ $openOrders }}</strong> pedido(s) em andamento</span>@endisset
-                    @isset($openTables)<span class="block"><strong>{{ $openTables }}</strong> mesa(s) ocupada(s)</span>@endisset
-                </p>
+                <p class="stat-label">Agora</p>
+                <div class="mt-3 space-y-2">
+                    @isset($openOrders)
+                        <a href="{{ route('orders.board') }}" wire:navigate class="flex items-center gap-3 rounded-xl bg-brand-50 px-3 py-2 hover:bg-brand-100">
+                            <x-icon name="flame" class="size-5 text-brand-600" />
+                            <span class="text-sm"><strong class="text-lg">{{ $openOrders }}</strong> pedido(s) em andamento</span>
+                        </a>
+                    @endisset
+                    @isset($openTables)
+                        <a href="{{ route('tables.map') }}" wire:navigate class="flex items-center gap-3 rounded-xl bg-violet-50 px-3 py-2 hover:bg-violet-100">
+                            <x-icon name="table" class="size-5 text-violet-600" />
+                            <span class="text-sm"><strong class="text-lg">{{ $openTables }}</strong> mesa(s) ocupada(s)</span>
+                        </a>
+                    @endisset
+                </div>
             </div>
         </div>
 
         <div class="grid gap-4 lg:grid-cols-2">
-            <section class="card card-body">
-                <h2 class="font-semibold">Por canal</h2>
-                <dl class="mt-2 space-y-1 text-sm">
+            <section class="card">
+                <div class="card-header"><h2 class="section-title">Vendas por canal</h2></div>
+                <ul class="space-y-4 p-5 sm:p-6">
                     @foreach ($sales['channels'] as $channel)
-                        <div class="flex justify-between"><dt>{{ $channel['label'] }} ({{ $channel['count'] }})</dt><dd class="font-medium">{{ $channel['total']->format() }}</dd></div>
+                        <li>
+                            <div class="flex justify-between text-sm">
+                                <span class="font-medium">{{ $channel['label'] }} <span class="text-stone-400">· {{ $channel['count'] }}</span></span>
+                                <span class="font-semibold tabular-nums">{{ $channel['total']->format() }}</span>
+                            </div>
+                            <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-stone-100">
+                                <div class="h-full rounded-full bg-brand-500" style="width: {{ round($channel['total']->cents / $channelTotal * 100) }}%"></div>
+                            </div>
+                        </li>
                     @endforeach
-                </dl>
+                </ul>
             </section>
-            <section class="card card-body">
-                <h2 class="font-semibold">Recebido hoje</h2>
-                <dl class="mt-2 space-y-1 text-sm">
-                    @forelse ($methods as $row)
-                        <div class="flex justify-between"><dt>{{ $row['method'] }}</dt><dd class="font-medium">{{ $row['total']->format() }}</dd></div>
-                    @empty
-                        <p class="text-stone-500">Nada recebido no caixa ainda.</p>
-                    @endforelse
-                </dl>
-                <a href="{{ route('reports.index') }}" class="btn-link mt-3 inline-block text-sm" wire:navigate>Ver relatórios</a>
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="section-title">Recebido hoje</h2>
+                    @can('reports.view')<a href="{{ route('reports.index') }}" class="btn-link" wire:navigate>Ver relatórios</a>@endcan
+                </div>
+                @if (count($methods))
+                    <ul class="space-y-4 p-5 sm:p-6">
+                        @foreach ($methods as $row)
+                            <li>
+                                <div class="flex justify-between text-sm">
+                                    <span class="font-medium">{{ $row['method'] }}</span>
+                                    <span class="font-semibold tabular-nums">{{ $row['total']->format() }}</span>
+                                </div>
+                                <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-stone-100">
+                                    <div class="h-full rounded-full bg-emerald-500" style="width: {{ round($row['total']->cents / $methodTotal * 100) }}%"></div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <x-ui.empty icon="wallet" title="Nada recebido ainda" text="Os pagamentos registrados no caixa hoje aparecem aqui." />
+                @endif
             </section>
         </div>
     @else
         <div class="grid gap-4 sm:grid-cols-2">
             @isset($openOrders)
-                <a href="{{ route('orders.board') }}" wire:navigate class="card card-body hover:border-brand-500">
-                    <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Pedidos em andamento</p>
-                    <p class="mt-2 text-2xl font-semibold">{{ $openOrders }}</p>
-                </a>
+                <x-ui.stat label="Pedidos em andamento" :value="$openOrders" icon="flame" tone="brand" :href="route('orders.board')" />
             @endisset
             @isset($openTables)
-                <a href="{{ route('tables.map') }}" wire:navigate class="card card-body hover:border-brand-500">
-                    <p class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Mesas ocupadas</p>
-                    <p class="mt-2 text-2xl font-semibold">{{ $openTables }}</p>
-                </a>
+                <x-ui.stat label="Mesas ocupadas" :value="$openTables" icon="table" tone="violet" :href="route('tables.map')" />
             @endisset
         </div>
         <p class="text-sm text-stone-500">Seus perfis: {{ auth()->user()->roles->pluck('name')->implode(', ') ?: 'nenhum (peça ao dono para atribuir um)' }}.</p>
+    @endif
+
+    {{-- Atalhos --}}
+    @php($available = collect($shortcuts)->filter(fn ($s) => auth()->user()->can($s['can'])))
+    @if ($available->isNotEmpty())
+        <section>
+            <h2 class="stat-label mb-3">Acesso rápido</h2>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ($available as $shortcut)
+                    <a href="{{ route($shortcut['route']) }}" wire:navigate class="card group flex items-center gap-3 p-4 transition hover:border-brand-300 hover:shadow-md">
+                        <span class="flex size-11 items-center justify-center rounded-xl {{ $shortcut['tone'] }}"><x-icon :name="$shortcut['icon']" class="size-5" /></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-semibold">{{ $shortcut['label'] }}</span>
+                            <span class="block text-xs text-stone-500">{{ $shortcut['text'] }}</span>
+                        </span>
+                        <x-icon name="chevron-right" class="size-4 text-stone-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
+                    </a>
+                @endforeach
+            </div>
+        </section>
     @endif
 
     <p class="text-xs text-stone-400">Cardápio público: <a href="{{ url('/cardapio') }}" target="_blank" class="hover:underline">{{ request()->getHttpHost() }}/cardapio</a></p>
