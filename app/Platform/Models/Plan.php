@@ -76,7 +76,7 @@ class Plan extends Model
 
         foreach (self::LIMIT_LABELS as $key => [$label, $unlimited]) {
             $value = $this->limit($key);
-            $lines[] = $value === null ? $unlimited : "Até {$value} {$label}";
+            $lines[] = $value === null ? $unlimited : 'Até '.number_format($value, 0, ',', '.')." {$label}";
         }
 
         foreach (self::FEATURE_LABELS as $key => $label) {

@@ -42,16 +42,18 @@
         @endif
     </div>
 
-    <div class="flex flex-wrap items-center gap-2 border-t border-stone-100 bg-stone-50/70 px-4 py-3">
-        <a href="{{ $mapUrl }}" target="_blank" rel="noopener" class="btn-secondary btn-sm"><x-icon name="pin" class="size-4" /> Mapa</a>
-        @if ($digits)
-            <a href="tel:{{ $digits }}" class="btn-ghost btn-sm" title="Ligar"><x-icon name="phone" class="size-4" /></a>
-            <a href="{{ \App\Modules\Messaging\OrderMessages::link($order, $mode === 'ready' ? null : 'dispatched') }}" target="_blank" rel="noopener" class="btn-ghost btn-sm text-emerald-700" title="Avisar o cliente no WhatsApp">WhatsApp</a>
-        @endif
-        <div class="ml-auto flex flex-wrap gap-2">
+    <div class="space-y-2 border-t border-stone-100 bg-stone-50/70 px-4 py-3">
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ $mapUrl }}" target="_blank" rel="noopener" class="btn-secondary btn-sm"><x-icon name="pin" class="size-4" /> Mapa</a>
+            @if ($digits)
+                <a href="tel:{{ $digits }}" class="btn-ghost btn-sm" title="Ligar"><x-icon name="phone" class="size-4" /></a>
+                <a href="{{ \App\Modules\Messaging\OrderMessages::link($order, $mode === 'ready' ? null : 'dispatched') }}" target="_blank" rel="noopener" class="btn-ghost btn-sm text-emerald-700" title="Avisar o cliente no WhatsApp">WhatsApp</a>
+            @endif
+        </div>
+        <div class="flex gap-2 [&>*]:flex-1">
             @if ($mode === 'ready')
                 @if ($manager && $couriers->isNotEmpty())
-                    <select class="input h-8 w-auto py-0 text-xs" aria-label="Escolher entregador"
+                    <select class="input min-h-8 h-8 py-0 text-xs" aria-label="Escolher entregador"
                             x-data @change="if ($event.target.value) $wire.assign({{ $order->id }}, parseInt($event.target.value)); $event.target.value = ''">
                         <option value="">Entregar com…</option>
                         @foreach ($couriers as $courier)
@@ -68,7 +70,7 @@
                 </button>
             @else
                 @if ($couriers->isNotEmpty())
-                    <select class="input h-8 w-auto py-0 text-xs" aria-label="Trocar entregador"
+                    <select class="input min-h-8 h-8 py-0 text-xs" aria-label="Trocar entregador"
                             x-data @change="if ($event.target.value) $wire.assign({{ $order->id }}, parseInt($event.target.value)); $event.target.value = ''">
                         <option value="">Trocar entregador…</option>
                         @foreach ($couriers as $courier)
