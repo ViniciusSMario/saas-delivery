@@ -5,6 +5,9 @@ namespace App\Livewire\Platform\Tenants;
 use App\Platform\Actions\ChangeTenantStatus;
 use App\Platform\Actions\TenantDeletion;
 use App\Platform\Backups\TenantBackups;
+use App\Platform\Billing\Subscriptions;
+use App\Platform\Models\Invoice;
+use App\Platform\Models\Plan;
 use App\Platform\Models\TenantBackup;
 use App\Tenancy\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
@@ -25,9 +28,12 @@ class Show extends Component
     /** Para agendar a exclusão, digita-se o slug (evita clique por engano). */
     public string $confirmSlug = '';
 
+    public ?int $planId = null;
+
     public function mount(Tenant $tenant): void
     {
         $this->tenantId = $tenant->id;
+        $this->planId = $tenant->plan_id;
     }
 
     public function suspend(ChangeTenantStatus $action): void
@@ -96,6 +102,31 @@ class Show extends Component
         $this->done('Exclusão cancelada.');
     }
 
+    public function setPlan(Subscriptions $subscriptions): void
+    {
+        $this->authorize('platform.manage-tenants');
+        $plan = Plan::find($this->planId) ?? throw ValidationException::withMessages(['status' => 'Escolha um plano.']);
+
+        $subscriptions->setPlan($this->tenant(), $plan, $this->actor());
+        $this->done("Plano alterado para {$plan->name}.");
+    }
+
+    public function extendTrial(Subscriptions $subscriptions): void
+    {
+        $this->authorize('platform.manage-tenants');
+
+        $subscriptions->extendTrial($this->tenant(), 7, $this->actor());
+        $this->done('Teste grátis estendido por 7 dias.');
+    }
+
+    public function makeCourtesy(Subscriptions $subscriptions): void
+    {
+        $this->authorize('platform.manage-tenants');
+
+        $subscriptions->makeCourtesy($this->tenant(), $this->actor());
+        $this->done('Estabelecimento em cortesia: sem cobrança.');
+    }
+
     private function done(string $message): void
     {
         session()->flash('status', $message);
@@ -119,6 +150,8 @@ class Show extends Component
         return view('livewire.platform.tenants.show', [
             'tenant' => $tenant,
             'backups' => TenantBackup::where('tenant_id', $tenant->id)->latest('created_at')->latest('id')->limit(30)->get(),
+            'plans' => Plan::query()->where('is_active', true)->orderBy('sort')->orderBy('price_cents')->get(),
+            'invoices' => Invoice::where('tenant_id', $tenant->id)->latest('due_date')->latest('id')->limit(6)->get(),
             'events' => $tenant->events()->latest('created_at')->latest('id')->limit(50)->get(),
         ])->title($tenant->name);
     }

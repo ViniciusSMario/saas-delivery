@@ -16,4 +16,16 @@ return [
     // Dias entre "agendar exclusão" e a remoção definitiva dos dados.
     'deletion_grace_days' => (int) env('TENANT_DELETION_GRACE_DAYS', 30),
 
+    'billing' => [
+        // fake (desenvolvimento/testes, nada sai da máquina) ou asaas.
+        'driver' => env('BILLING_DRIVER', 'fake'),
+        // Dias com fatura vencida antes de suspender o acesso.
+        'grace_days' => (int) env('BILLING_GRACE_DAYS', 7),
+        // Aviso de fim do teste grátis, N dias antes.
+        'trial_reminder_days' => 3,
+    ],
+
+    // Cadastro self-service: tentativas por IP por hora.
+    'signup_per_hour' => (int) env('SIGNUP_PER_HOUR', 5),
+
 ];

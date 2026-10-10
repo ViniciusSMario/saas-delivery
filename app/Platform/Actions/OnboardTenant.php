@@ -28,6 +28,8 @@ class OnboardTenant
         ?string $domain = null,
         ?int $planId = null,
         ?string $actor = null,
+        #[\SensitiveParameter] ?string $ownerPassword = null,
+        ?string $phone = null,
     ): Tenant {
         $tenant = $this->provision->handle(
             $slug,
@@ -35,7 +37,7 @@ class OnboardTenant
             $domain,
             $document,
             $planId,
-            fn () => $this->initialize->handle($name, $document, $ownerName, $ownerEmail),
+            fn () => $this->initialize->handle($name, $document, $ownerName, $ownerEmail, $ownerPassword, $phone),
         );
 
         if ($actor) {

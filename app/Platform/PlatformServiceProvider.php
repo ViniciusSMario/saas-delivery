@@ -2,7 +2,12 @@
 
 namespace App\Platform;
 
+use App\Platform\Billing\AsaasGateway;
+use App\Platform\Billing\BillingGateway;
+use App\Platform\Billing\FakeGateway;
+use App\Platform\Billing\Portal;
 use App\Platform\Models\PlatformUser;
+use App\Tenancy\Contracts\SubscriptionPortal;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -12,6 +17,14 @@ class PlatformServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Gateway de cobrança conforme config/platform.php (fake em desenvolvimento e testes).
+        $this->app->singleton(BillingGateway::class, fn () => match (config('platform.billing.driver')) {
+            'asaas' => new AsaasGateway,
+            default => new FakeGateway,
+        });
+
+        $this->app->bind(SubscriptionPortal::class, Portal::class);
+
         // As ações Livewire do admin rodam no domínio do admin, sem tenant. A rota de
         // update do tenant não tem domínio e casa com qualquer host, então esta precisa
         // estar ANTES dela na coleção. O Livewire registra a rota padrão (que o tenant

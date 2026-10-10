@@ -19,7 +19,7 @@ Entregue até agora:
 
 - **Fase 8 (Interface):** cardápio online como app web (mobile first, navegação inferior, folha de produto, busca, "meus pedidos" e instalável na tela inicial) e painel padronizado (design system, ícones, barra lateral, cozinha com tempo de espera e tela cheia).
 
-Próxima: operação da plataforma (fase 9): backup e restauração por tenant, exclusão com carência e cadastro self-service com planos e cobrança.
+- **Fase 9 (Operação da plataforma):** backup diário e restauração por estabelecimento, exclusão com carência, site com planos, cadastro self-service com teste grátis, limites por plano e cobrança recorrente (Asaas ou gateway de teste).
 
 ## Subir o ambiente
 
@@ -118,6 +118,19 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Relatórios** (`/relatorios`, `reports.view`): vendas por dia e canal, recebido por forma de pagamento, produtos mais vendidos com custo e margem pela ficha (combos inclusive), horários de pico, cancelamentos, descontos e taxa retirada (por quem), caixas fechados. Exportação CSV (`;`, abre no Excel). "Venda" = pedido online/balcão não cancelado + conta de mesa fechada, sem contar duas vezes os lançamentos de mesa. As consultas vão direto no schema do tenant (`App\Modules\Reports\SalesReport`).
 - **Início:** painel do dia conforme o perfil: vendas, pedidos e ticket médio contra o mesmo dia da semana passada, canais, recebido, pedidos em andamento, mesas ocupadas, contas vencendo e estoque baixo.
 
+## Operação da plataforma
+
+- **Backups** (`public.tenant_backups`, disco `backups` em `storage/app/backups/<tenant>/`): `pg_dump` só do schema do estabelecimento + `tar.gz` das fotos e do logo + `manifest.json`. Diário às 03:00. Retenção: 7 diários, o de domingo das últimas 4 semanas, e os demais (manual, "antes da restauração", final) por 30 dias. No admin da plataforma (página do estabelecimento): "Fazer backup agora", baixar (.zip) e restaurar.
+- **Restauração:** salva o estado atual como backup "antes da restauração" (dá para desfazer), deixa o app em manutenção (503), tira o schema atual do caminho, restaura o dump e os arquivos e roda as migrations pendentes. Se o `pg_restore` falhar, o schema original volta e nada muda.
+- **Exclusão com carência:** "Agendar exclusão" (digitando o slug) bloqueia o acesso na hora ("Conta em exclusão") e avisa o dono por e-mail. Até a data (30 dias) dá para cancelar. Depois, `tenants:purge-deleted` faz um backup final e apaga schema, arquivos e domínios.
+- **Site e cadastro** (`http://localhost:8080`): página com os planos e `/cadastro`. O restaurante escolhe o endereço (verificado enquanto digita), cria o dono com senha e entra com 14 dias grátis. Proteções: campo escondido contra robôs, limite de cadastros por IP e slugs reservados.
+- **Planos** (`database/seeders/Central/CentralDatabaseSeeder.php`): Essencial, Profissional e Completo, com limites de usuários, mesas, produtos e pedidos/mês e recursos (estoque, financeiro). Passar do limite bloqueia o cadastro com aviso; recurso fora do plano aparece com cadeado para o dono. Sem plano = cortesia (estabelecimentos antigos, como empresa1 e empresa2): sem limites e sem cobrança.
+- **Assinatura** (`/assinatura`, só o dono): plano, uso dos limites, troca de plano (não deixa ir para um plano menor que o uso), faturas e cancelamento. Durante o teste, a primeira cobrança vence no fim dele.
+- **Cobrança:** teste grátis → ativa (fatura paga) → pagamento pendente (fatura vencida ou teste acabou) → suspensa depois de 7 dias. Pagou, reativa sozinha. Cancelada: acesso até o fim do período pago. A tela de conta suspensa mostra "Pagar fatura".
+  - `BILLING_DRIVER=fake` (padrão): nada sai da máquina; o link da fatura abre uma página com "Simular pagamento".
+  - `BILLING_DRIVER=asaas`: configure `ASAAS_API_KEY` (sandbox por padrão) e `ASAAS_WEBHOOK_TOKEN`, e cadastre no Asaas o webhook `https://<seu-domínio>/webhooks/billing/asaas`. O cliente paga por Pix, boleto ou cartão na fatura do Asaas. Webhooks repetidos são ignorados (`billing_events`).
+- **Admin da plataforma → Assinaturas:** receita recorrente (MRR), recebido no mês, em aberto, estabelecimentos por situação, faturas e planos. Na página do estabelecimento: trocar plano, +7 dias de teste e cortesia.
+
 ## Interface
 
 - **Design system** em `resources/css/app.css`: cor da marca (`brand-*`), fonte Inter, sombras, e as classes `card`, `btn-*`, `input`, `badge-*`, `table`, `alert-*`, `tab`, `chip` e `stat-*`. Mudar ali muda o sistema inteiro.
@@ -137,6 +150,11 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 | `tenants:seed [--tenant=slug] [--class=]` | roda seeders de tenant (idempotente) |
 | `tenants:status` | status, schema, versão e migrations pendentes de cada tenant |
 | `platform:create-user {email} {nome} [--role=admin]` | cria usuário da equipe do SaaS |
+| `tenants:backup [--tenant=slug] [--kind=manual]` | backup do schema e dos arquivos (todo dia às 03:00 com `--kind=daily`) |
+| `tenants:restore {slug} [--backup=id] [--force]` | sem `--backup`, lista os backups; com ele, restaura |
+| `tenants:prune-backups` | apaga backups fora da retenção (04:30) |
+| `tenants:purge-deleted` | remove de vez quem passou da carência de exclusão (05:00) |
+| `billing:check` | fim de teste, inadimplência, suspensão e reativação (06:00) |
 
 Ordem do deploy: `central:migrate`, `tenants:migrate`, `tenants:seed`. Se a migration falhar em um tenant, os outros seguem, a falha vai para `tenant_events` e o comando termina com erro.
 

@@ -9,12 +9,13 @@ use Illuminate\Validation\ValidationException;
 /** Suspensão e reativação. Nenhum dado do tenant é tocado. */
 class ChangeTenantStatus
 {
-    public function suspend(Tenant $tenant, string $actor, ?string $reason = null): Tenant
+    /** @param  bool  $billing  suspensão por falta de pagamento (reativa sozinha quando a fatura é paga) */
+    public function suspend(Tenant $tenant, string $actor, ?string $reason = null, bool $billing = false): Tenant
     {
         $this->assertStatus($tenant, TenantStatus::Active, 'Só um estabelecimento ativo pode ser suspenso.');
 
-        $tenant->update(['status' => TenantStatus::Suspended, 'suspended_at' => now()]);
-        $tenant->recordEvent('suspended', array_filter(['reason' => $reason]), $actor);
+        $tenant->update(['status' => TenantStatus::Suspended, 'suspended_at' => now(), 'suspension_reason' => $billing ? 'billing' : null]);
+        $tenant->recordEvent('suspended', array_filter(['reason' => $reason, 'billing' => $billing ?: null]), $actor);
 
         return $tenant;
     }
@@ -23,7 +24,7 @@ class ChangeTenantStatus
     {
         $this->assertStatus($tenant, TenantStatus::Suspended, 'Só um estabelecimento suspenso pode ser reativado.');
 
-        $tenant->update(['status' => TenantStatus::Active, 'suspended_at' => null]);
+        $tenant->update(['status' => TenantStatus::Active, 'suspended_at' => null, 'suspension_reason' => null]);
         $tenant->recordEvent('reactivated', [], $actor);
 
         return $tenant;

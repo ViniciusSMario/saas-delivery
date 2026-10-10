@@ -15,6 +15,7 @@ class AccessServiceProvider extends ServiceProvider
     {
         // Habilidades com o nome de uma Permission (ex.: "users.manage") são resolvidas
         // pelos perfis do usuário. null deixa Policies e outros Gates decidirem.
+        // Recurso fora do plano do estabelecimento (ex.: estoque) é negado para todos.
         Gate::before(function (mixed $user, string $ability) {
             if (! $user instanceof User) {
                 return null;
@@ -22,8 +23,15 @@ class AccessServiceProvider extends ServiceProvider
 
             $permission = Permission::tryFrom($ability);
 
+            if ($permission?->feature() && ! (tenant()?->hasFeature($permission->feature()) ?? true)) {
+                return false;
+            }
+
             return $permission && $user->hasPermission($permission) ? true : null;
         });
+
+        // Assinatura e plano: só o dono.
+        Gate::define('billing.manage', fn (mixed $user) => $user instanceof User && $user->isOwner());
 
         // Ações do Livewire também derrubam usuário desativado no meio da sessão.
         Livewire::addPersistentMiddleware([AuthenticateSession::class, EnsureUserIsActive::class]);

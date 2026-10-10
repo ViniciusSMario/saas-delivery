@@ -19,6 +19,11 @@
                 <span class="font-semibold">{{ config('app.name') }}</span>
                 <span class="badge bg-white/10 text-brand-300">Admin</span>
             </a>
+            <nav class="mr-auto flex gap-1 text-sm">
+                @foreach (['platform.tenants.index' => ['Estabelecimentos', 'platform.tenants.*'], 'platform.billing.index' => ['Assinaturas', 'platform.billing.*']] as $route => [$label, $match])
+                    <a href="{{ route($route) }}" wire:navigate @class(['rounded-lg px-3 py-1.5 font-medium transition', 'bg-white/10 text-white' => request()->routeIs($match), 'text-stone-400 hover:text-white' => ! request()->routeIs($match)])>{{ $label }}</a>
+                @endforeach
+            </nav>
             <div class="flex items-center gap-3 text-sm">
                 <span class="hidden text-right sm:block">
                     <span class="block font-medium">{{ auth('platform')->user()->name }}</span>

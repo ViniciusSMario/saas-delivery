@@ -60,6 +60,63 @@
         @endif
     @endcan
 
+    {{-- Assinatura --}}
+    @php
+        $subLabels = \App\Platform\Billing\Portal::STATUS_LABELS;
+        $subBadges = ['trialing' => 'badge-blue', 'active' => 'badge-green', 'past_due' => 'badge-red', 'canceled' => 'badge-gray'];
+    @endphp
+    <section class="card overflow-hidden">
+        <div class="card-header">
+            <h2 class="section-title">Assinatura</h2>
+            <span class="{{ $subBadges[$tenant->subscription_status] ?? 'badge-violet' }}">{{ $subLabels[$tenant->subscription_status] ?? 'Cortesia (sem cobrança)' }}</span>
+        </div>
+        <div class="grid gap-4 p-5 text-sm sm:grid-cols-4 sm:p-6">
+            <div><p class="stat-label">Teste até</p><p class="mt-1 font-medium">{{ $tenant->trial_ends_at?->timezone($tz)->format('d/m/Y') ?? '—' }}</p></div>
+            <div><p class="stat-label">Pago até</p><p class="mt-1 font-medium">{{ $tenant->current_period_ends_at?->timezone($tz)->format('d/m/Y') ?? '—' }}</p></div>
+            <div><p class="stat-label">E-mail de cobrança</p><p class="mt-1 truncate font-medium">{{ $tenant->billing_email ?? '—' }}</p></div>
+            <div><p class="stat-label">Assinatura no gateway</p><p class="mt-1 truncate font-mono text-xs">{{ $tenant->billing_subscription_id ?? '—' }}</p></div>
+        </div>
+        @if ($invoices->isNotEmpty())
+            <div class="overflow-x-auto border-t border-stone-100">
+                <table class="table">
+                    <thead><tr><th>Vencimento</th><th>Descrição</th><th>Situação</th><th class="text-right">Valor</th></tr></thead>
+                    <tbody>
+                        @foreach ($invoices as $invoice)
+                            <tr>
+                                <td class="whitespace-nowrap">{{ $invoice->due_date->format('d/m/Y') }}</td>
+                                <td class="text-stone-600">{{ $invoice->description }}</td>
+                                <td><span class="{{ $invoice->statusBadge() }}">{{ $invoice->statusLabel() }}</span></td>
+                                <td class="text-right font-semibold tabular-nums">{{ $invoice->amount()->format() }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+        @can('platform.manage-tenants')
+            @if ($operable)
+                <div class="flex flex-wrap items-end gap-3 border-t border-stone-100 bg-stone-50/60 p-5 sm:px-6">
+                    <div>
+                        <label for="planId" class="label">Plano</label>
+                        <div class="flex gap-2">
+                            <select wire:model="planId" id="planId" class="input w-auto">
+                                <option value="" disabled>Escolha</option>
+                                @foreach ($plans as $plan)
+                                    <option value="{{ $plan->id }}">{{ $plan->name }} · {{ $plan->price()->format() }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" wire:click="setPlan" class="btn-secondary">Trocar</button>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="extendTrial" wire:confirm="Estender o teste grátis de {{ $tenant->name }} por 7 dias?" class="btn-secondary">+7 dias de teste</button>
+                    @if ($tenant->subscription_status)
+                        <button type="button" wire:click="makeCourtesy" wire:confirm="Tirar {{ $tenant->name }} da cobrança (cortesia)? Faturas em aberto são canceladas." class="btn-ghost">Cortesia (sem cobrança)</button>
+                    @endif
+                </div>
+            @endif
+        @endcan
+    </section>
+
     {{-- Backups --}}
     <section class="card overflow-hidden">
         <div class="card-header">

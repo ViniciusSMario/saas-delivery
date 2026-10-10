@@ -31,6 +31,11 @@ class SaveUser
 
         $this->authorize($user, $roles, $data, $actor);
 
+        // Limite do plano conta usuários ativos (desativar libera a vaga).
+        if (($data['is_active'] ?? true) && ($isNew || ! $user->is_active)) {
+            tenant()?->assertWithinLimit('users', User::query()->where('is_active', true)->count(), 'email');
+        }
+
         DB::connection('tenant')->transaction(function () use ($user, $data, $roles, $isNew, $actor) {
             $previousRoles = $isNew ? [] : $user->roles()->pluck('name')->sort()->values()->all();
 

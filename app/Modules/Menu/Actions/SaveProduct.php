@@ -26,6 +26,10 @@ class SaveProduct
         $isNew = $product === null;
         $product ??= new Product;
 
+        if ($isNew) {
+            tenant()?->assertWithinLimit('products', Product::query()->count(), 'name');
+        }
+
         $code = isset($data['code']) && trim($data['code']) !== '' ? trim($data['code']) : null;
 
         if ($code && Product::query()->whereRaw('lower(code) = lower(?)', [$code])->whereKeyNot($product->getKey())->exists()) {

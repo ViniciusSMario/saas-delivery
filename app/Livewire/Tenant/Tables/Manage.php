@@ -59,6 +59,10 @@ class Manage extends Component
         $this->authorize('establishment.manage');
         $this->validate();
 
+        if (! $this->editingId) {
+            tenant()->assertWithinLimit('tables', DiningTable::count(), 'name');
+        }
+
         $table = $this->editingId ? DiningTable::findOrFail($this->editingId) : new DiningTable(['position' => (DiningTable::max('position') ?? 0) + 1]);
         $table->fill(['name' => trim($this->name), 'seats' => $this->seats, 'area' => trim($this->area) ?: null, 'is_active' => $this->is_active])->save();
         Audit::record($this->editingId ? 'table.updated' : 'table.created', $table, ['mesa' => $table->name]);
@@ -69,12 +73,17 @@ class Manage extends Component
     public function createRange(): void
     {
         $this->authorize('establishment.manage');
+        $this->resetErrorBag('range');
 
         if (! preg_match('/^(\d{1,3})\s*-\s*(\d{1,3})$/', trim($this->range), $m) || (int) $m[1] > (int) $m[2] || (int) $m[2] - (int) $m[1] > 99) {
             $this->addError('range', 'Use o formato inicial-final, ex.: 1-20 (até 100 mesas).');
 
             return;
         }
+
+        $existing = DiningTable::pluck('name')->all();
+        $missing = count(array_diff(array_map('strval', range((int) $m[1], (int) $m[2])), $existing));
+        tenant()->assertWithinLimit('tables', count($existing), 'range', $missing);
 
         $position = (DiningTable::max('position') ?? 0);
         $created = 0;

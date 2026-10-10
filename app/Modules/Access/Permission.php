@@ -68,6 +68,16 @@ enum Permission: string
         };
     }
 
+    /** Recurso do plano de assinatura que libera esta permissão (null = sempre liberada). */
+    public function feature(): ?string
+    {
+        return match ($this) {
+            self::StockManage => 'stock',
+            self::FinanceView, self::FinanceManage => 'finance',
+            default => null,
+        };
+    }
+
     /** @return array<string, list<self>> */
     public static function grouped(): array
     {

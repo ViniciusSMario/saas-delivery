@@ -14,13 +14,14 @@
         ['route' => 'menu.combos.index', 'label' => 'Combos', 'icon' => 'gift', 'can' => 'menu.manage'],
         ['section' => 'Gestão', 'can' => ['customers.manage', 'finance.view', 'reports.view']],
         ['route' => 'customers.index', 'label' => 'Clientes', 'icon' => 'users', 'can' => 'customers.manage', 'match' => ['customers.*']],
-        ['route' => 'finance.index', 'label' => 'Financeiro', 'icon' => 'trending', 'can' => 'finance.view', 'match' => ['finance.*']],
+        ['route' => 'finance.index', 'label' => 'Financeiro', 'icon' => 'trending', 'can' => 'finance.view', 'match' => ['finance.*'], 'feature' => 'finance'],
         ['route' => 'reports.index', 'label' => 'Relatórios', 'icon' => 'chart', 'can' => 'reports.view', 'match' => ['reports.*']],
-        ['section' => 'Estoque', 'can' => 'stock.manage'],
-        ['route' => 'stock.index', 'label' => 'Insumos', 'icon' => 'box', 'can' => 'stock.manage', 'match' => ['stock.index', 'stock.show']],
-        ['route' => 'stock.recipes', 'label' => 'Fichas técnicas', 'icon' => 'file', 'can' => 'stock.manage', 'match' => ['stock.recipes', 'stock.recipe.*']],
-        ['route' => 'stock.consumption', 'label' => 'Consumo', 'icon' => 'activity', 'can' => 'stock.manage', 'match' => ['stock.consumption']],
-        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view']],
+        ['section' => 'Estoque', 'can' => 'stock.manage', 'feature' => 'stock'],
+        ['route' => 'stock.index', 'label' => 'Insumos', 'icon' => 'box', 'can' => 'stock.manage', 'match' => ['stock.index', 'stock.show'], 'feature' => 'stock'],
+        ['route' => 'stock.recipes', 'label' => 'Fichas técnicas', 'icon' => 'file', 'can' => 'stock.manage', 'match' => ['stock.recipes', 'stock.recipe.*'], 'feature' => 'stock'],
+        ['route' => 'stock.consumption', 'label' => 'Consumo', 'icon' => 'activity', 'can' => 'stock.manage', 'match' => ['stock.consumption'], 'feature' => 'stock'],
+        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage']],
+        ['route' => 'subscription', 'label' => 'Assinatura', 'icon' => 'card', 'can' => 'billing.manage'],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'icon' => 'sliders', 'can' => 'settings.manage'],
         ['route' => 'users.index', 'label' => 'Usuários', 'icon' => 'user', 'can' => 'users.view'],
@@ -29,6 +30,10 @@
     ];
     $user = auth()->user();
     $establishment = \App\Modules\Establishment\Models\Establishment::current();
+    $tenant = tenant();
+    $isOwner = $user->can('billing.manage');
+    // Recurso fora do plano: o dono vê o item com cadeado, levando à tela de assinatura.
+    $locked = fn (array $item) => isset($item['feature']) && ! $tenant->hasFeature($item['feature']) && $isOwner;
     $isActive = fn (array $item) => request()->routeIs(...($item['match'] ?? [$item['route'], str_replace('.index', '.*', $item['route'])]));
 @endphp
 <!DOCTYPE html>
@@ -65,9 +70,15 @@
             <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4 scrollbar-none">
                 @foreach ($nav as $item)
                     @if (isset($item['section']))
-                        @if (! $item['can'] || $user->canAny((array) $item['can']))
+                        @if (! $item['can'] || $user->canAny((array) $item['can']) || $locked($item))
                             <p class="px-3 pt-5 pb-1.5 text-[11px] font-semibold tracking-wider text-stone-500 uppercase">{{ $item['section'] }}</p>
                         @endif
+                    @elseif ($locked($item))
+                        <a href="{{ route('subscription') }}" wire:navigate title="Disponível em outro plano" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/5 hover:text-stone-300">
+                            <x-icon :name="$item['icon']" class="size-[18px]" />
+                            {{ $item['label'] }}
+                            <x-icon name="lock" class="ml-auto size-3.5" />
+                        </a>
                     @elseif (! $item['can'] || $user->can($item['can']))
                         <a href="{{ route($item['route']) }}" wire:navigate
                            @class([
@@ -114,6 +125,27 @@
             </header>
 
             <main @class(['mx-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8', 'max-w-7xl' => ! ($wide ?? false)])>
+                {{-- Assinatura: aviso só para o dono --}}
+                @if ($isOwner && ! request()->routeIs('subscription'))
+                    @if ($tenant->subscription_status === 'trialing' && ! $tenant->billing_subscription_id)
+                        <div class="print:hidden mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                            <x-icon name="clock" class="size-5 text-sky-600" />
+                            <span class="flex-1">Teste grátis: faltam <strong>{{ $tenant->trialDaysLeft() }} dia(s)</strong>. Escolha um plano para continuar sem interrupção.</span>
+                            <a href="{{ route('subscription') }}" wire:navigate class="btn-primary btn-sm">Escolher plano</a>
+                        </div>
+                    @elseif ($tenant->subscription_status === 'past_due')
+                        <div class="print:hidden mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                            <x-icon name="alert" class="size-5 text-red-600" />
+                            <span class="flex-1">Assinatura com pagamento pendente. Regularize para evitar a suspensão do acesso.</span>
+                            @if ($payUrl = $tenant->openInvoiceUrl())
+                                <a href="{{ $payUrl }}" target="_blank" class="btn-danger btn-sm">Pagar fatura</a>
+                            @else
+                                <a href="{{ route('subscription') }}" wire:navigate class="btn-danger btn-sm">Escolher plano</a>
+                            @endif
+                        </div>
+                    @endif
+                @endif
+
                 @if (session('status'))
                     <div class="alert-success mb-6" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition>
                         <x-icon name="check" class="mt-0.5 size-4" />

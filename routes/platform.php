@@ -19,5 +19,6 @@ Route::middleware('auth:platform')->group(function () {
     Route::get('/tenants/novo', Tenants\Create::class)->middleware('can:platform.manage-tenants')->name('tenants.create');
     Route::get('/tenants/{tenant}', Tenants\Show::class)->withTrashed()->name('tenants.show');
     Route::get('/backups/{backup}/download', BackupDownloadController::class)->name('backups.download');
+    Route::get('/assinaturas', \App\Livewire\Platform\Billing\Index::class)->name('billing.index');
     Route::post('/logout', LogoutController::class)->name('logout');
 });

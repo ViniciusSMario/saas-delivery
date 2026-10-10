@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Cobrança das assinaturas (BILLING_DRIVER=asaas). Webhook: /webhooks/billing/asaas.
+    'asaas' => [
+        'url' => env('ASAAS_URL', 'https://api-sandbox.asaas.com/v3'),
+        'key' => env('ASAAS_API_KEY'),
+        'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

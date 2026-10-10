@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Models;
 
+use App\Platform\Models\Invoice;
 use App\Platform\Models\Plan;
 use App\Tenancy\Enums\TenantStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 /**
@@ -89,10 +91,55 @@ class Tenant extends Model
         ]);
     }
 
-    /** Link de pagamento da fatura em aberto mais antiga (tela de conta suspensa). */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /** Link de pagamento da fatura em aberto mais antiga (tela de conta suspensa, aviso no painel). */
     public function openInvoiceUrl(): ?string
     {
-        return null;
+        return $this->invoices()->open()->whereNotNull('invoice_url')->orderBy('due_date')->value('invoice_url');
+    }
+
+    /** Limite do plano (null = ilimitado; sem plano = cortesia, sem limites). */
+    public function planLimit(string $key): ?int
+    {
+        return $this->plan?->limit($key);
+    }
+
+    /**
+     * Barra o cadastro que passaria do limite do plano (usuários, mesas, produtos).
+     *
+     * @throws ValidationException
+     */
+    public function assertWithinLimit(string $key, int $current, string $field, int $adding = 1): void
+    {
+        $limit = $this->planLimit($key);
+
+        if ($limit !== null && $current + $adding > $limit) {
+            $label = Plan::LIMIT_LABELS[$key][0] ?? $key;
+
+            throw ValidationException::withMessages([
+                $field => "Seu plano ({$this->plan->name}) permite até {$limit} {$label}. Para cadastrar mais, troque de plano em Assinatura.",
+            ]);
+        }
+    }
+
+    /** Recurso liberado no plano (sem plano = tudo liberado). */
+    public function hasFeature(string $feature): bool
+    {
+        return $this->plan?->hasFeature($feature) ?? true;
+    }
+
+    public function onTrial(): bool
+    {
+        return $this->subscription_status === 'trialing' && $this->trial_ends_at?->isFuture();
+    }
+
+    public function trialDaysLeft(): int
+    {
+        return $this->trial_ends_at ? max(0, (int) ceil(now()->diffInHours($this->trial_ends_at, false) / 24)) : 0;
     }
 
     public function primaryDomain(): ?string

@@ -55,6 +55,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/perfis/{role}', Roles\Form::class)->middleware('can:roles.manage')->name('roles.edit');
 
     Route::get('/auditoria', AuditLogIndex::class)->middleware('can:audit.view')->name('audit.index');
+    Route::get('/assinatura', \App\Livewire\Tenant\Subscription::class)->middleware('can:billing.manage')->name('subscription');
 
     Route::get('/pedidos', Orders\Board::class)->middleware('can:orders.view')->name('orders.board');
     Route::get('/pedidos/historico', Orders\Index::class)->middleware('can:orders.view')->name('orders.index');

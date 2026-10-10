@@ -19,20 +19,26 @@ class InitializeEstablishment
     {
     }
 
-    public function handle(string $tradeName, ?string $document, ?string $ownerName, ?string $ownerEmail): ?User
+    /**
+     * @param  string|null  $ownerPassword  cadastro self-service: o próprio dono escolheu a senha
+     *                                      (sem senha, ele recebe o convite para defini-la)
+     */
+    public function handle(string $tradeName, ?string $document, ?string $ownerName, ?string $ownerEmail, #[\SensitiveParameter] ?string $ownerPassword = null, ?string $phone = null): ?User
     {
-        Establishment::query()->firstOrCreate([], ['trade_name' => $tradeName, 'document' => $document]);
+        Establishment::query()->firstOrCreate([], ['trade_name' => $tradeName, 'document' => $document, 'phone' => $phone]);
 
         if (! $ownerEmail) {
             return null;
         }
 
-        $owner = User::create(['name' => $ownerName ?: $ownerEmail, 'email' => $ownerEmail]);
+        $owner = User::create(array_filter(['name' => $ownerName ?: $ownerEmail, 'email' => $ownerEmail, 'password' => $ownerPassword]));
         $owner->roles()->attach(DefaultRoles::owner());
 
         Audit::record('user.created', $owner, ['nome' => $owner->name, 'email' => $owner->email, 'perfis' => ['Dono']]);
 
-        $this->sendLink->handle($owner, invitation: true);
+        if (! $ownerPassword) {
+            $this->sendLink->handle($owner, invitation: true);
+        }
 
         return $owner;
     }
