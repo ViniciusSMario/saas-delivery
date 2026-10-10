@@ -14,6 +14,13 @@ class Audit
     {
         $actor ??= Auth::guard('web')->user();
 
+        // Ação feita pela equipe do SaaS em modo suporte: fica marcado quem foi.
+        $support = request()->hasSession() ? request()->session()->get('support_access') : null;
+
+        if ($support && ! isset($changes['equipe'])) {
+            $changes['via_suporte'] = $support['email'];
+        }
+
         return AuditLog::create([
             'user_id' => $actor?->getKey(),
             'action' => $action,

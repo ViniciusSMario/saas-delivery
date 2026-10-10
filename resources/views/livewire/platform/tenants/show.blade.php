@@ -60,6 +60,58 @@
         @endif
     @endcan
 
+    {{-- Suporte --}}
+    @if ($tenantUsers->isNotEmpty())
+        <section class="card overflow-hidden">
+            <div class="card-header">
+                <div>
+                    <h2 class="section-title flex items-center gap-2"><x-icon name="shield" class="size-5 text-violet-600" /> Entrar como suporte</h2>
+                    <p class="text-xs text-stone-500">Abre o sistema do estabelecimento logado como o usuário escolhido. O acesso, o motivo e cada ação ficam na auditoria dele e aqui.</p>
+                </div>
+            </div>
+            <form wire:submit="impersonate" class="flex flex-wrap items-end gap-3 p-5 sm:px-6">
+                <div>
+                    <label for="supportUserId" class="label">Usuário</label>
+                    <select wire:model="supportUserId" id="supportUserId" class="input w-auto">
+                        <option value="">Escolha</option>
+                        @foreach ($tenantUsers as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }} · {{ $user->roles->pluck('name')->implode(', ') }}</option>
+                        @endforeach
+                    </select>
+                    @error('supportUserId') <p class="field-error">{{ $message }}</p> @enderror
+                </div>
+                <div class="min-w-64 flex-1">
+                    <label for="supportReason" class="label">Motivo</label>
+                    <input wire:model="supportReason" id="supportReason" type="text" class="input" placeholder="Ex.: chamado #123, ajuda para montar o cardápio" maxlength="300">
+                    @error('supportReason') <p class="field-error">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="btn bg-violet-700 text-white hover:bg-violet-800"><x-icon name="external" class="size-4" /> Entrar</button>
+            </form>
+            @if ($supportAccesses->isNotEmpty())
+                <div class="overflow-x-auto border-t border-stone-100">
+                    <table class="table">
+                        <thead><tr><th>Quando</th><th>Equipe</th><th>Como</th><th>Motivo</th><th>Duração</th></tr></thead>
+                        <tbody>
+                            @foreach ($supportAccesses as $access)
+                                <tr>
+                                    <td class="whitespace-nowrap text-stone-500">{{ $access->created_at->timezone($tz)->format('d/m H:i') }}</td>
+                                    <td>{{ $access->platform_email }}</td>
+                                    <td>{{ $access->tenant_user_name }}</td>
+                                    <td class="max-w-xs truncate text-stone-600" title="{{ $access->reason }}">{{ $access->reason }}</td>
+                                    <td class="whitespace-nowrap text-stone-500">
+                                        @if (! $access->used_at) <span class="badge-gray">link não usado</span>
+                                        @elseif ($access->ended_at) {{ $access->used_at->diffForHumans($access->ended_at, true) }}
+                                        @else <span class="badge-violet">em andamento</span> @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+    @endif
+
     {{-- Assinatura --}}
     @php
         $subLabels = \App\Platform\Billing\Portal::STATUS_LABELS;

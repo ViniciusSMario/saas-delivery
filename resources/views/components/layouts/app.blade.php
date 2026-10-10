@@ -129,6 +129,18 @@
                 </a>
             </header>
 
+            {{-- Modo suporte: a equipe do SaaS está usando a conta de alguém daqui. --}}
+            @if ($support = session('support_access'))
+                <div class="print:hidden sticky top-0 z-30 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-violet-700 px-4 py-2 text-sm text-white">
+                    <x-icon name="shield" class="size-4" />
+                    <span>Modo suporte: <strong>{{ $support['email'] }}</strong> está usando a conta de {{ $support['user'] }}. Tudo fica registrado na auditoria.</span>
+                    <form method="POST" action="{{ route('support.leave') }}">
+                        @csrf
+                        <button type="submit" class="rounded-lg bg-white/15 px-2.5 py-1 font-semibold hover:bg-white/25">Sair do modo suporte</button>
+                    </form>
+                </div>
+            @endif
+
             <main @class(['mx-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8', 'max-w-7xl' => ! ($wide ?? false)])>
                 {{-- Assinatura: aviso só para o dono --}}
                 @if ($isOwner && ! request()->routeIs('subscription'))

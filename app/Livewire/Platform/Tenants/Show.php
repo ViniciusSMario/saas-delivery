@@ -2,7 +2,11 @@
 
 namespace App\Livewire\Platform\Tenants;
 
+use App\Modules\Access\Models\User;
 use App\Platform\Actions\ChangeTenantStatus;
+use App\Platform\Actions\SupportImpersonation;
+use App\Platform\Models\SupportAccess;
+use App\Tenancy\TenantContext;
 use App\Platform\Actions\TenantDeletion;
 use App\Platform\Backups\TenantBackups;
 use App\Platform\Billing\Subscriptions;
@@ -30,10 +34,25 @@ class Show extends Component
 
     public ?int $planId = null;
 
+    public ?int $supportUserId = null;
+
+    public string $supportReason = '';
+
     public function mount(Tenant $tenant): void
     {
         $this->tenantId = $tenant->id;
         $this->planId = $tenant->plan_id;
+    }
+
+    /** "Entrar como suporte": abre o estabelecimento logado como um usuário dele (auditado). */
+    public function impersonate(SupportImpersonation $support): void
+    {
+        $tenant = $this->tenant();
+        abort_unless($tenant->isActive(), 422, 'Só dá para entrar num estabelecimento ativo.');
+
+        $url = $support->start($tenant, Auth::guard('platform')->user(), (int) $this->supportUserId, $this->supportReason, request()->ip());
+
+        $this->redirect($url);
     }
 
     public function suspend(ChangeTenantStatus $action): void
@@ -152,6 +171,10 @@ class Show extends Component
             'backups' => TenantBackup::where('tenant_id', $tenant->id)->latest('created_at')->latest('id')->limit(30)->get(),
             'plans' => Plan::query()->where('is_active', true)->orderBy('sort')->orderBy('price_cents')->get(),
             'invoices' => Invoice::where('tenant_id', $tenant->id)->latest('due_date')->latest('id')->limit(6)->get(),
+            'tenantUsers' => $tenant->isActive()
+                ? app(TenantContext::class)->run($tenant, fn () => User::with('roles')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']))
+                : collect(),
+            'supportAccesses' => SupportAccess::where('tenant_id', $tenant->id)->latest('created_at')->limit(10)->get(),
             'events' => $tenant->events()->latest('created_at')->latest('id')->limit(50)->get(),
         ])->title($tenant->name);
     }

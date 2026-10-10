@@ -5,6 +5,7 @@
 
 use App\Http\Controllers\Tenant\EstablishmentLogoController;
 use App\Http\Controllers\Tenant\LogoutController;
+use App\Http\Controllers\Tenant\SupportAccessController;
 use App\Http\Controllers\Tenant\MenuImageController;
 use App\Livewire\Tenant\AuditLogIndex;
 use App\Livewire\Tenant\Auth\ForgotPassword;
@@ -38,9 +39,13 @@ Route::middleware('guest')->group(function () {
 // Público: usado pelo cardápio.
 Route::get('/logo', EstablishmentLogoController::class)->name('establishment.logo');
 
+// Link de uso único gerado no admin da plataforma ("Entrar como suporte").
+Route::get('/suporte/entrar/{token}', [SupportAccessController::class, 'enter'])->middleware('throttle:20,1')->name('support.enter');
+
 Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class])->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::post('/logout', LogoutController::class)->name('logout');
+    Route::post('/suporte/sair', [SupportAccessController::class, 'leave'])->name('support.leave');
     Route::get('/minha-conta', Profile::class)->name('profile');
 
     Route::get('/estabelecimento', EditEstablishment::class)->middleware('can:establishment.manage')->name('establishment.edit');
