@@ -80,6 +80,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/impressoras', \App\Livewire\Tenant\Printing\Settings::class)->middleware('can:settings.manage')->name('printing.settings');
 
     Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');
+    Route::get('/mesas/prontos', Tables\ReadyToServe::class)->middleware('can:tables.manage')->name('tables.ready');
     Route::get('/mesas/cadastro', Tables\Manage::class)->middleware('can:establishment.manage')->name('tables.manage');
     Route::get('/comandas/{command}', Tables\CommandPage::class)->whereNumber('command')->middleware('can:tables.manage')->name('tables.command');
 

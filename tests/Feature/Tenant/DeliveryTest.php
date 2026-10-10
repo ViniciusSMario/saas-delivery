@@ -91,7 +91,7 @@ it('o entregador pega o pedido pronto, sai e conclui a entrega', function () {
 
     activateTenant($this->tenant);
     $this->actingAs($courier);
-    Livewire::test(DeliveryBoard::class)->assertSee('#'.$order->number)->call('take', $order->id)->assertHasNoErrors();
+    Livewire::test(DeliveryBoard::class)->assertSet('tab', 'ready')->assertSee('#'.$order->number)->call('take', $order->id)->assertHasNoErrors()->assertSee('está com você');
 
     $order->refresh();
     expect($order->status)->toBe(OrderStatus::Dispatched)
@@ -104,7 +104,10 @@ it('o entregador pega o pedido pronto, sai e conclui a entrega', function () {
     Livewire::test(DeliveryBoard::class)->call('complete', $order->id)->assertHasErrors('status');
 
     $this->actingAs($courier);
-    Livewire::test(DeliveryBoard::class)->assertSee('Rota com a entrega')->call('complete', $order->id)->assertHasNoErrors();
+    // Com entrega em andamento, a tela abre na aba "Comigo"; ao concluir, volta para "Para pegar".
+    Livewire::test(DeliveryBoard::class)->assertSet('tab', 'mine')->assertSee('Abrir rota no mapa')->assertSee('Hoje você entregou 0 pedidos')
+        ->call('complete', $order->id)->assertHasNoErrors()
+        ->assertSet('tab', 'ready')->assertSee('Hoje você entregou 1 pedido');
 
     $order->refresh();
     expect($order->status)->toBe(OrderStatus::Completed)->and($order->isPaid())->toBeTrue();
@@ -133,7 +136,7 @@ it('a gerência escolhe e troca o entregador e vê o fechamento do dia', functio
     $third = readyDelivery($this, 'Vila Nova');
     Livewire::test(DeliveryBoard::class)->call('assign', $third->id, $ana->id);
     $this->actingAs($ana);
-    $html = Livewire::test(DeliveryBoard::class)->assertSee('Rota com todas as paradas')->html();
+    $html = Livewire::test(DeliveryBoard::class)->assertSee('Rota com as 2 paradas')->html();
     expect($html)->toContain('waypoints=');
 
     Livewire::test(DeliveryBoard::class)->call('complete', $first->id);

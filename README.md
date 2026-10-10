@@ -122,6 +122,13 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Relatórios** (`/relatorios`, `reports.view`): vendas por dia e canal, recebido por forma de pagamento, produtos mais vendidos com custo e margem pela ficha (combos inclusive), horários de pico, cancelamentos, descontos e taxa retirada (por quem), caixas fechados. Exportação CSV (`;`, abre no Excel). "Venda" = pedido online/balcão não cancelado + conta de mesa fechada, sem contar duas vezes os lançamentos de mesa. As consultas vão direto no schema do tenant (`App\Modules\Reports\SalesReport`).
 - **Início:** painel do dia conforme o perfil: vendas, pedidos e ticket médio contra o mesmo dia da semana passada, canais, recebido, pedidos em andamento, mesas ocupadas, contas vencendo e estoque baixo.
 
+## Garçom e entregador no celular ("modo app")
+
+- Quem só tem mesas e/ou entregas (perfis Garçom e Entregador, ou um perfil próprio sem nada além de pedidos, mesas e entregas) usa o painel como um app de celular: topo simples, abas grandes embaixo e nada de barra lateral. Ao entrar, vai direto para Mesas (garçom) ou Entregas (entregador). Dono, gerência, caixa e cozinha seguem no painel completo. A regra é `User::usesFieldMode()`.
+- **Garçom:** mesas em 3 colunas com filtro (livres, ocupadas, conta pedida); abrir mesa com botões − / + de pessoas; na comanda, produtos em grade com a quantidade já escolhida, barra "Ver pedido · Enviar" embaixo e "Pedir conta / Lançar itens" ao alcance do polegar. Aba **Prontos** (`/mesas/prontos`): pedidos de mesa que a cozinha marcou como prontos, com o botão "Servido".
+- **Entregador:** abas "Para pegar" e "Comigo", valor a cobrar e troco em destaque, botões grandes de mapa, ligar e WhatsApp, "Entregue e recebi" e o resumo do dia.
+- As abas mostram quantos pedidos estão prontos e o celular vibra quando chega um novo (atualiza a cada 15 s). No celular, os campos usam letra de 16 px para o iPhone não dar zoom, e a busca de produtos não abre o teclado sozinha.
+
 ## Impressão, entregas e WhatsApp
 
 - **Impressão na cozinha** (Administração → Impressoras, `/impressoras`): cadastre os setores (Cozinha, Bar, Expedição) e diga em qual setor sai cada categoria. Todo pedido novo (online, balcão ou lançamento de mesa) vira um cupom por setor, só com os itens dele (combos são separados por componente). Itens de categoria sem setor vão para o setor padrão. Setor marcado como "pedido completo" recebe o pedido inteiro com valores, troco e endereço (expedição/caixa). Há reimpressão no painel de pedidos e na página do pedido.

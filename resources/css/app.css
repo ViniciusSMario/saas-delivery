@@ -82,8 +82,9 @@
         @apply mb-1.5 block text-sm font-medium text-stone-700;
     }
 
+    /* 16px no celular: abaixo disso o iPhone dá zoom ao tocar no campo. */
     .input {
-        @apply block min-h-10 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-xs transition placeholder:text-stone-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500;
+        @apply block min-h-10 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-base text-stone-900 sm:text-sm shadow-xs transition placeholder:text-stone-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500;
     }
 
     select.input {
@@ -129,6 +130,11 @@
 
     .btn-lg {
         @apply h-12 rounded-2xl px-6 text-base;
+    }
+
+    /* Toque com o polegar: botão principal das telas de garçom e entregador. */
+    .btn-xl {
+        @apply h-14 w-full rounded-2xl px-6 text-base font-bold;
     }
 
     .btn-icon {
@@ -201,6 +207,19 @@
 
     .chip-active {
         @apply border-stone-900 bg-stone-900 text-white hover:border-stone-900;
+    }
+
+    /* Seletor segmentado (abas grandes no celular) */
+    .segmented {
+        @apply grid auto-cols-fr grid-flow-col gap-1 rounded-2xl bg-stone-200/70 p-1;
+    }
+
+    .segment {
+        @apply flex h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold text-stone-600 transition;
+    }
+
+    .segment-active {
+        @apply bg-white text-stone-900 shadow-sm;
     }
 
     /* Indicadores */

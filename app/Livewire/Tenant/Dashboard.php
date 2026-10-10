@@ -18,6 +18,16 @@ use Livewire\Component;
 #[Title('Início')]
 class Dashboard extends Component
 {
+    /** Garçom e entregador vão direto para a tela deles. */
+    public function mount(): void
+    {
+        $user = auth()->user();
+
+        if ($user->usesFieldMode()) {
+            $this->redirectRoute($user->fieldHome(), navigate: true);
+        }
+    }
+
     public function render()
     {
         $user = auth()->user();

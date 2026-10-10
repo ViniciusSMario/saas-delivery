@@ -79,6 +79,24 @@ class User extends Authenticatable
     }
 
     /**
+     * "Modo app": quem só atende mesas e/ou faz entregas (garçom, entregador) usa
+     * o painel como um app de celular, com abas embaixo e sem a barra lateral.
+     */
+    public function usesFieldMode(): bool
+    {
+        $field = [Permission::OrdersView, Permission::OrdersManage, Permission::OrdersCancel, Permission::OrdersDiscount, Permission::TablesManage, Permission::DeliveriesOperate];
+
+        return ($this->hasPermission(Permission::TablesManage) || $this->hasPermission(Permission::DeliveriesOperate))
+            && array_diff(array_keys($this->permissions()), array_map(fn (Permission $p) => $p->value, $field)) === [];
+    }
+
+    /** Tela inicial do modo app. */
+    public function fieldHome(): string
+    {
+        return $this->hasPermission(Permission::TablesManage) ? 'tables.map' : 'delivery.board';
+    }
+
+    /**
      * Evita escalada de privilégio: só o dono concede o perfil de dono, e ninguém
      * concede um perfil com permissões que ele mesmo não tem.
      */
