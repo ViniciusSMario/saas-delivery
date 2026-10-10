@@ -25,6 +25,9 @@ return [
         'trial_reminder_days' => 3,
     ],
 
+    // Segredo compartilhado com o Caddy (/caddy/ask): só ele consulta quais domínios são nossos.
+    'caddy_ask_token' => env('CADDY_ASK_TOKEN', ''),
+
     // Cadastro self-service: tentativas por IP por hora.
     'signup_per_hour' => (int) env('SIGNUP_PER_HOUR', 5),
 

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Infra\CaddyAskController;
+use App\Http\Controllers\Infra\HealthController;
 use App\Platform\Http\UsePlatformGuard;
 use App\Tenancy\Middleware\EnsureSessionBelongsToTenant;
 use App\Tenancy\Middleware\EnsureTenantIsActive;
@@ -24,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         commands: __DIR__.'/../routes/console.php',
         using: function () {
+            // Infraestrutura, em qualquer host e sem sessão: saúde e liberação de certificado (Caddy).
+            Route::get('/saude', HealthController::class)->name('infra.health');
+            Route::get('/caddy/ask', CaddyAskController::class)->name('infra.caddy-ask');
+
             // Admin da plataforma (equipe do SaaS), só no domínio dele.
             Route::middleware('platform')
                 ->domain(config('tenancy.platform_domain'))
@@ -66,6 +72,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // assim o Laravel nunca os reordena em relação à sessão.
 
         $middleware->group('platform', ['web', UsePlatformGuard::class]);
+
+        // Em produção o app fica atrás do Caddy (rede interna do Docker): confia nos
+        // cabeçalhos X-Forwarded-* para saber o host, o IP do cliente e se é HTTPS.
+        $middleware->trustProxies(at: '*');
 
         $middleware->redirectGuestsTo(fn (Request $request) => $isPlatformHost($request) ? route('platform.login') : route('login'));
         $middleware->redirectUsersTo(fn (Request $request) => $isPlatformHost($request) ? route('platform.tenants.index') : route('dashboard'));

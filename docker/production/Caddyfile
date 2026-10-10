@@ -1,0 +1,54 @@
+# Caddy de produção: HTTPS automático (Let's Encrypt) para o domínio principal, o admin,
+# os subdomínios dos estabelecimentos (<slug>.seudominio.com.br) e os domínios próprios.
+#
+# Certificado "sob demanda": na primeira visita a um host, o Caddy pergunta ao app
+# (/caddy/ask) se o domínio é nosso. Só domínios conhecidos ganham certificado, e não
+# precisa de certificado curinga nem de API do provedor de DNS.
+{
+	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://127.0.0.1:8081/caddy/ask
+	}
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+(laravel) {
+	root * /var/www/html/public
+	encode zstd gzip
+
+	# Assets do Vite têm hash no nome: cache longo.
+	@build path /build/*
+	header @build Cache-Control "public, max-age=31536000, immutable"
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	php_fastcgi app:9000 {
+		trusted_proxies private_ranges
+	}
+	file_server
+}
+
+# Só para o Caddy perguntar ao app se um domínio pode ganhar certificado.
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	request_header X-Caddy-Ask {$CADDY_ASK_TOKEN}
+	import laravel
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+	import laravel
+}
+
+http:// {
+	redir https://{host}{uri} permanent
+}

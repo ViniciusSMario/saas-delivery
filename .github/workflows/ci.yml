@@ -1,0 +1,98 @@
+# Testes a cada push e pull request; deploy automático da branch main quando os
+# testes passam e os segredos do servidor estão configurados (Settings → Secrets):
+#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY e, opcional, DEPLOY_PATH (padrão /opt/saas-delivery).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: saas
+      DB_PASSWORD: secret
+      REDIS_HOST: 127.0.0.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Banco de testes (mesmo init do Docker)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          export POSTGRES_USER=postgres APP_DB_USER=saas APP_DB_PASSWORD=secret APP_DB_NAME=saas PGHOST=127.0.0.1
+          sh docker/postgres/init/01-init.sh
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, intl, zip, bcmath, pcntl, redis, gd
+          coverage: none
+
+      - name: Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm run build
+
+      - name: Ambiente
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Testes
+        run: php artisan test
+
+  deploy:
+    needs: tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - name: Servidor configurado?
+        id: check
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: echo "ready=$([ -n "$HOST" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy por SSH
+        if: steps.check.outputs.ready == 'yes'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 20m
+          script: cd "${{ secrets.DEPLOY_PATH || '/opt/saas-delivery' }}" && ./scripts/deploy.sh
