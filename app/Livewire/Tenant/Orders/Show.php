@@ -6,6 +6,7 @@ use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Printing\OrderTickets;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -23,6 +24,15 @@ class Show extends Component
     public function mount(Order $order): void
     {
         $this->orderId = $order->id;
+    }
+
+    public function reprint(OrderTickets $tickets): void
+    {
+        $this->authorize('orders.view');
+
+        $count = $tickets->queue(Order::findOrFail($this->orderId), reprint: true)->count();
+        session()->flash('status', $count ? 'Pedido enviado para as impressoras dos setores.' : 'Nenhuma impressora configurada (Administração → Impressoras).');
+        $this->redirectRoute('orders.show', $this->orderId, navigate: true);
     }
 
     private function order(): Order

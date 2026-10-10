@@ -2,6 +2,7 @@
 
 use App\Modules\Access\AccessServiceProvider;
 use App\Modules\Finance\FinanceServiceProvider;
+use App\Modules\Printing\PrintingServiceProvider;
 use App\Modules\Stock\StockServiceProvider;
 use App\Platform\PlatformServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -15,4 +16,5 @@ return [
     AccessServiceProvider::class,
     StockServiceProvider::class,
     FinanceServiceProvider::class,
+    PrintingServiceProvider::class,
 ];

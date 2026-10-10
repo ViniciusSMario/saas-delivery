@@ -13,6 +13,7 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <button type="button" onclick="window.print()" class="btn-secondary"><x-icon name="printer" class="size-4" /> Imprimir</button>
+            <button type="button" wire:click="reprint" class="btn-secondary"><x-icon name="flame" class="size-4" /> Reimprimir nos setores</button>
             @can('orders.manage')
                 @if ($order->payments->contains('status', PaymentStatus::Pending) && $order->status !== OrderStatus::Cancelled)
                     <button type="button" wire:click="markPaid" class="btn-secondary">Marcar como pago</button>

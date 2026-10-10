@@ -26,6 +26,7 @@
      x-data="{
          sound: false,
          full: false,
+         toast: '',
          beep() {
              if (! this.sound) return;
              try {
@@ -48,6 +49,7 @@
          },
      }"
      @fullscreenchange.document="full = !! document.fullscreenElement"
+     @notify.window="toast = $event.detail.message; setTimeout(() => toast = '', 2500)"
      @new-order.window="beep(); flash($event.detail.count)">
 
     <x-ui.page-header title="Painel de pedidos">
@@ -69,6 +71,10 @@
             <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate x-show="! full"><x-icon name="plus" class="size-4" /> Venda no balcão</a>
         @endcan
     </x-ui.page-header>
+
+    <div x-cloak x-show="toast" x-transition class="fixed inset-x-0 top-4 z-50 mx-auto flex w-fit items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-float">
+        <x-icon name="printer" class="size-4 text-emerald-400" /> <span x-text="toast"></span>
+    </div>
 
     @error('board') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
 
@@ -135,6 +141,9 @@
                             <div class="space-y-2 border-t border-stone-100 bg-stone-50/70 px-3.5 py-2.5">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="font-bold whitespace-nowrap tabular-nums">{{ $order->total_cents->format() }}</span>
+                                    <button type="button" wire:click="reprint({{ $order->id }})" class="btn-icon btn-ghost ml-auto size-8" title="Reimprimir nos setores" aria-label="Reimprimir pedido {{ $order->number }}">
+                                        <x-icon name="printer" class="size-4" />
+                                    </button>
                                     @can('orders.cancel')
                                         <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-ghost btn-sm -mr-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
                                     @endcan

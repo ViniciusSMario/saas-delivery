@@ -6,6 +6,7 @@ use App\Modules\Access\Models\User;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Printing\OrderTickets;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -48,6 +49,15 @@ class Board extends Component
             // Outro atendente mexeu no pedido antes: o painel só recarrega.
             $this->addError('board', collect($e->errors())->flatten()->first());
         }
+    }
+
+    /** Manda o pedido de novo para as impressoras dos setores. */
+    public function reprint(int $orderId, OrderTickets $tickets): void
+    {
+        $this->authorize('orders.view');
+
+        $count = $tickets->queue(Order::findOrFail($orderId), reprint: true)->count();
+        $this->dispatch('notify', message: $count ? 'Enviado para a impressão.' : 'Nenhuma impressora configurada.');
     }
 
     public function startCancel(int $orderId): void

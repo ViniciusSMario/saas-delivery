@@ -62,6 +62,9 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/pedidos/{order}', Orders\Show::class)->whereNumber('order')->middleware('can:orders.view')->name('orders.show');
     Route::get('/balcao', Orders\Counter::class)->middleware('can:pos.use')->name('orders.counter');
 
+    Route::get('/impressao', \App\Livewire\Tenant\Printing\Station::class)->middleware('can:orders.view')->name('printing.station');
+    Route::get('/impressoras', \App\Livewire\Tenant\Printing\Settings::class)->middleware('can:settings.manage')->name('printing.settings');
+
     Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');
     Route::get('/mesas/cadastro', Tables\Manage::class)->middleware('can:establishment.manage')->name('tables.manage');
     Route::get('/comandas/{command}', Tables\CommandPage::class)->whereNumber('command')->middleware('can:tables.manage')->name('tables.command');
