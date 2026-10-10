@@ -162,6 +162,22 @@
                             @endif
                         </div>
                     @endif
+
+                    {{-- Limite brando de pedidos do mês: só avisa, nunca bloqueia. --}}
+                    @if (\App\Modules\Orders\MonthlyOrders::limit())
+                        @php($ordersCount = \App\Modules\Orders\MonthlyOrders::count())
+                        @php($ordersPercent = \App\Modules\Orders\MonthlyOrders::percent($ordersCount))
+                        @if ($ordersPercent >= 80)
+                            <div @class(['print:hidden mb-6 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-sm', 'border-red-200 bg-red-50 text-red-900' => $ordersPercent >= 100, 'border-amber-200 bg-amber-50 text-amber-900' => $ordersPercent < 100])>
+                                <x-icon name="trending" class="size-5" />
+                                <span class="flex-1">
+                                    {{ $ordersCount }} de {{ \App\Modules\Orders\MonthlyOrders::limit() }} pedidos do mês ({{ $ordersPercent }}%).
+                                    {{ $ordersPercent >= 100 ? 'Você passou do limite do plano; os pedidos continuam entrando.' : 'Você está perto do limite do plano.' }}
+                                </span>
+                                <a href="{{ route('subscription') }}" wire:navigate class="btn-secondary btn-sm">Ver planos</a>
+                            </div>
+                        @endif
+                    @endif
                 @endif
 
                 @if (session('status'))

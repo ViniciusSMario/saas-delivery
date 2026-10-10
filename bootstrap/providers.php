@@ -3,6 +3,7 @@
 use App\Modules\Access\AccessServiceProvider;
 use App\Modules\Finance\FinanceServiceProvider;
 use App\Modules\Messaging\MessagingServiceProvider;
+use App\Modules\Orders\OrdersServiceProvider;
 use App\Modules\Printing\PrintingServiceProvider;
 use App\Modules\Stock\StockServiceProvider;
 use App\Platform\PlatformServiceProvider;
@@ -19,4 +20,5 @@ return [
     FinanceServiceProvider::class,
     PrintingServiceProvider::class,
     MessagingServiceProvider::class,
+    OrdersServiceProvider::class,
 ];
