@@ -6,6 +6,7 @@ use App\Modules\Access\Models\User;
 use App\Modules\Access\Permission;
 use App\Modules\Cash\CashLedger;
 use App\Modules\Customers\Models\Customer;
+use App\Modules\Delivery\DeliveryFees;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
 use App\Modules\Menu\Models\Combo;
@@ -34,8 +35,10 @@ class PlaceOrder
 
     public const MAX_QUANTITY = 99;
 
-    public function __construct(private readonly CashLedger $ledger)
-    {
+    public function __construct(
+        private readonly CashLedger $ledger,
+        private readonly DeliveryFees $fees,
+    ) {
     }
 
     /**
@@ -72,13 +75,19 @@ class PlaceOrder
 
         $subtotal = array_reduce($lines, fn (Money $sum, array $line) => $sum->add($line['total']), Money::zero());
         $discount = $this->discount($input['discount'] ?? null, $subtotal, $online, $actor);
-        $deliveryFee = $fulfillment === Fulfillment::Delivery
-            ? Money::cents((int) Setting::read('delivery_fee_cents', 0))
-            : Money::zero();
+        // Taxa única ou por bairro (bairro fora da área de entrega é recusado).
+        ['fee' => $deliveryFee, 'zone' => $zone] = $fulfillment === Fulfillment::Delivery
+            ? $this->fees->resolve($address['district'])
+            : ['fee' => Money::zero(), 'zone' => null];
+
+        if ($zone) {
+            $address['district'] = $zone->name; // grafia do cadastro
+        }
+
         $total = $subtotal->subtract($discount)->add($deliveryFee);
 
         if ($online) {
-            $minimum = Money::cents((int) Setting::read('min_order_cents', 0));
+            $minimum = $zone?->min_order_cents ?? Money::cents((int) Setting::read('min_order_cents', 0));
 
             if ($minimum->greaterThan($subtotal)) {
                 $this->fail('lines', "O pedido mínimo é de {$minimum->format()} (sem a taxa de entrega).");
@@ -93,7 +102,7 @@ class PlaceOrder
         $cashSession = $paidNow ? $this->ledger->requireSession($actor) : null;
 
         $order = DB::connection('tenant')->transaction(function () use (
-            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession
+            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $zone, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession
         ) {
             $customerModel = $customer['phone'] ? $this->rememberCustomer($customer, $address) : null;
 
@@ -117,6 +126,7 @@ class PlaceOrder
                 'subtotal_cents' => $subtotal,
                 'discount_cents' => $discount,
                 'delivery_fee_cents' => $deliveryFee,
+                'delivery_zone_id' => $zone?->id,
                 'total_cents' => $total,
                 'created_by' => $actor?->id,
             ]);

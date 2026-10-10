@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Modules\Delivery\DeliveryFees;
 use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
@@ -38,7 +39,8 @@ class PublicOrderController
             'acceptsOnline' => (bool) Setting::read('accepts_online_orders', true),
             'acceptsDelivery' => (bool) Setting::read('accepts_delivery', true),
             'acceptsPickup' => (bool) Setting::read('accepts_pickup', true),
-            'deliveryFee' => Money::cents((int) Setting::read('delivery_fee_cents', 0)),
+            'deliveryFee' => app(DeliveryFees::class)->cheapest(),
+            'zones' => DeliveryFees::byZone() ? app(DeliveryFees::class)->zones() : collect(),
             'minOrder' => Money::cents((int) Setting::read('min_order_cents', 0)),
             'paymentMethods' => PaymentMethod::active()->get(),
         ]);

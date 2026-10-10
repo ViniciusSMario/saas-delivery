@@ -26,16 +26,26 @@
               fulfillment: @js($defaultFulfillment),
               payment: @js(old('payment_method', $paymentMethods->first()?->code)),
               cashCodes: @js($cashCodes),
-              fee: {{ $deliveryFee->cents }},
-              minimum: {{ $minOrder->cents }},
+              baseFee: {{ $deliveryFee->cents }},
+              // Taxa por bairro: {bairro: {fee, min}}; vazio = taxa única.
+              zones: @js($zones->mapWithKeys(fn ($z) => [$z->name => ['fee' => $z->fee_cents->cents, 'min' => $z->min_order_cents?->cents]])),
+              district: @js(old('address.district', '')),
+              baseMinimum: {{ $minOrder->cents }},
               sending: false,
               profileKey: 'cliente:{{ tenant()->getKey() }}',
+              get byZone() { return Object.keys(this.zones).length > 0 },
+              get fee() { return this.byZone ? (this.zones[this.district]?.fee ?? 0) : this.baseFee },
+              get minimum() { return (this.fulfillment === 'delivery' && this.zones[this.district]?.min) || this.baseMinimum },
               get fullTotal() { return this.$store.cart.subtotal + (this.fulfillment === 'delivery' ? this.fee : 0) },
               loadProfile() {
                   if (@js((bool) old('name'))) return;
                   try {
                       const p = JSON.parse(localStorage.getItem(this.profileKey)) || {};
                       for (const [name, value] of Object.entries(p)) {
+                          if (name === 'address[district]' && this.byZone) {
+                              if (this.zones[value]) this.district = value;
+                              continue;
+                          }
                           const el = this.$root.querySelector(`[name='${name}']`);
                           if (el && ! el.value) el.value = value;
                       }
@@ -131,7 +141,7 @@
                         <label class="{{ $option }}" :class="fulfillment === 'delivery' ? 'border-brand-600 bg-brand-50' : 'border-stone-200'">
                             <input type="radio" name="fulfillment" value="delivery" x-model="fulfillment" class="sr-only">
                             <x-icon name="truck" class="size-6 text-brand-600" />
-                            <span><span class="block font-semibold">Entrega</span><span class="text-xs text-stone-500">{{ $deliveryFee->isZero() ? 'Grátis' : $deliveryFee->format() }}</span></span>
+                            <span><span class="block font-semibold">Entrega</span><span class="text-xs text-stone-500">{{ $zones->isNotEmpty() ? 'Taxa por bairro' : ($deliveryFee->isZero() ? 'Grátis' : $deliveryFee->format()) }}</span></span>
                         </label>
                     @endif
                     @if ($acceptsPickup)
@@ -161,7 +171,17 @@
                     </div>
                     <div class="col-span-6 sm:col-span-3">
                         <label for="district" class="label">Bairro</label>
-                        <input id="district" name="address[district]" type="text" class="input h-11" value="{{ old('address.district') }}" :required="fulfillment === 'delivery'">
+                        @if ($zones->isNotEmpty())
+                            <select id="district" name="address[district]" class="input h-11" x-model="district" :required="fulfillment === 'delivery'">
+                                <option value="">Escolha o bairro</option>
+                                @foreach ($zones as $zone)
+                                    <option value="{{ $zone->name }}">{{ $zone->name }} · {{ $zone->fee_cents->isZero() ? 'grátis' : $zone->fee_cents->format() }}</option>
+                                @endforeach
+                            </select>
+                            <p class="hint">Não achou seu bairro? Ainda não entregamos aí; você pode retirar no local.</p>
+                        @else
+                            <input id="district" name="address[district]" type="text" class="input h-11" value="{{ old('address.district') }}" :required="fulfillment === 'delivery'">
+                        @endif
                     </div>
                     <div class="col-span-6 sm:col-span-3">
                         <label for="city" class="label">Cidade</label>
@@ -202,7 +222,7 @@
 
             <section class="card card-body space-y-2 text-sm">
                 <div class="flex justify-between text-stone-600"><span>Subtotal</span><span x-text="money($store.cart.subtotal)"></span></div>
-                <div class="flex justify-between text-stone-600" x-show="fulfillment === 'delivery'"><span>Taxa de entrega</span><span x-text="fee ? money(fee) : 'Grátis'"></span></div>
+                <div class="flex justify-between text-stone-600" x-show="fulfillment === 'delivery'"><span>Taxa de entrega</span><span x-text="byZone && ! district ? 'escolha o bairro' : (fee ? money(fee) : 'Grátis')"></span></div>
                 <div class="flex justify-between border-t border-stone-100 pt-2 text-base font-bold"><span>Total</span><span x-text="money(fullTotal)"></span></div>
                 <p class="flex items-center gap-1.5 pt-1 font-medium text-amber-700" x-show="$store.cart.subtotal < minimum">
                     <x-icon name="alert" class="size-4" />

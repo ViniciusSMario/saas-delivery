@@ -75,10 +75,22 @@
                 <div class="grid grid-cols-3 gap-2">
                     <input wire:model="address.street" type="text" class="input col-span-2" placeholder="Rua" aria-label="Rua">
                     <input wire:model="address.number" type="text" class="input" placeholder="Nº" aria-label="Número">
-                    <input wire:model="address.district" type="text" class="input col-span-2" placeholder="Bairro" aria-label="Bairro">
+                    @if ($zones->isNotEmpty())
+                        <select wire:model.live="address.district" class="input col-span-2" aria-label="Bairro">
+                            <option value="">Bairro</option>
+                            @foreach ($zones as $zone)
+                                <option value="{{ $zone->name }}">{{ $zone->name }} · {{ $zone->fee_cents->format() }}</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <input wire:model.blur="address.district" type="text" class="input col-span-2" placeholder="Bairro" aria-label="Bairro">
+                    @endif
                     <input wire:model="address.complement" type="text" class="input" placeholder="Compl." aria-label="Complemento">
                     <input wire:model="address.reference" type="text" class="input col-span-3" placeholder="Referência" aria-label="Referência">
                 </div>
+                @if ($unknownZone)
+                    <p class="field-error">Bairro fora da área de entrega.</p>
+                @endif
                 @foreach (['address.street', 'address.number', 'address.district'] as $field)
                     @error($field) <p class="field-error">{{ $message }}</p> @enderror
                 @endforeach

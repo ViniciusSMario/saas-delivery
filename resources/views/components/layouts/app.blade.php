@@ -1,10 +1,11 @@
 @php
     $nav = [
         ['route' => 'dashboard', 'label' => 'Início', 'icon' => 'home', 'can' => null],
-        ['section' => 'Atendimento', 'can' => ['orders.view', 'pos.use', 'tables.manage', 'cash.operate']],
+        ['section' => 'Atendimento', 'can' => ['orders.view', 'pos.use', 'tables.manage', 'cash.operate', 'deliveries.operate']],
         ['route' => 'orders.board', 'label' => 'Painel de pedidos', 'icon' => 'flame', 'can' => 'orders.view', 'match' => ['orders.board', 'orders.show']],
         ['route' => 'tables.map', 'label' => 'Mesas', 'icon' => 'table', 'can' => 'tables.manage', 'match' => ['tables.map', 'tables.command']],
         ['route' => 'orders.counter', 'label' => 'PDV', 'icon' => 'pos', 'can' => 'pos.use'],
+        ['route' => 'delivery.board', 'label' => 'Entregas', 'icon' => 'truck', 'can' => 'deliveries.operate', 'match' => ['delivery.*']],
         ['route' => 'cash.current', 'label' => 'Caixa', 'icon' => 'wallet', 'can' => 'cash.operate', 'match' => ['cash.*']],
         ['route' => 'orders.index', 'label' => 'Histórico', 'icon' => 'clock', 'can' => 'orders.view', 'match' => ['orders.index']],
         ['route' => 'printing.station', 'label' => 'Estação de impressão', 'icon' => 'printer', 'can' => 'orders.view'],

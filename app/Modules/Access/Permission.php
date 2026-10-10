@@ -22,6 +22,7 @@ enum Permission: string
     case OrdersDiscount = 'orders.discount';
     case TablesManage = 'tables.manage';
     case PosUse = 'pos.use';
+    case DeliveriesOperate = 'deliveries.operate';
     case CashOperate = 'cash.operate';
     case CashManage = 'cash.manage';
     case StockManage = 'stock.manage';
@@ -46,6 +47,7 @@ enum Permission: string
             self::OrdersDiscount => 'Aplicar descontos',
             self::TablesManage => 'Gerenciar mesas e comandas',
             self::PosUse => 'Usar o PDV',
+            self::DeliveriesOperate => 'Fazer entregas (pegar e concluir)',
             self::CashOperate => 'Operar caixa (abrir, sangria, suprimento)',
             self::CashManage => 'Fechar e conferir caixa',
             self::StockManage => 'Gerenciar estoque',
@@ -62,7 +64,7 @@ enum Permission: string
             'establishment', 'settings' => 'Estabelecimento',
             'users', 'roles', 'audit' => 'Acesso',
             'menu' => 'Cardápio',
-            'orders', 'tables', 'pos' => 'Pedidos e PDV',
+            'orders', 'tables', 'pos', 'deliveries' => 'Pedidos e PDV',
             'cash', 'finance', 'reports' => 'Caixa e financeiro',
             default => 'Operação',
         };

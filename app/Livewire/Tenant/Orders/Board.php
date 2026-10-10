@@ -84,7 +84,7 @@ class Board extends Component
 
     public function render()
     {
-        $orders = Order::open()->with('items.addons')->oldest()->get()->groupBy(fn (Order $o) => $o->status->value);
+        $orders = Order::open()->with(['items.addons', 'courier'])->oldest()->get()->groupBy(fn (Order $o) => $o->status->value);
         $newest = (int) Order::max('id');
 
         // Pedido novo desde a última atualização: o navegador toca o aviso.

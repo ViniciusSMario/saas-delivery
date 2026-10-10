@@ -31,6 +31,7 @@ class Order extends TenantModel
             'total_cents' => MoneyCast::class,
             'cancelled_at' => 'datetime',
             'completed_at' => 'datetime',
+            'dispatched_at' => 'datetime',
         ];
     }
 
@@ -57,6 +58,12 @@ class Order extends TenantModel
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Entregador que saiu com o pedido. */
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
     }
 
     public function scopeOpen(Builder $query): void

@@ -42,8 +42,8 @@ class DefaultRoles
             ],
             'entregador' => [
                 'name' => 'Entregador',
-                'description' => 'Consulta pedidos para entrega.',
-                'permissions' => [P::OrdersView],
+                'description' => 'Pega os pedidos prontos e conclui as entregas.',
+                'permissions' => [P::OrdersView, P::DeliveriesOperate],
             ],
         ];
     }

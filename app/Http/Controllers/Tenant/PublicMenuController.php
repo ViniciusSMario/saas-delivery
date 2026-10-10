@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Modules\Delivery\DeliveryFees;
 use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
@@ -64,7 +65,8 @@ class PublicMenuController
             'categories' => $categories,
             'featured' => $categories->flatMap->products->where('is_featured', true)->values(),
             'combos' => $combos,
-            'deliveryFee' => Money::cents((int) Setting::read('delivery_fee_cents', 0)),
+            'deliveryFee' => app(DeliveryFees::class)->cheapest(),
+            'zones' => DeliveryFees::byZone() ? app(DeliveryFees::class)->zones() : collect(),
             'minOrder' => Money::cents((int) Setting::read('min_order_cents', 0)),
             'acceptsDelivery' => $acceptsDelivery,
             'acceptsPickup' => $acceptsPickup,

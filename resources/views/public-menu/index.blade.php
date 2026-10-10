@@ -69,7 +69,11 @@
                             @if ($acceptsDelivery)
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
                                     <x-icon name="truck" class="size-4 text-brand-600" />
-                                    {{ $deliveryFee->isZero() ? 'Entrega grátis' : 'Entrega '.$deliveryFee->format() }}
+                                    @if ($zones->isNotEmpty())
+                                        Entrega {{ $deliveryFee->isZero() ? 'grátis em alguns bairros' : 'a partir de '.$deliveryFee->format() }}
+                                    @else
+                                        {{ $deliveryFee->isZero() ? 'Entrega grátis' : 'Entrega '.$deliveryFee->format() }}
+                                    @endif
                                 </span>
                             @endif
                             @if ($acceptsPickup)
@@ -411,7 +415,17 @@
                 <div class="card-header"><h2 class="section-title flex items-center gap-2"><x-icon name="truck" class="size-5 text-brand-600" /> Entrega e retirada</h2></div>
                 <ul class="space-y-2 p-5 text-sm">
                     @if ($acceptsDelivery)
-                        <li class="flex justify-between"><span class="text-stone-500">Entrega</span><span class="font-medium">{{ $deliveryFee->isZero() ? 'Grátis' : 'Taxa de '.$deliveryFee->format() }}</span></li>
+                        @if ($zones->isNotEmpty())
+                            <li class="text-stone-500">Bairros atendidos</li>
+                            @foreach ($zones as $zone)
+                                <li class="flex justify-between pl-3">
+                                    <span>{{ $zone->name }}@if ($zone->eta_minutes)<span class="text-xs text-stone-400"> · ~{{ $zone->eta_minutes }} min</span>@endif</span>
+                                    <span class="font-medium">{{ $zone->fee_cents->isZero() ? 'Grátis' : $zone->fee_cents->format() }}</span>
+                                </li>
+                            @endforeach
+                        @else
+                            <li class="flex justify-between"><span class="text-stone-500">Entrega</span><span class="font-medium">{{ $deliveryFee->isZero() ? 'Grátis' : 'Taxa de '.$deliveryFee->format() }}</span></li>
+                        @endif
                     @endif
                     @if ($acceptsPickup)
                         <li class="flex justify-between"><span class="text-stone-500">Retirada</span><span class="font-medium">Retirada no local</span></li>

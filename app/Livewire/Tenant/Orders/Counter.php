@@ -6,7 +6,7 @@ use App\Livewire\Tenant\Concerns\PicksMenuItems;
 use App\Modules\Access\Models\User;
 use App\Modules\Cash\CashLedger;
 use App\Modules\Customers\Models\Customer;
-use App\Modules\Establishment\Models\Setting;
+use App\Modules\Delivery\DeliveryFees;
 use App\Modules\Orders\Actions\PlaceOrder;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Models\PaymentMethod;
@@ -130,13 +130,17 @@ class Counter extends Component
     {
         $ledger = app(CashLedger::class);
         $subtotal = $this->cartSubtotal()->cents;
-        $fee = $this->fulfillment === 'delivery' ? (int) Setting::read('delivery_fee_cents', 0) : 0;
+        $fees = app(DeliveryFees::class);
+        $quote = $this->fulfillment === 'delivery' ? $fees->quote($this->address['district'] ?? '') : Money::zero();
+        $fee = $quote?->cents ?? 0;
         $discount = $this->discount !== '' && Money::isValid($this->discount) ? Money::parse($this->discount)->cents : 0;
 
         return view('livewire.tenant.orders.counter', $this->pickerData() + [
             'paymentMethods' => PaymentMethod::active()->get(),
             'subtotal' => Money::cents($subtotal),
             'fee' => Money::cents($fee),
+            'zones' => DeliveryFees::byZone() ? $fees->zones() : collect(),
+            'unknownZone' => $this->fulfillment === 'delivery' && $quote === null && trim($this->address['district'] ?? '') !== '',
             'total' => Money::cents(max(0, $subtotal - $discount + $fee)),
             'canDiscount' => $this->user()->can('orders.discount'),
             'session' => $ledger->currentFor($this->user()),
