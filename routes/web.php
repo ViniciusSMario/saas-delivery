@@ -12,6 +12,7 @@ Route::get('/cadastro', [SignupController::class, 'create'])->name('signup.creat
 Route::post('/cadastro', [SignupController::class, 'store'])->name('signup.store');
 Route::get('/cadastro/disponivel', [SignupController::class, 'check'])->middleware('throttle:60,1')->name('signup.check');
 Route::get('/cadastro/pronto', [SignupController::class, 'done'])->name('signup.done');
+Route::get('/cadastro/confirmar/{tenant}', [SignupController::class, 'verify'])->middleware('signed')->name('signup.verify');
 
 // Webhook do gateway (Asaas): autenticado pelo token do gateway, sem CSRF.
 Route::post('/webhooks/billing/{gateway}', [BillingController::class, 'webhook'])

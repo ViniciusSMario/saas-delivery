@@ -14,6 +14,16 @@
     </x-ui.page-header>
 
     @error('status') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
+
+    @if (! $tenant->email_verified_at)
+        <div class="alert-warning items-center">
+            <x-icon name="alert" class="size-5" />
+            <span class="flex-1">O dono ainda não confirmou o e-mail ({{ $tenant->billing_email }}): o cardápio online está fora do ar.</span>
+            @can('platform.manage-tenants')
+                <button type="button" wire:click="markEmailVerified" wire:confirm="Marcar o e-mail como confirmado?" class="btn-secondary btn-sm">Marcar como confirmado</button>
+            @endcan
+        </div>
+    @endif
     @error('backup') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
 
     <section class="card card-body">

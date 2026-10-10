@@ -144,6 +144,18 @@
             @endif
 
             <main @class(['mx-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8', 'max-w-7xl' => ! ($wide ?? false)])>
+                {{-- Cadastro self-service: cardápio fora do ar até confirmar o e-mail. --}}
+                @if ($isOwner && ! $tenant->email_verified_at)
+                    <div class="print:hidden mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <x-icon name="alert" class="size-5 text-amber-600" />
+                        <span class="flex-1">Confirme seu e-mail (<strong>{{ $tenant->billing_email }}</strong>) para colocar o cardápio online no ar. Enquanto isso, você já pode montar o cardápio.</span>
+                        <form method="POST" action="{{ route('verification.resend') }}">
+                            @csrf
+                            <button type="submit" class="btn-secondary btn-sm">Reenviar e-mail</button>
+                        </form>
+                    </div>
+                @endif
+
                 {{-- Assinatura: aviso só para o dono --}}
                 @if ($isOwner && ! request()->routeIs('subscription'))
                     @if ($tenant->subscription_status === 'trialing' && ! $tenant->billing_subscription_id)

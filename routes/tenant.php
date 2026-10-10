@@ -46,6 +46,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::post('/logout', LogoutController::class)->name('logout');
     Route::post('/suporte/sair', [SupportAccessController::class, 'leave'])->name('support.leave');
+    Route::post('/confirmar-email/reenviar', \App\Http\Controllers\Tenant\ResendVerificationController::class)->middleware('throttle:3,60')->name('verification.resend');
     Route::get('/minha-conta', Profile::class)->name('profile');
 
     Route::get('/estabelecimento', EditEstablishment::class)->middleware('can:establishment.manage')->name('establishment.edit');

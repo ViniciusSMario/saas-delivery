@@ -8,16 +8,20 @@
 use App\Http\Controllers\Tenant\EstablishmentLogoController;
 use App\Http\Controllers\Tenant\PublicMenuController;
 use App\Http\Controllers\Tenant\PublicOrderController;
+use App\Tenancy\Middleware\EnsureTenantVerified;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PublicMenuController::class, 'index']);
-Route::get('/manifest.webmanifest', [PublicMenuController::class, 'manifest']);
-Route::get('/logo', EstablishmentLogoController::class);
-Route::get('/imagens/{image}', [PublicMenuController::class, 'productImage'])->whereNumber('image');
-Route::get('/combos/{combo}/imagem', [PublicMenuController::class, 'comboImage'])->whereNumber('combo');
+// Cadastro self-service: o cardápio só vai ao ar depois da confirmação do e-mail do dono.
+Route::middleware(EnsureTenantVerified::class)->group(function () {
+    Route::get('/', [PublicMenuController::class, 'index']);
+    Route::get('/manifest.webmanifest', [PublicMenuController::class, 'manifest']);
+    Route::get('/logo', EstablishmentLogoController::class);
+    Route::get('/imagens/{image}', [PublicMenuController::class, 'productImage'])->whereNumber('image');
+    Route::get('/combos/{combo}/imagem', [PublicMenuController::class, 'comboImage'])->whereNumber('combo');
 
-// Pedido online
-Route::get('/pedido', [PublicOrderController::class, 'checkout']);
-Route::post('/pedido', [PublicOrderController::class, 'store']);
-Route::get('/pedido/{token}', [PublicOrderController::class, 'show']);
-Route::get('/pedido/{token}/status', [PublicOrderController::class, 'status']);
+    // Pedido online
+    Route::get('/pedido', [PublicOrderController::class, 'checkout']);
+    Route::post('/pedido', [PublicOrderController::class, 'store']);
+    Route::get('/pedido/{token}', [PublicOrderController::class, 'show']);
+    Route::get('/pedido/{token}/status', [PublicOrderController::class, 'status']);
+});

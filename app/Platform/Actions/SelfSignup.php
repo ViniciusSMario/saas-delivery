@@ -10,6 +10,7 @@ use App\Tenancy\Exceptions\InvalidTenantData;
 use App\Tenancy\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -57,20 +58,41 @@ class SelfSignup
         }
 
         $this->subscriptions->startTrial($tenant, $plan, mb_strtolower(trim($data['email'])));
+        $tenant->update(['email_verified_at' => null]);
         $tenant->recordEvent('self_signup', ['plan' => $plan->slug, 'ip' => $ip], $data['email']);
 
-        Notification::route('mail', $data['email'])->notify(new TenantNotice(
-            "Bem-vindo ao ".config('app.name').", {$tenant->name}!",
-            [
-                "Seu estabelecimento está pronto e o teste grátis do plano {$plan->name} vai até ".$tenant->trial_ends_at->timezone('America/Sao_Paulo')->format('d/m/Y').'.',
-                'Comece cadastrando o cardápio e as mesas. O link do seu cardápio online é '.static::url($tenant, '/cardapio').'.',
-                'Entre com o e-mail e a senha que você escolheu.',
-            ],
-            'Entrar no painel',
-            static::url($tenant, '/login'),
-        ));
+        static::sendVerification($tenant, welcome: true);
 
         return $tenant;
+    }
+
+    /** E-mail com o link (assinado, válido por 7 dias) para confirmar o endereço do dono. */
+    public static function sendVerification(Tenant $tenant, bool $welcome = false): void
+    {
+        $link = URL::temporarySignedRoute('signup.verify', now()->addDays(7), ['tenant' => $tenant->id]);
+
+        $lines = $welcome
+            ? [
+                "Seu estabelecimento está pronto e o teste grátis do plano {$tenant->plan?->name} vai até ".$tenant->trial_ends_at?->timezone('America/Sao_Paulo')->format('d/m/Y').'.',
+                'Confirme o seu e-mail para colocar o cardápio online no ar. Enquanto isso, você já pode entrar no painel e montar o cardápio.',
+                'Painel: '.static::url($tenant, '/login').' (entre com o e-mail e a senha que você escolheu).',
+            ]
+            : ['Confirme o seu e-mail para colocar o cardápio online de '.$tenant->name.' no ar.'];
+
+        Notification::route('mail', $tenant->billing_email)->notify(new TenantNotice(
+            $welcome ? 'Bem-vindo ao '.config('app.name').", {$tenant->name}! Confirme seu e-mail" : 'Confirme seu e-mail',
+            $lines,
+            'Confirmar e-mail',
+            $link,
+        ));
+    }
+
+    public static function markVerified(Tenant $tenant, string $actor = 'dono'): void
+    {
+        if (! $tenant->email_verified_at) {
+            $tenant->update(['email_verified_at' => now()]);
+            $tenant->recordEvent('email_verified', [], $actor);
+        }
     }
 
     public static function isAvailable(string $slug): bool

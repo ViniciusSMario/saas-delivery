@@ -4,6 +4,7 @@ namespace App\Livewire\Platform\Tenants;
 
 use App\Modules\Access\Models\User;
 use App\Platform\Actions\ChangeTenantStatus;
+use App\Platform\Actions\SelfSignup;
 use App\Platform\Actions\SupportImpersonation;
 use App\Platform\Models\SupportAccess;
 use App\Tenancy\TenantContext;
@@ -136,6 +137,15 @@ class Show extends Component
 
         $subscriptions->extendTrial($this->tenant(), 7, $this->actor());
         $this->done('Teste grátis estendido por 7 dias.');
+    }
+
+    /** Suporte confirma o e-mail do dono manualmente (ex.: e-mail caiu no spam). */
+    public function markEmailVerified(): void
+    {
+        $this->authorize('platform.manage-tenants');
+
+        SelfSignup::markVerified($this->tenant(), $this->actor());
+        $this->done('E-mail marcado como confirmado. O cardápio online está no ar.');
     }
 
     public function makeCourtesy(Subscriptions $subscriptions): void

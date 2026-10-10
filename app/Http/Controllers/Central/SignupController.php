@@ -93,4 +93,17 @@ class SignupController
             'menuUrl' => SelfSignup::url($tenant, '/cardapio'),
         ]);
     }
+
+    /** Link do e-mail de confirmação (assinado). */
+    public function verify(string $tenant): View
+    {
+        $tenant = Tenant::findOrFail($tenant);
+        SelfSignup::markVerified($tenant);
+
+        return view('central.signup-verified', [
+            'tenant' => $tenant,
+            'loginUrl' => SelfSignup::url($tenant, '/login'),
+            'menuUrl' => SelfSignup::url($tenant, '/cardapio'),
+        ]);
+    }
 }

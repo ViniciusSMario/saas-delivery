@@ -40,6 +40,7 @@ class Tenant extends Model
             'trial_ends_at' => 'datetime',
             'current_period_ends_at' => 'datetime',
             'past_due_since' => 'datetime',
+            'email_verified_at' => 'datetime',
         ];
     }
 

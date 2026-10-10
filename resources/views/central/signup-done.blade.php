@@ -5,7 +5,8 @@
             <h1 class="mt-5 text-3xl font-extrabold tracking-tight">Tudo pronto, {{ $tenant->name }}!</h1>
             <p class="mt-3 text-stone-600">
                 Seu teste grátis vai até <strong>{{ $tenant->trial_ends_at?->timezone('America/Sao_Paulo')->format('d/m/Y') }}</strong>.
-                Enviamos um e-mail de boas-vindas com os links abaixo.
+                Enviamos um link de confirmação para <strong>{{ $tenant->billing_email }}</strong>: o cardápio online entra no ar quando você confirmar.
+                Já dá para entrar no painel e montar o cardápio.
             </p>
 
             <div class="card mt-8 space-y-4 p-6 text-left">
