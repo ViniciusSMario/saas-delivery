@@ -91,7 +91,8 @@ it('deixa o suporte só consultar', function () {
     $tenant = tenantBySlug('teste1');
     $support = createPlatformUser(PlatformUser::ROLE_SUPPORT);
 
-    $this->actingAs($support, 'platform')->get(ADMIN.'/')->assertOk()->assertSee('Tenant Teste 1');
+    // Com busca: a suíte cria muitos estabelecimentos e a lista é paginada.
+    $this->actingAs($support, 'platform')->get(ADMIN.'/?q=teste1')->assertOk()->assertSee('Tenant Teste 1');
     $this->actingAs($support, 'platform')->get(ADMIN.'/tenants/'.$tenant->id)->assertOk();
     $this->actingAs($support, 'platform')->get(ADMIN.'/tenants/novo')->assertForbidden();
 
