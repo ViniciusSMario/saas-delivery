@@ -14,6 +14,9 @@
         <div class="flex flex-wrap gap-2">
             <button type="button" onclick="window.print()" class="btn-secondary"><x-icon name="printer" class="size-4" /> Imprimir</button>
             <button type="button" wire:click="reprint" class="btn-secondary"><x-icon name="flame" class="size-4" /> Reimprimir nos setores</button>
+            @if ($waLink = \App\Modules\Messaging\OrderMessages::link($order))
+                <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn-secondary text-emerald-700"><x-icon name="phone" class="size-4" /> Avisar no WhatsApp</a>
+            @endif
             @can('orders.manage')
                 @if ($order->payments->contains('status', PaymentStatus::Pending) && $order->status !== OrderStatus::Cancelled)
                     <button type="button" wire:click="markPaid" class="btn-secondary">Marcar como pago</button>

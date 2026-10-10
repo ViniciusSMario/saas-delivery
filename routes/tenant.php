@@ -65,7 +65,9 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/entregas', \App\Livewire\Tenant\Delivery\Board::class)->middleware('can:deliveries.operate')->name('delivery.board');
     Route::get('/entregas/bairros', \App\Livewire\Tenant\Delivery\Zones::class)->middleware('can:settings.manage')->name('delivery.zones');
 
-    Route::get('/impressao',\App\Livewire\Tenant\Printing\Station::class)->middleware('can:orders.view')->name('printing.station');
+    Route::get('/whatsapp', \App\Livewire\Tenant\Messaging\Settings::class)->middleware('can:settings.manage')->name('whatsapp.settings');
+
+    Route::get('/impressao', \App\Livewire\Tenant\Printing\Station::class)->middleware('can:orders.view')->name('printing.station');
     Route::get('/impressoras', \App\Livewire\Tenant\Printing\Settings::class)->middleware('can:settings.manage')->name('printing.settings');
 
     Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');

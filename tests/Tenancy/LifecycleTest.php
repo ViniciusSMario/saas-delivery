@@ -59,7 +59,8 @@ it('continua migrando os outros tenants quando um falha', function () {
     $healthy = provisionTenant('mig');
 
     foreach ([$broken, $healthy] as $tenant) {
-        $this->artisan('tenants:rollback', ['--tenant' => $tenant->slug, '--step' => 10])->assertSuccessful();
+        // Desfaz todas as migrations do tenant.
+        $this->artisan('tenants:rollback', ['--tenant' => $tenant->slug, '--step' => count(glob(base_path('database/migrations/tenant/*.php')))])->assertSuccessful();
         expect(inTenant($tenant, fn () => Schema::hasTable('settings')))->toBeFalse();
     }
 

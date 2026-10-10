@@ -46,7 +46,7 @@
         <a href="{{ $mapUrl }}" target="_blank" rel="noopener" class="btn-secondary btn-sm"><x-icon name="pin" class="size-4" /> Mapa</a>
         @if ($digits)
             <a href="tel:{{ $digits }}" class="btn-ghost btn-sm" title="Ligar"><x-icon name="phone" class="size-4" /></a>
-            <a href="https://wa.me/55{{ ltrim($digits, '0') }}" target="_blank" rel="noopener" class="btn-ghost btn-sm text-emerald-700" title="WhatsApp">WhatsApp</a>
+            <a href="{{ \App\Modules\Messaging\OrderMessages::link($order, $mode === 'ready' ? null : 'dispatched') }}" target="_blank" rel="noopener" class="btn-ghost btn-sm text-emerald-700" title="Avisar o cliente no WhatsApp">WhatsApp</a>
         @endif
         <div class="ml-auto flex flex-wrap gap-2">
             @if ($mode === 'ready')

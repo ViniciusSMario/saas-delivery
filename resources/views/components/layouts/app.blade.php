@@ -27,6 +27,8 @@
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'icon' => 'sliders', 'can' => 'settings.manage'],
         ['route' => 'printing.settings', 'label' => 'Impressoras', 'icon' => 'printer', 'can' => 'settings.manage'],
+        ['route' => 'whatsapp.settings', 'label' => 'WhatsApp', 'icon' => 'phone', 'can' => 'settings.manage'],
+        ['route' => 'delivery.zones', 'label' => 'Bairros e taxas', 'icon' => 'pin', 'can' => 'settings.manage'],
         ['route' => 'users.index', 'label' => 'Usuários', 'icon' => 'user', 'can' => 'users.view'],
         ['route' => 'roles.index', 'label' => 'Perfis e permissões', 'icon' => 'shield', 'can' => 'roles.manage'],
         ['route' => 'audit.index', 'label' => 'Auditoria', 'icon' => 'list', 'can' => 'audit.view'],

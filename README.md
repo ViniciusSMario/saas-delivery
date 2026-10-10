@@ -21,6 +21,8 @@ Entregue até agora:
 
 - **Fase 9 (Operação da plataforma):** backup diário e restauração por estabelecimento, exclusão com carência, site com planos, cadastro self-service com teste grátis, limites por plano e cobrança recorrente (Asaas ou gateway de teste).
 
+- **Fase 10 (Operação do restaurante):** impressão na cozinha por setor (estação no navegador ou impressora de rede), entregas com taxa por bairro, tela do entregador e rota no mapa, e avisos ao cliente pelo WhatsApp.
+
 ## Subir o ambiente
 
 ```bash
@@ -117,6 +119,19 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
   - Entrada de estoque: opção "gerar conta a pagar".
 - **Relatórios** (`/relatorios`, `reports.view`): vendas por dia e canal, recebido por forma de pagamento, produtos mais vendidos com custo e margem pela ficha (combos inclusive), horários de pico, cancelamentos, descontos e taxa retirada (por quem), caixas fechados. Exportação CSV (`;`, abre no Excel). "Venda" = pedido online/balcão não cancelado + conta de mesa fechada, sem contar duas vezes os lançamentos de mesa. As consultas vão direto no schema do tenant (`App\Modules\Reports\SalesReport`).
 - **Início:** painel do dia conforme o perfil: vendas, pedidos e ticket médio contra o mesmo dia da semana passada, canais, recebido, pedidos em andamento, mesas ocupadas, contas vencendo e estoque baixo.
+
+## Impressão, entregas e WhatsApp
+
+- **Impressão na cozinha** (Administração → Impressoras, `/impressoras`): cadastre os setores (Cozinha, Bar, Expedição) e diga em qual setor sai cada categoria. Todo pedido novo (online, balcão ou lançamento de mesa) vira um cupom por setor, só com os itens dele (combos são separados por componente). Itens de categoria sem setor vão para o setor padrão. Setor marcado como "pedido completo" recebe o pedido inteiro com valores, troco e endereço (expedição/caixa). Há reimpressão no painel de pedidos e na página do pedido.
+  - **Estação no navegador** (`/impressao`): deixe aberta no computador da impressora, marque os setores e clique em Começar. Ela pega os cupons (nenhuma outra estação pega o mesmo) e imprime em 80 ou 58 mm. Para imprimir sem a janela de impressão, abra o Chrome com `--kiosk-printing` e a térmica como impressora padrão.
+  - **Impressora de rede (ESC/POS, porta 9100):** só para instalação na rede do restaurante (`PRINTING_NETWORK_ENABLED=true`). Na nuvem fica desligada: o servidor não alcança a rede da loja. Aceita só as portas 9100-9109.
+- **Entregas** (`/entregas`, permissão "Fazer entregas", dada a Entregador e Gerente): pedidos prontos para sair, "Pegar entrega" (o primeiro que tocar leva), mapa de cada endereço, rota no Google Maps com todas as paradas, ligar/WhatsApp para o cliente e "Entregue" (o pagamento na entrega entra no caixa aberto). A gerência escolhe ou troca o entregador e vê as entregas e as taxas do dia por entregador. O painel de pedidos mostra o entregador.
+  - **Taxa por bairro** (`/entregas/bairros`): valor único (Configurações) ou por bairro, com pedido mínimo e tempo por bairro. Por bairro, o checkout mostra a lista e recusa bairro fora da área; o nome é comparado sem acento e sem diferenciar maiúsculas.
+- **WhatsApp** (Administração → WhatsApp, `/whatsapp`): avisos de pedido recebido, em preparo, pronto para retirada, saiu para entrega, entregue e cancelado, cada um ligável e com texto editável (`{nome}`, `{numero}`, `{estabelecimento}`, `{total}`, `{link}`, `{motivo}`). Pedido de mesa e pedido sem telefone não recebem aviso. O mesmo aviso nunca sai duas vezes.
+  - **Manual** (padrão, grátis): botão "Avisar no WhatsApp" na página do pedido e nas entregas, com a mensagem pronta.
+  - **Evolution API:** envio automático pelo seu número (QR code). O endereço precisa ser https público.
+  - **Cloud API (Meta):** oficial. Mensagem iniciada pela empresa exige um modelo aprovado com uma variável (ex.: "Atualização do seu pedido: {{1}}"). O texto do aviso vai nela.
+  - Credenciais ficam criptografadas. Os envios saem pela fila (`queue`) e aparecem em "Últimos avisos".
 
 ## Operação da plataforma
 
