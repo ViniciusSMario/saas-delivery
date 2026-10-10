@@ -111,5 +111,12 @@ final class TenantContext
         Storage::forgetDisk('tenant');
 
         $id ? Context::add('tenant_id', $id) : Context::forget('tenant_id');
+
+        // Erros no Sentry chegam marcados com o estabelecimento.
+        if (function_exists('\Sentry\configureScope')) {
+            \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($tenant) {
+                $tenant ? $scope->setTag('tenant', $tenant->slug) : $scope->removeTag('tenant');
+            });
+        }
     }
 }

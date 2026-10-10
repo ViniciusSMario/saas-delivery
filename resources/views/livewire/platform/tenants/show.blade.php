@@ -144,6 +144,7 @@
                             <td><span @class(['badge-gray' => $backup->kind === 'daily', 'badge-blue' => $backup->kind === 'manual', 'badge-amber' => $backup->kind === 'pre_restore', 'badge-violet' => $backup->kind === 'final'])>{{ $backup->kindLabel() }}</span></td>
                             <td>
                                 @if ($backup->status === 'done') <span class="badge-green">Concluído</span>
+                                    @if ($backup->offsite_at)<span class="badge-blue ml-1" title="Cópia fora do servidor em {{ $backup->offsite_at->timezone($tz)->format('d/m H:i') }}">no bucket</span>@endif
                                 @elseif ($backup->status === 'running') <span class="badge-amber">Em andamento</span>
                                 @else <span class="badge-red" title="{{ $backup->error }}">Falhou</span> @endif
                             </td>

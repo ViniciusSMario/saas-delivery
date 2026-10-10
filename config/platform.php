@@ -11,6 +11,10 @@ return [
         // Manuais, "antes da restauração" e o final da exclusão.
         'keep_other_days' => (int) env('BACKUPS_KEEP_OTHER_DAYS', 30),
         'timeout' => (int) env('BACKUPS_TIMEOUT', 900),
+        // Disco da cópia fora do servidor (ex.: "s3", configurado em filesystems.php). Vazio = desligado.
+        'offsite_disk' => env('BACKUPS_OFFSITE_DISK', ''),
+        // Backups do banco inteiro (platform:backup-database) mantidos.
+        'keep_database' => (int) env('BACKUPS_KEEP_DATABASE', 14),
     ],
 
     // Dias entre "agendar exclusão" e a remoção definitiva dos dados.

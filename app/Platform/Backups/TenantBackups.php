@@ -25,6 +25,7 @@ class TenantBackups
     public function __construct(
         private readonly SchemaManager $schemas,
         private readonly TenantMigrator $migrator,
+        private readonly Offsite $offsite,
     ) {
     }
 
@@ -67,7 +68,25 @@ class TenantBackups
             throw $e;
         }
 
+        $this->sendOffsite($backup);
+
         return $backup->refresh();
+    }
+
+    /** Cópia no bucket. Falhar aqui não invalida o backup local: tenta de novo no próximo prune. */
+    public function sendOffsite(TenantBackup $backup): void
+    {
+        if (! $this->offsite->enabled() || $backup->offsite_at || $backup->status !== 'done') {
+            return;
+        }
+
+        try {
+            $this->offsite->upload($backup->path);
+            $backup->update(['offsite_at' => now()]);
+        } catch (Throwable $e) {
+            report($e);
+            $backup->tenant?->recordEvent('backup_offsite_failed', ['backup' => $backup->id, 'error' => mb_substr($e->getMessage(), 0, 300)]);
+        }
     }
 
     /**
@@ -77,6 +96,11 @@ class TenantBackups
     public function restore(TenantBackup $backup, ?string $actor = null): void
     {
         $tenant = $backup->tenant;
+
+        // Servidor novo (ou backup local já apagado): busca no bucket.
+        if ($backup->status === 'done' && $backup->offsite_at && ! $this->disk()->exists($backup->path.'/database.dump') && $this->offsite->enabled()) {
+            $this->offsite->download($backup->path);
+        }
 
         if ($backup->status !== 'done' || ! $this->disk()->exists($backup->path.'/database.dump')) {
             throw new RuntimeException('Backup indisponível para restauração.');
@@ -136,6 +160,10 @@ class TenantBackups
     {
         if ($backup->path) {
             $this->disk()->deleteDirectory($backup->path);
+
+            if ($backup->offsite_at && $this->offsite->enabled()) {
+                $this->offsite->delete($backup->path);
+            }
         }
 
         $backup->delete();
@@ -169,6 +197,9 @@ class TenantBackups
                 if ($expired) {
                     $this->delete($backup);
                     $deleted++;
+                } else {
+                    // Cópia no bucket que falhou antes: nova tentativa.
+                    $this->sendOffsite($backup);
                 }
             }
         }

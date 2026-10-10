@@ -34,6 +34,7 @@ class TenantBackup extends Model
         return [
             'size_bytes' => 'integer',
             'completed_at' => 'datetime',
+            'offsite_at' => 'datetime',
         ];
     }
 

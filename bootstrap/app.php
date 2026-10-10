@@ -19,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Sentry\Laravel\Integration;
 
 $isPlatformHost = fn (Request $request) => $request->getHost() === config('tenancy.platform_domain');
 
@@ -81,5 +82,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn (Request $request) => $isPlatformHost($request) ? route('platform.tenants.index') : route('dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Erros para o Sentry (só com SENTRY_LARAVEL_DSN configurado).
+        Integration::handles($exceptions);
     })->create();
