@@ -25,7 +25,11 @@ class EnsureTenantIsActive
 
         abort_unless($tenant instanceof Tenant, 404);
 
-        if ($tenant->status === TenantStatus::Suspended || $tenant->status === TenantStatus::Restoring) {
+        if ($tenant->status === TenantStatus::Restoring) {
+            return response()->view('tenancy.suspended', ['tenant' => $tenant], 503, ['Retry-After' => '120']);
+        }
+
+        if ($tenant->status === TenantStatus::Suspended || $tenant->status === TenantStatus::PendingDeletion) {
             return response()->view('tenancy.suspended', ['tenant' => $tenant], 403);
         }
 

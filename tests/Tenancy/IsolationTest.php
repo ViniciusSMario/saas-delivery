@@ -52,7 +52,14 @@ it('bloqueia tenant suspenso e não expõe tenant em provisionamento', function 
     $tenant->update(['status' => TenantStatus::Provisioning]);
     $this->get(tenantUrl($tenant))->assertNotFound();
 
+    // Agendado para exclusão: bloqueado, com aviso (ainda dá para cancelar).
     $tenant->update(['status' => TenantStatus::PendingDeletion]);
+    $this->get(tenantUrl($tenant))->assertForbidden()->assertSee('Conta em exclusão');
+
+    $tenant->update(['status' => TenantStatus::Restoring]);
+    $this->get(tenantUrl($tenant))->assertStatus(503)->assertSee('Em manutenção');
+
+    $tenant->update(['status' => TenantStatus::Deleted]);
     $this->get(tenantUrl($tenant))->assertNotFound();
 });
 

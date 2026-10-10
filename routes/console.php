@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Rotina da plataforma (container "scheduler" roda schedule:work). Horários de Brasília.
+Schedule::command('tenants:backup --kind=daily')->dailyAt('03:00')->timezone('America/Sao_Paulo')->withoutOverlapping();
+Schedule::command('tenants:prune-backups')->dailyAt('04:30')->timezone('America/Sao_Paulo');
+Schedule::command('tenants:purge-deleted')->dailyAt('05:00')->timezone('America/Sao_Paulo')->withoutOverlapping();

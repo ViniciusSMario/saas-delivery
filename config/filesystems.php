@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        // Backups dos estabelecimentos (fora do disco "tenant": sobrevivem à exclusão do tenant).
+        'backups' => [
+            'driver' => 'local',
+            'root' => env('BACKUPS_PATH', storage_path('app/backups')),
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

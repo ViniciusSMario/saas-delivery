@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use LogicException;
 
@@ -21,6 +22,7 @@ use LogicException;
 class Tenant extends Model
 {
     use HasUuids;
+    use SoftDeletes;
 
     protected $connection = 'central';
 
@@ -32,6 +34,10 @@ class Tenant extends Model
             'status' => TenantStatus::class,
             'activated_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'deletion_scheduled_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+            'current_period_ends_at' => 'datetime',
+            'past_due_since' => 'datetime',
         ];
     }
 
@@ -81,6 +87,12 @@ class Tenant extends Model
             'payload' => $payload,
             'actor' => $actor ?? (app()->runningInConsole() ? 'console' : null),
         ]);
+    }
+
+    /** Link de pagamento da fatura em aberto mais antiga (tela de conta suspensa). */
+    public function openInvoiceUrl(): ?string
+    {
+        return null;
     }
 
     public function primaryDomain(): ?string

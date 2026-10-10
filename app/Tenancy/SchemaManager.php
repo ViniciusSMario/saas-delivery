@@ -34,6 +34,12 @@ final class SchemaManager
         $this->central()->statement('drop schema if exists '.$this->quote($schema).' cascade');
     }
 
+    /** Usado na restauração de backup: o schema atual sai do caminho antes do dump voltar. */
+    public function rename(string $from, string $to): void
+    {
+        $this->central()->statement('alter schema '.$this->quote($from).' rename to '.$this->quote($to));
+    }
+
     public function exists(string $schema): bool
     {
         return $this->central()->table('information_schema.schemata')

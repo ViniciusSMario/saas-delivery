@@ -2,6 +2,7 @@
 
 // Admin da plataforma: admin.meusistema.com. Guard "platform", schema public, sem tenant.
 
+use App\Http\Controllers\Platform\BackupDownloadController;
 use App\Http\Controllers\Platform\LogoutController;
 use App\Livewire\Platform\Auth\Login;
 use App\Livewire\Platform\Auth\TwoFactor;
@@ -16,6 +17,7 @@ Route::middleware('guest:platform')->group(function () {
 Route::middleware('auth:platform')->group(function () {
     Route::get('/', Tenants\Index::class)->name('tenants.index');
     Route::get('/tenants/novo', Tenants\Create::class)->middleware('can:platform.manage-tenants')->name('tenants.create');
-    Route::get('/tenants/{tenant}', Tenants\Show::class)->name('tenants.show');
+    Route::get('/tenants/{tenant}', Tenants\Show::class)->withTrashed()->name('tenants.show');
+    Route::get('/backups/{backup}/download', BackupDownloadController::class)->name('backups.download');
     Route::post('/logout', LogoutController::class)->name('logout');
 });
