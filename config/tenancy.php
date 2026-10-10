@@ -26,7 +26,9 @@ return [
 
     'seeder' => Database\Seeders\Tenant\TenantDatabaseSeeder::class,
 
-    // Role do PostgreSQL por tenant (SET ROLE): preparado, desligado no MVP.
-    'database_roles' => false,
+    // Papel do PostgreSQL por tenant (SET ROLE): o banco só deixa o tenant ativo ler o próprio
+    // schema. Ligue em produção (TENANCY_DATABASE_ROLES=true) e rode tenants:roles.
+    // O usuário da aplicação precisa de CREATEROLE (docker/postgres/init).
+    'database_roles' => (bool) env('TENANCY_DATABASE_ROLES', false),
 
 ];

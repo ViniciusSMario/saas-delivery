@@ -43,6 +43,11 @@ abstract class TestCase extends BaseTestCase
             $schemas->drop($schema);
         }
 
+        // Papéis de tenant de execuções anteriores (com TENANCY_DATABASE_ROLES ligado).
+        foreach ($schemas->orphanRoles() as $role) {
+            $schemas->dropOrphanRole($role);
+        }
+
         Artisan::call('central:migrate', ['--fresh' => true, '--seed' => true]);
 
         Redis::connection('default')->flushdb();

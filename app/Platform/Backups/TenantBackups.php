@@ -127,8 +127,13 @@ class TenantBackups
 
             try {
                 $this->pgRestore($this->absolute($backup->path.'/database.dump'));
+
+                // O dump volta como da aplicação: devolve tudo ao papel do tenant.
+                if (SchemaManager::rolesEnabled()) {
+                    $this->schemas->assignToRole($schema);
+                }
             } catch (Throwable $e) {
-                $this->schemas->drop($schema);
+                $this->schemas->drop($schema, withRole: false);
                 $this->schemas->rename($parked, $schema);
 
                 throw $e;
@@ -147,7 +152,7 @@ class TenantBackups
         }
 
         // O estado anterior está no backup "antes da restauração": o que foi tirado do caminho sai.
-        $this->schemas->drop($parked);
+        $this->schemas->drop($parked, withRole: false);
         File::deleteDirectory($parkedFiles);
 
         // Backup antigo pode estar numa versão anterior do schema.

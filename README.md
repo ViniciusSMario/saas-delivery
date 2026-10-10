@@ -21,6 +21,8 @@ Entregue até agora:
 
 - **Fase 9 (Operação da plataforma):** backup diário e restauração por estabelecimento, exclusão com carência, site com planos, cadastro self-service com teste grátis, limites por plano e cobrança recorrente (Asaas ou gateway de teste).
 
+- **Fase 11 (Produção):** imagens Docker de produção com HTTPS automático (Caddy, certificado sob demanda), deploy por script e GitHub Actions, backups fora do servidor e do banco inteiro, Sentry, acesso de suporte auditado, domínio próprio e papel do PostgreSQL por estabelecimento. Guia em [docs/PRODUCAO.md](docs/PRODUCAO.md).
+
 - **Fase 10 (Operação do restaurante):** impressão na cozinha por setor (estação no navegador ou impressora de rede), entregas com taxa por bairro, tela do entregador e rota no mapa, e avisos ao cliente pelo WhatsApp.
 
 ## Subir o ambiente
@@ -133,6 +135,20 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
   - **Cloud API (Meta):** oficial. Mensagem iniciada pela empresa exige um modelo aprovado com uma variável (ex.: "Atualização do seu pedido: {{1}}"). O texto do aviso vai nela.
   - Credenciais ficam criptografadas. Os envios saem pela fila (`queue`) e aparecem em "Últimos avisos".
 
+## Produção
+
+Passo a passo completo (servidor, DNS, `.env`, primeira subida, backups, monitoramento) em **[docs/PRODUCAO.md](docs/PRODUCAO.md)**.
+
+- **Imagens** (`docker/production/Dockerfile`): `app` (PHP-FPM com opcache, vendor sem dev e assets compilados; também roda a fila e o agendador) e `web` (Caddy). `docker-compose.production.yml` sobe app, fila, agendador, web, PostgreSQL e Redis, com reinício automático e sem portas de banco abertas.
+- **HTTPS automático:** o Caddy emite certificado na primeira visita a cada host. Antes, pergunta ao app (`/caddy/ask`, protegido por `CADDY_ASK_TOKEN`) se o domínio é do sistema: domínio central, admin, subdomínio de estabelecimento ou domínio próprio verificado. Basta um registro DNS curinga (`*.seudominio.com.br`).
+- **Deploy:** `./scripts/deploy.sh` (código, imagens, manutenção, migrations da plataforma e de todos os estabelecimentos, papéis, containers e conferência de `/saude`). O GitHub Actions (`.github/workflows/ci.yml`) roda os testes a cada push e, na `main`, faz o deploy por SSH quando os segredos `DEPLOY_*` existem.
+- **Saúde:** `/saude` (qualquer host) responde 200 com banco, Redis e disco em ordem; 503 se algo falhar.
+- **Backups fora do servidor:** com `BACKUPS_OFFSITE_DISK=s3` (S3, Backblaze B2, Cloudflare R2, Wasabi...), cada backup de estabelecimento vai também para o bucket; restaurar busca de lá se a cópia local sumiu. `platform:backup-database` (02:30) salva o banco inteiro, mantém os 14 mais recentes e também vai para o bucket.
+- **Erros:** `SENTRY_LARAVEL_DSN` liga o Sentry; cada erro chega marcado com o estabelecimento.
+- **Entrar como suporte** (admin → estabelecimento): escolhe o usuário e o motivo; um link de uso único (2 minutos) abre o sistema do estabelecimento logado como ele. Uma faixa avisa o modo suporte; cada ação na auditoria leva `via_suporte`; entrada e saída ficam registradas no estabelecimento e na plataforma.
+- **Domínio próprio** (`/dominio`, planos Profissional e Completo): o dono cadastra, cria no DNS o CNAME (para o subdomínio dele) e o TXT `_saas-verify.<domínio>` com o código, e verifica. Só domínio verificado abre o sistema e recebe certificado; pode virar o endereço principal (links de e-mail e WhatsApp).
+- **Papel do PostgreSQL por estabelecimento** (`TENANCY_DATABASE_ROLES=true`): cada schema pertence a um papel próprio, e a conexão faz `SET ROLE` ao ativar o tenant. Mesmo uma consulta com outro schema escrito por extenso é recusada pelo banco, assim como as tabelas da plataforma. `tenants:roles` cria/ajusta os papéis (roda no deploy). O usuário da aplicação precisa de `CREATEROLE` (já no `docker/postgres/init`; num banco existente: `ALTER ROLE saas CREATEROLE` e `GRANT USAGE ON SCHEMA extensions TO PUBLIC` como superusuário). A suíte de testes passa com os papéis ligados e desligados.
+
 ## Operação da plataforma
 
 - **Backups** (`public.tenant_backups`, disco `backups` em `storage/app/backups/<tenant>/`): `pg_dump` só do schema do estabelecimento + `tar.gz` das fotos e do logo + `manifest.json`. Diário às 03:00. Retenção: 7 diários, o de domingo das últimas 4 semanas, e os demais (manual, "antes da restauração", final) por 30 dias. No admin da plataforma (página do estabelecimento): "Fazer backup agora", baixar (.zip) e restaurar.
@@ -164,6 +180,8 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 | `tenants:rollback [--tenant=slug] [--step=1]` | desfaz migrations de tenant |
 | `tenants:seed [--tenant=slug] [--class=]` | roda seeders de tenant (idempotente) |
 | `tenants:status` | status, schema, versão e migrations pendentes de cada tenant |
+| `tenants:roles [--tenant=slug]` | cria/ajusta o papel do PostgreSQL de cada estabelecimento |
+| `platform:backup-database` | backup do banco inteiro (02:30), com cópia no bucket se configurado |
 | `platform:create-user {email} {nome} [--role=admin]` | cria usuário da equipe do SaaS |
 | `tenants:backup [--tenant=slug] [--kind=manual]` | backup do schema e dos arquivos (todo dia às 03:00 com `--kind=daily`) |
 | `tenants:restore {slug} [--backup=id] [--force]` | sem `--backup`, lista os backups; com ele, restaura |
