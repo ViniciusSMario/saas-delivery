@@ -1,4 +1,4 @@
-<div class="space-y-4 sm:space-y-6" wire:poll.15s>
+<div class="space-y-4 sm:space-y-6" wire:poll.5s>
     <x-ui.page-header title="Entregas" subtitle="Pegue os pedidos prontos, siga a rota e marque como entregue. Atualiza sozinho.">
         @can('settings.manage')
             <a href="{{ route('delivery.zones') }}" class="btn-secondary" wire:navigate><x-icon name="pin" class="size-4" /> Bairros e taxas</a>

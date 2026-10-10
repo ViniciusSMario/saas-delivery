@@ -36,9 +36,10 @@ class FieldNav extends Component
         $user = Auth::guard('web')->user();
 
         return [
-            $user->can('tables.manage') ? ServeQueue::count() : 0,
+            // Garçom: só o que ele pode levar (livre ou reservado por ele).
+            $user->can('tables.manage') ? ServeQueue::countFor($user) : 0,
             $user->can('deliveries.operate')
-                ? Order::where('fulfillment', Fulfillment::Delivery->value)->where('status', OrderStatus::Ready->value)->whereNull('courier_id')->count()
+                ? Order::where('fulfillment', Fulfillment::Delivery->value)->where('status', OrderStatus::Ready->value)->count()
                 : 0,
         ];
     }

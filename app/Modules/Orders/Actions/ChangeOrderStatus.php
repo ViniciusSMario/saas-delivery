@@ -9,6 +9,7 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Events\OrderStatusChanged;
 use App\Modules\Orders\Models\Order;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,14 +23,22 @@ class ChangeOrderStatus
     {
     }
 
-    public function handle(Order $order, OrderStatus $to, ?User $actor = null, ?string $reason = null): Order
+    /**
+     * @param  (Closure(Order): void)|null  $guard  regra extra conferida com a linha travada (ex.: "o pedido ainda é seu"); lança ValidationException para recusar
+     * @param  array<string, mixed>  $attributes  gravados junto com o status, na mesma transação (ex.: entregador e hora de saída)
+     */
+    public function handle(Order $order, OrderStatus $to, ?User $actor = null, ?string $reason = null, ?Closure $guard = null, array $attributes = []): Order
     {
         $reason = trim((string) $reason) ?: null;
 
-        DB::connection('tenant')->transaction(function () use ($order, $to, $actor, $reason) {
+        DB::connection('tenant')->transaction(function () use ($order, $to, $actor, $reason, $guard, $attributes) {
             // Trava a linha: dois atendentes clicando ao mesmo tempo não pulam etapas.
             $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
             $from = $locked->status;
+
+            if ($guard) {
+                $guard($locked);
+            }
 
             if (! $from->canTransitionTo($to, $locked->fulfillment)) {
                 throw ValidationException::withMessages([
@@ -41,6 +50,7 @@ class ChangeOrderStatus
                 throw ValidationException::withMessages(['reason' => 'Informe o motivo do cancelamento.']);
             }
 
+            $locked->fill($attributes);
             $locked->status = $to;
 
             if ($to === OrderStatus::Completed) {

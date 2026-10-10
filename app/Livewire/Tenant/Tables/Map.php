@@ -90,7 +90,7 @@ class Map extends Component
             'subtotals' => $open->map(fn (Command $c) => $c->itemsSubtotal()),
             'loose' => Command::open()->whereNull('table_id')->latest()->get(),
             'hasTables' => $tables->isNotEmpty(),
-            'toServe' => ServeQueue::count(),
+            'toServe' => ServeQueue::countFor(Auth::guard('web')->user()),
             'opening' => $this->openingTableId ? $tables->firstWhere('id', $this->openingTableId) : null,
         ]);
     }

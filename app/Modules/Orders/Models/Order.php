@@ -32,7 +32,22 @@ class Order extends TenantModel
             'cancelled_at' => 'datetime',
             'completed_at' => 'datetime',
             'dispatched_at' => 'datetime',
+            'runner_claimed_at' => 'datetime',
         ];
+    }
+
+    /** Garçom que vai levar o pedido de mesa pronto até a mesa. */
+    public function runner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'runner_id');
+    }
+
+    /** Quem levou o pedido ao último status (ex.: quem entregou ou serviu). */
+    public function lastActorName(): ?string
+    {
+        $userId = $this->history()->reorder('id', 'desc')->value('user_id');
+
+        return $userId ? User::find($userId)?->name : null;
     }
 
     public function items(): HasMany

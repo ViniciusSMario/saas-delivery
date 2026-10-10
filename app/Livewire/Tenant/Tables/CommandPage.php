@@ -225,7 +225,7 @@ class CommandPage extends Component
 
         return view('livewire.tenant.tables.command-page', $this->pickerData() + [
             'command' => $command,
-            'orders' => $command->orders()->with('items.addons', 'createdBy')->get(),
+            'orders' => $command->orders()->with('items.addons', 'createdBy', 'runner')->get(),
             'totals' => $totals,
             'paid' => $this->paidValue(),
             'serviceFeePercent' => Command::serviceFeePercent(),

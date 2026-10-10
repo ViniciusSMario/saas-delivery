@@ -124,7 +124,7 @@ class Board extends Component
         return view('livewire.tenant.delivery.board', [
             'manager' => $manager,
             'city' => $city,
-            'ready' => $this->base()->where('status', OrderStatus::Ready->value)->whereNull('courier_id')->oldest()->get(),
+            'ready' => $this->base()->where('status', OrderStatus::Ready->value)->oldest()->get(),
             'preparing' => $this->base()->whereIn('status', [OrderStatus::Received->value, OrderStatus::Preparing->value])->oldest()->get(),
             'mine' => $mine,
             'route' => $route,

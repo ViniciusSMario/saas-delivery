@@ -65,7 +65,7 @@ it('garçom vê os pedidos de mesa prontos e marca como servido', function () {
     app(ChangeOrderStatus::class)->handle($ready, OrderStatus::Preparing);
     app(ChangeOrderStatus::class)->handle($ready, OrderStatus::Ready);
 
-    expect(ServeQueue::count())->toBe(1);
+    expect(ServeQueue::countFor($garcom))->toBe(1);
     Livewire::actingAs($garcom)->test(FieldNav::class)->assertSet('toServe', 1)->assertSee('Prontos');
     Livewire::actingAs($garcom)->test(Map::class)->assertSee('1 pedido pronto para servir');
 
@@ -81,9 +81,10 @@ it('garçom vê os pedidos de mesa prontos e marca como servido', function () {
     expect($ready->refresh()->status)->toBe(OrderStatus::Completed)
         ->and($ready->history()->get()->last()->note)->toBe('Servido na mesa');
 
-    // Pedido ainda na cozinha não pode ser "servido".
-    expect(fn () => Livewire::actingAs($garcom)->test(ReadyToServe::class)->call('serve', $cooking->id))
-        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    // Pedido ainda na cozinha não pode ser "servido": aviso claro, sem erro de página.
+    Livewire::actingAs($garcom)->test(ReadyToServe::class)->call('serve', $cooking->id)
+        ->assertHasErrors('status')->assertSee("O pedido #{$cooking->number} ainda não está pronto (Recebido).");
+    expect($cooking->fresh()->status)->toBe(OrderStatus::Received);
 
     // A comanda mostra o pedido como servido e continua aberta para a conta.
     Livewire::actingAs($garcom)->test(CommandPage::class, ['command' => $command])->assertSee('Servido')->assertSee('Lançar itens');

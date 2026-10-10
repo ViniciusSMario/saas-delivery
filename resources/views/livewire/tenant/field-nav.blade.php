@@ -1,4 +1,4 @@
-<nav wire:poll.15s="refresh" x-data @field-alert.window="navigator.vibrate?.([90, 60, 90])"
+<nav wire:poll.10s="refresh" x-data @field-alert.window="navigator.vibrate?.([90, 60, 90])"
      class="print:hidden fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Navegação">
     <div class="mx-auto flex max-w-lg">
         @foreach ($tabs as $tab)
