@@ -20,11 +20,16 @@
                 <x-icon name="chevron-left" class="size-6" />
             </a>
             <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                    <h1 class="truncate text-xl font-bold tracking-tight sm:text-2xl">{{ $command->displayName() }}</h1>
-                    <span @class(['badge shrink-0', 'badge-amber' => $command->status === CommandStatus::Closing, 'badge-brand' => $command->status === CommandStatus::Open, 'badge-gray' => ! $isOpen])>{{ $command->status->label() }}</span>
-                </div>
-                <p class="truncate text-xs text-stone-500 sm:text-sm">#{{ $command->number }} · {{ $command->people }} {{ $command->people === 1 ? 'pessoa' : 'pessoas' }} · desde {{ $command->created_at->timezone($tz)->format('H:i') }}</p>
+                <h1 class="truncate text-xl font-bold tracking-tight sm:text-2xl">{{ $command->displayName() }}</h1>
+                {{-- Situação na linha de baixo (quebra se faltar espaço): o nome da mesa nunca some em celular estreito. --}}
+                <p class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-stone-500 sm:text-sm">
+                    <span @class(['badge mr-1', 'badge-amber' => $command->status === CommandStatus::Closing, 'badge-brand' => $command->status === CommandStatus::Open, 'badge-gray' => ! $isOpen])>{{ $command->status->label() }}</span>
+                    <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                        #{{ $command->number }}
+                        <span aria-hidden="true">·</span> <x-icon name="users" class="size-3.5" /> <span title="pessoas">{{ $command->people }}</span>
+                        <span aria-hidden="true">·</span> <x-icon name="clock" class="size-3.5" /> <span title="aberta às">{{ $command->created_at->timezone($tz)->format('H:i') }}</span>
+                    </span>
+                </p>
             </div>
             <div class="text-right">
                 <p class="text-[11px] font-semibold tracking-wide text-stone-500 uppercase">Total</p>
@@ -75,15 +80,15 @@
             @error('cart') <p class="field-error mt-0 mb-2">{{ $message }}</p> @enderror
             @if ($cart)
                 <div class="grid grid-cols-[1fr_auto] gap-2">
-                    <button type="button" @click="cartOpen = true" class="flex h-14 items-center gap-3 rounded-2xl border border-stone-200 px-4 text-left active:bg-stone-50">
-                        <span class="flex size-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{{ $cartCount }}</span>
+                    <button type="button" @click="cartOpen = true" class="flex h-14 min-w-0 items-center gap-2.5 rounded-2xl border border-stone-200 px-3 text-left active:bg-stone-50">
+                        <span class="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 px-1.5 text-sm font-bold text-white">{{ $cartCount }}</span>
                         <span class="min-w-0">
-                            <span class="block text-xs text-stone-500">Ver pedido</span>
-                            <span class="block font-bold tabular-nums">{{ $cartSubtotal->format() }}</span>
+                            <span class="block truncate text-xs text-stone-500">Ver pedido</span>
+                            <span class="block truncate font-bold whitespace-nowrap tabular-nums">{{ $cartSubtotal->format() }}</span>
                         </span>
-                        <x-icon name="chevron-down" class="ml-auto size-5 rotate-180 text-stone-400" />
+                        <x-icon name="chevron-down" class="ml-auto size-5 shrink-0 rotate-180 text-stone-400 max-[359px]:hidden" />
                     </button>
-                    <button type="button" wire:click="send" wire:loading.attr="disabled" class="btn-primary h-14 rounded-2xl px-5 text-base font-bold"><x-icon name="flame" class="size-5" /> Enviar</button>
+                    <button type="button" wire:click="send" wire:loading.attr="disabled" class="btn-primary h-14 rounded-2xl px-4 text-base font-bold"><x-icon name="flame" class="size-5" /> Enviar</button>
                 </div>
             @else
                 <div class="flex items-center gap-3">
@@ -303,9 +308,10 @@
     @if ($isOpen && ! $launching)
         <div class="print:hidden fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.15)] sm:hidden">
             @if ($command->status === CommandStatus::Open)
-                <div @class(['grid gap-2', 'grid-cols-[auto_1fr]' => $orders->isNotEmpty()])>
+                {{-- "Pedir conta" compacto (ícone em cima) para caber ao lado em celular de 320 px. --}}
+                <div @class(['grid gap-2', 'grid-cols-[5.5rem_1fr]' => $orders->isNotEmpty()])>
                     @if ($orders->isNotEmpty())
-                        <button type="button" wire:click="requestBill" wire:confirm="Pedir a conta de {{ $command->displayName() }}?" class="btn-secondary h-14 rounded-2xl px-4 text-base"><x-icon name="file" class="size-5" /> Pedir conta</button>
+                        <button type="button" wire:click="requestBill" wire:confirm="Pedir a conta de {{ $command->displayName() }}?" class="btn-secondary h-14 flex-col gap-0.5 rounded-2xl px-1 text-xs"><x-icon name="file" class="size-5" /> Pedir conta</button>
                     @endif
                     <button type="button" wire:click="$set('adding', true)" class="btn-primary btn-xl"><x-icon name="plus" class="size-6" stroke="2.4" /> Lançar itens</button>
                 </div>

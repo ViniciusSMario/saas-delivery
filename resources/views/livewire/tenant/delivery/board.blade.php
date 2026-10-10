@@ -18,11 +18,11 @@
     {{-- Celular: duas abas grandes --}}
     <div class="segmented lg:hidden" role="tablist">
         <button type="button" role="tab" wire:click="setTab('ready')" @class(['segment', 'segment-active' => $tab === 'ready']) aria-selected="{{ $tab === 'ready' ? 'true' : 'false' }}">
-            <x-icon name="bag" class="size-5" /> Para pegar
+            <x-icon name="bag" class="size-5 max-[379px]:hidden" /> Para pegar
             <span @class(['flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold', 'bg-emerald-600 text-white' => $ready->isNotEmpty(), 'bg-stone-300 text-stone-600' => $ready->isEmpty()])>{{ $ready->count() }}</span>
         </button>
         <button type="button" role="tab" wire:click="setTab('mine')" @class(['segment', 'segment-active' => $tab === 'mine']) aria-selected="{{ $tab === 'mine' ? 'true' : 'false' }}">
-            <x-icon name="truck" class="size-5" /> Comigo
+            <x-icon name="truck" class="size-5 max-[379px]:hidden" /> Comigo
             <span @class(['flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold', 'bg-brand-600 text-white' => $mine->isNotEmpty(), 'bg-stone-300 text-stone-600' => $mine->isEmpty()])>{{ $mine->count() }}</span>
         </button>
     </div>

@@ -99,7 +99,7 @@
             <h2 class="stat-label mb-2">Comandas avulsas</h2>
             <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($loose as $command)
-                    <a href="{{ route('tables.command', $command) }}" class="card flex items-center gap-3 p-4 transition active:scale-[0.99]" wire:navigate wire:key="l-{{ $command->id }}">
+                    <a href="{{ route('tables.command', $command) }}" class="card flex min-w-0 items-center gap-3 p-4 transition active:scale-[0.99]" wire:navigate wire:key="l-{{ $command->id }}">
                         <span class="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><x-icon name="orders" class="size-5" /></span>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate font-semibold">{{ $command->label }}</span>
@@ -157,7 +157,7 @@
                 @error('open') <p class="field-error">{{ $message }}</p> @enderror
 
                 <div class="grid grid-cols-[auto_1fr] gap-2">
-                    <button type="button" wire:click="cancelOpen" class="btn-secondary h-14 rounded-2xl px-5">Cancelar</button>
+                    <button type="button" wire:click="cancelOpen" class="btn-secondary h-14 rounded-2xl px-4">Cancelar</button>
                     <button type="submit" class="btn-primary btn-xl" wire:loading.attr="disabled"><x-icon name="check" class="size-5" stroke="2.4" /> Abrir e lançar</button>
                 </div>
             </form>

@@ -9,15 +9,13 @@
 @endphp
 <article wire:key="dl-{{ $mode }}-{{ $order->id }}" class="card overflow-hidden">
     <div class="space-y-3 p-4">
-        <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-                <p class="text-2xl leading-none font-extrabold tracking-tight">#{{ $order->number }}</p>
-                <p class="mt-1 truncate font-medium text-stone-700">{{ $order->customer_name }}</p>
+        <div>
+            <div class="flex items-center gap-2">
+                <p class="shrink-0 text-2xl leading-none font-extrabold tracking-tight">#{{ $order->number }}</p>
+                @if ($order->address_district)<span class="badge-blue block min-w-0 truncate text-sm">{{ $order->address_district }}</span>@endif
+                @if ($since)<p class="ml-auto shrink-0 text-xs text-stone-500">{{ $mode === 'ready' ? 'pronto' : 'saiu' }} {{ $since->locale('pt_BR')->diffForHumans(short: true) }}</p>@endif
             </div>
-            <div class="shrink-0 text-right">
-                @if ($order->address_district)<span class="badge-blue text-sm">{{ $order->address_district }}</span>@endif
-                @if ($since)<p class="mt-1 text-xs text-stone-500">{{ $mode === 'ready' ? 'pronto' : 'saiu' }} {{ $since->locale('pt_BR')->diffForHumans(short: true) }}</p>@endif
-            </div>
+            <p class="mt-1.5 font-medium text-stone-700">{{ $order->customer_name }}</p>
         </div>
 
         <a href="{{ $mapUrl }}" target="_blank" rel="noopener" class="flex items-start gap-3 rounded-xl bg-stone-50 p-3 active:bg-stone-100">
