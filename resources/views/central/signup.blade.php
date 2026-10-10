@@ -2,6 +2,7 @@
 <x-layouts.site title="Criar conta">
     <section class="bg-gradient-to-b from-brand-50 to-white">
         <div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_26rem] lg:py-16">
+            {{-- Endereço: digitando, o hífen do fim fica (senão não dá para digitar pizzaria-do...); ao sair do campo, sai. --}}
             <form method="POST" action="{{ route('signup.store') }}" class="card space-y-6 p-6 sm:p-8"
                   x-data="{
                       name: @js(old('name', '')),
@@ -11,7 +12,10 @@
                       timer: null,
                       plan: @js(old('plan', $selected)),
                       suggest() { if (! this.touched) { this.slug = this.slugify(this.name); this.check(); } },
-                      slugify(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); },
+                      slugify(s, typing = false) {
+                          const slug = s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+/, '').slice(0, 40);
+                          return typing ? slug : slug.replace(/-+$/, '');
+                      },
                       check() {
                           clearTimeout(this.timer);
                           if (this.slug.length < 3) { this.status = null; return; }
@@ -45,7 +49,7 @@
                         <div class="flex items-stretch overflow-hidden rounded-xl border border-stone-300 bg-white focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100">
                             <span class="flex items-center bg-stone-50 pl-3 text-sm text-stone-500">http://</span>
                             <input id="slug" name="slug" type="text" class="min-w-0 flex-1 border-0 bg-transparent px-1 py-2.5 text-sm focus:ring-0 focus:outline-none" x-model="slug"
-                                   @input="touched = true; slug = slugify(slug); check()" required maxlength="40" placeholder="pizzaria-do-joao" autocomplete="off">
+                                   @input="touched = true; slug = slugify(slug, true); check()" @blur="slug = slugify(slug); check()" required maxlength="40" placeholder="pizzaria-do-joao" autocomplete="off">
                             <span class="flex items-center bg-stone-50 pr-3 text-sm text-stone-500">.{{ $baseDomain }}{{ $port ? ':'.$port : '' }}</span>
                         </div>
                         <p class="hint" x-show="status === 'checking'">Verificando...</p>
