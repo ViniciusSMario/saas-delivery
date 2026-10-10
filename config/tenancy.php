@@ -13,6 +13,9 @@ return [
     // Cada tenant ganha <slug>.<base_domain> no provisionamento.
     'base_domain' => env('TENANCY_BASE_DOMAIN', 'localhost'),
 
+    // Domínio próprio: registro TXT "<prefixo>.<domínio>" com o código de verificação.
+    'domain_verification_prefix' => env('TENANCY_DOMAIN_VERIFICATION_PREFIX', '_saas-verify'),
+
     // Ordem em que o tenant é procurado. Novo modo = nova classe aqui.
     'resolvers' => [
         App\Tenancy\Resolvers\DomainResolver::class,

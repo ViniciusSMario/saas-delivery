@@ -25,6 +25,7 @@
         ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage']],
         ['route' => 'subscription', 'label' => 'Assinatura', 'icon' => 'card', 'can' => 'billing.manage'],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
+        ['route' => 'domains', 'label' => 'Domínio próprio', 'icon' => 'external', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'icon' => 'sliders', 'can' => 'settings.manage'],
         ['route' => 'printing.settings', 'label' => 'Impressoras', 'icon' => 'printer', 'can' => 'settings.manage'],
         ['route' => 'whatsapp.settings', 'label' => 'WhatsApp', 'icon' => 'phone', 'can' => 'settings.manage'],

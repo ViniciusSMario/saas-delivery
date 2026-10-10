@@ -26,19 +26,19 @@ class CentralDatabaseSeeder extends Seeder
                 'name' => 'Essencial', 'price_cents' => 8990, 'sort' => 1,
                 'description' => 'Cardápio online, pedidos, mesas, PDV e caixa para começar.',
                 'limits' => ['users' => 3, 'tables' => 10, 'products' => 150, 'orders_per_month' => 1500],
-                'features' => ['stock' => false, 'finance' => false],
+                'features' => ['stock' => false, 'finance' => false, 'custom_domain' => false],
             ],
             'profissional' => [
                 'name' => 'Profissional', 'price_cents' => 14990, 'sort' => 2,
                 'description' => 'Tudo do Essencial, com estoque, ficha técnica e financeiro.',
                 'limits' => ['users' => 10, 'tables' => 30, 'products' => 500, 'orders_per_month' => 5000],
-                'features' => ['stock' => true, 'finance' => true],
+                'features' => ['stock' => true, 'finance' => true, 'custom_domain' => true],
             ],
             'completo' => [
                 'name' => 'Completo', 'price_cents' => 24990, 'sort' => 3,
                 'description' => 'Sem limites de usuários, mesas, produtos ou pedidos.',
                 'limits' => ['users' => null, 'tables' => null, 'products' => null, 'orders_per_month' => null],
-                'features' => ['stock' => true, 'finance' => true],
+                'features' => ['stock' => true, 'finance' => true, 'custom_domain' => true],
             ],
         ];
 

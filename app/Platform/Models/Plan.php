@@ -25,6 +25,7 @@ class Plan extends Model
     public const FEATURE_LABELS = [
         'stock' => 'Estoque e ficha técnica',
         'finance' => 'Financeiro (contas a pagar e receber)',
+        'custom_domain' => 'Domínio próprio (pedidos.seurestaurante.com.br)',
     ];
 
     protected $connection = 'central';

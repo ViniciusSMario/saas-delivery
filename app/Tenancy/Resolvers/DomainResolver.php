@@ -16,8 +16,10 @@ class DomainResolver implements TenantResolver
             return null;
         }
 
+        // Domínio próprio só depois de verificado (prova de posse por TXT).
         return Tenant::query()
-            ->whereHas('domains', fn ($query) => $query->where('domain', $host))
+            ->whereHas('domains', fn ($query) => $query->where('domain', $host)
+                ->where(fn ($q) => $q->where('type', 'subdomain')->orWhereNotNull('verified_at')))
             ->first();
     }
 }

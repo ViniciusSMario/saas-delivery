@@ -144,6 +144,8 @@ class Tenant extends Model
 
     public function primaryDomain(): ?string
     {
-        return $this->domains()->orderByDesc('is_primary')->value('domain');
+        return $this->domains()
+            ->where(fn ($q) => $q->where('type', 'subdomain')->orWhereNotNull('verified_at'))
+            ->orderByDesc('is_primary')->orderBy('id')->value('domain');
     }
 }
