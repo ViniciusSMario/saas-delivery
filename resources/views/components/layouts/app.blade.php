@@ -24,6 +24,7 @@
         ['route' => 'stock.consumption', 'label' => 'Consumo', 'icon' => 'activity', 'can' => 'stock.manage', 'match' => ['stock.consumption'], 'feature' => 'stock'],
         ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage']],
         ['route' => 'subscription', 'label' => 'Assinatura', 'icon' => 'card', 'can' => 'billing.manage'],
+        ['route' => 'data-exports', 'label' => 'Exportar dados', 'icon' => 'download', 'can' => 'billing.manage'],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
         ['route' => 'domains', 'label' => 'Domínio próprio', 'icon' => 'external', 'can' => 'establishment.manage'],
         ['route' => 'settings.edit', 'label' => 'Configurações', 'icon' => 'sliders', 'can' => 'settings.manage'],

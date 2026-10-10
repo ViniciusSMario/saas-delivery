@@ -70,7 +70,9 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/entregas', \App\Livewire\Tenant\Delivery\Board::class)->middleware('can:deliveries.operate')->name('delivery.board');
     Route::get('/entregas/bairros', \App\Livewire\Tenant\Delivery\Zones::class)->middleware('can:settings.manage')->name('delivery.zones');
 
-    Route::get('/dominio', \App\Livewire\Tenant\Domains::class)->middleware('can:establishment.manage')->name('domains');
+    Route::get('/exportar-dados', \App\Livewire\Tenant\DataExports::class)->middleware('can:billing.manage')->name('data-exports');
+    Route::get('/exportar-dados/{export}/baixar', \App\Http\Controllers\Tenant\DataExportDownloadController::class)->whereNumber('export')->middleware('can:billing.manage')->name('data-exports.download');
+    Route::get('/dominio',\App\Livewire\Tenant\Domains::class)->middleware('can:establishment.manage')->name('domains');
     Route::get('/whatsapp',\App\Livewire\Tenant\Messaging\Settings::class)->middleware('can:settings.manage')->name('whatsapp.settings');
 
     Route::get('/impressao', \App\Livewire\Tenant\Printing\Station::class)->middleware('can:orders.view')->name('printing.station');
