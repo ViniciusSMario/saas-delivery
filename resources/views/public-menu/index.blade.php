@@ -101,6 +101,27 @@
                         @endif
                     </div>
 
+                    {{-- Cupons divulgados: "Usar" guarda o código, que o checkout já aplica. --}}
+                    @if ($ordering && $coupons->isNotEmpty())
+                        <div @class(['mt-3 space-y-2', '-mx-4 flex snap-x gap-3 space-y-0 overflow-x-auto px-4 scroll-px-4 scrollbar-none' => $coupons->count() > 1])>
+                            @foreach ($coupons as $coupon)
+                                <div x-data="{ saved: false }" @class(['flex items-center gap-3 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 p-3', 'w-[85%] shrink-0 snap-start' => $coupons->count() > 1])>
+                                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white"><x-icon name="ticket" class="size-5" /></span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm leading-snug font-bold">{{ $coupon->benefit() }}</p>
+                                        <p class="text-xs text-stone-600">
+                                            Cupom <strong class="tracking-wide">{{ $coupon->code }}</strong>@if ($conditions = $coupon->conditions($timezone)) · {{ $conditions }}@endif
+                                        </p>
+                                    </div>
+                                    <button type="button" class="btn-primary btn-sm shrink-0 rounded-full" :class="saved && 'bg-emerald-600 hover:bg-emerald-600'"
+                                            @click="saveCoupon(@js($coupon->code)); saved = true; $store.cart.notify(@js('Cupom '.$coupon->code.' guardado: ele entra no fechamento do pedido'))">
+                                        <span x-text="saved ? 'Guardado' : 'Usar'">Usar</span>
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                     @unless ($ordering)
                         <div class="alert-warning mt-3">
                             <x-icon name="clock" class="mt-0.5 size-4" />

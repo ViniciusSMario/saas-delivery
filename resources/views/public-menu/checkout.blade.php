@@ -36,7 +36,67 @@
               get byZone() { return Object.keys(this.zones).length > 0 },
               get fee() { return this.byZone ? (this.zones[this.district]?.fee ?? 0) : this.baseFee },
               get minimum() { return (this.fulfillment === 'delivery' && this.zones[this.district]?.min) || this.baseMinimum },
-              get fullTotal() { return this.$store.cart.subtotal + (this.fulfillment === 'delivery' ? this.fee : 0) },
+              get deliveryFee() { return this.fulfillment === 'delivery' ? this.fee : 0 },
+              get fullTotal() { return this.$store.cart.subtotal - this.discount + this.deliveryFee },
+              // Cupom: o servidor diz se vale e devolve a regra; o desconto é recalculado aqui a cada mudança.
+              couponCode: @js(old('coupon', '')),
+              coupon: null,
+              couponError: '',
+              couponBusy: false,
+              couponKey: 'cupom:{{ tenant()->getKey() }}',
+              get couponShort() {
+                  const c = this.coupon;
+                  if (! c) return '';
+                  if (this.$store.cart.subtotal < c.min) return 'Faltam ' + money(c.min - this.$store.cart.subtotal) + ' para usar este cupom.';
+                  if (c.type === 'free_delivery' && this.fulfillment !== 'delivery') return 'Cupom de entrega grátis: vale só com entrega.';
+                  return '';
+              },
+              get discount() {
+                  const c = this.coupon, subtotal = this.$store.cart.subtotal;
+                  if (! c || this.couponShort) return 0;
+                  let value = c.type === 'percent' ? Math.floor(subtotal * c.percent / 100) : (c.type === 'fixed' ? c.amount : this.deliveryFee);
+                  if (c.type === 'percent' && c.max) value = Math.min(value, c.max);
+                  return Math.min(value, c.type === 'free_delivery' ? this.deliveryFee : subtotal);
+              },
+              async applyCoupon() {
+                  const code = this.couponCode.trim();
+                  if (! code) return;
+                  this.couponBusy = true;
+                  this.couponError = '';
+                  try {
+                      const response = await fetch(@js($base.'/cupom'), {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                          body: JSON.stringify({ code, subtotal: this.$store.cart.subtotal, fulfillment: this.fulfillment, phone: this.$root.querySelector('[name=phone]')?.value || '' }),
+                      });
+                      const data = await response.json().catch(() => ({}));
+                      if (! response.ok) {
+                          this.couponError = data.message || 'Não foi possível conferir o cupom agora.';
+                          this.coupon = null;
+                          return;
+                      }
+                      this.coupon = data;
+                      this.couponCode = data.code;
+                      try { localStorage.setItem(this.couponKey, data.code); } catch (e) {}
+                  } catch (e) {
+                      this.couponError = 'Sem conexão. Tente de novo.';
+                  } finally {
+                      this.couponBusy = false;
+                  }
+              },
+              removeCoupon() {
+                  this.coupon = null;
+                  this.couponCode = '';
+                  this.couponError = '';
+                  try { localStorage.removeItem(this.couponKey); } catch (e) {}
+              },
+              loadCoupon() {
+                  // Veio do banner do cardápio (ou voltou com erro): já aplica o código.
+                  if (! this.couponCode) {
+                      try { this.couponCode = localStorage.getItem(this.couponKey) || ''; } catch (e) {}
+                  }
+                  if (this.couponCode && this.$store.cart.count > 0) this.applyCoupon();
+              },
               loadProfile() {
                   if (@js((bool) old('name'))) return;
                   try {
@@ -58,7 +118,7 @@
                   try { localStorage.setItem(this.profileKey, JSON.stringify(p)); } catch (e) {}
               },
           }"
-          x-init="loadProfile()">
+          x-init="loadProfile(); $nextTick(() => loadCoupon())">
 
         @if ($errors->any())
             <div class="alert-error">
@@ -220,9 +280,37 @@
                 </div>
             </section>
 
+            {{-- Cupom de desconto --}}
+            <section class="card card-body space-y-3">
+                <h2 class="section-title flex items-center gap-2"><x-icon name="ticket" class="size-5 text-brand-600" /> Cupom de desconto</h2>
+                <input type="hidden" name="coupon" :value="coupon ? coupon.code : ''">
+                <template x-if="! coupon">
+                    <div class="flex gap-2">
+                        <input x-model="couponCode" type="text" class="input h-11 min-w-0 flex-1 uppercase" placeholder="Digite o código" autocomplete="off" autocapitalize="characters"
+                               aria-label="Código do cupom" @keydown.enter.prevent="applyCoupon()">
+                        <button type="button" class="btn-secondary h-11 shrink-0" @click="applyCoupon()" :disabled="couponBusy || ! couponCode.trim()">
+                            <span x-text="couponBusy ? 'Conferindo...' : 'Aplicar'">Aplicar</span>
+                        </button>
+                    </div>
+                </template>
+                <template x-if="coupon">
+                    <div class="flex items-center gap-3 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50 p-3">
+                        <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><x-icon name="ticket" class="size-5" /></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-bold tracking-wide text-emerald-900" x-text="coupon.code"></span>
+                            <span class="block text-sm text-emerald-800" x-text="coupon.benefit"></span>
+                        </span>
+                        <button type="button" class="btn-ghost btn-sm text-stone-500" @click="removeCoupon()">Remover</button>
+                    </div>
+                </template>
+                <p x-show="couponShort" x-text="couponShort" class="flex items-center gap-1.5 text-sm font-medium text-amber-700"></p>
+                <p x-show="couponError" x-text="couponError" class="field-error"></p>
+            </section>
+
             <section class="card card-body space-y-2 text-sm">
                 <div class="flex justify-between text-stone-600"><span>Subtotal</span><span x-text="money($store.cart.subtotal)"></span></div>
                 <div class="flex justify-between text-stone-600" x-show="fulfillment === 'delivery'"><span>Taxa de entrega</span><span x-text="byZone && ! district ? 'escolha o bairro' : (fee ? money(fee) : 'Grátis')"></span></div>
+                <div class="flex justify-between font-medium text-emerald-700" x-show="discount > 0"><span x-text="'Cupom ' + (coupon ? coupon.code : '')"></span><span x-text="'− ' + money(discount)"></span></div>
                 <div class="flex justify-between border-t border-stone-100 pt-2 text-base font-bold"><span>Total</span><span x-text="money(fullTotal)"></span></div>
                 <p class="flex items-center gap-1.5 pt-1 font-medium text-amber-700" x-show="$store.cart.subtotal < minimum">
                     <x-icon name="alert" class="size-4" />

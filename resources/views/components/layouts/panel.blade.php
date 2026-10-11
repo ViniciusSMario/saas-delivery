@@ -14,6 +14,7 @@
         ['route' => 'menu.categories', 'label' => 'Categorias', 'icon' => 'tag', 'can' => 'menu.manage'],
         ['route' => 'menu.addon-groups.index', 'label' => 'Adicionais', 'icon' => 'plus-circle', 'can' => 'menu.manage'],
         ['route' => 'menu.combos.index', 'label' => 'Combos', 'icon' => 'gift', 'can' => 'menu.manage'],
+        ['route' => 'menu.coupons', 'label' => 'Cupons', 'icon' => 'ticket', 'can' => 'menu.manage'],
         ['section' => 'Gestão', 'can' => ['customers.manage', 'finance.view', 'reports.view']],
         ['route' => 'customers.index', 'label' => 'Clientes', 'icon' => 'users', 'can' => 'customers.manage', 'match' => ['customers.*']],
         ['route' => 'finance.index', 'label' => 'Financeiro', 'icon' => 'trending', 'can' => 'finance.view', 'match' => ['finance.*'], 'feature' => 'finance'],

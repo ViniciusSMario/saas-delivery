@@ -25,6 +25,8 @@ Route::middleware(EnsureTenantVerified::class)->group(function () {
     // Pedido online
     Route::get('/pedido', [PublicOrderController::class, 'checkout']);
     Route::post('/pedido', [PublicOrderController::class, 'store']);
+    // Prévia do cupom no checkout (limite contra tentativa e erro de códigos).
+    Route::post('/pedido/cupom', [PublicOrderController::class, 'coupon'])->middleware('throttle:20,1');
     Route::get('/pedido/{token}', [PublicOrderController::class, 'show']);
     Route::get('/pedido/{token}/status', [PublicOrderController::class, 'status']);
 

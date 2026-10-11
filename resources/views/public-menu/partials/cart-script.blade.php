@@ -9,6 +9,9 @@
         const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (e) { return fallback; } };
         const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} };
 
+        // Cupom escolhido no cardápio ("Usar", "Pedir de novo"): o checkout aplica sozinho.
+        window.saveCoupon = (code) => { try { localStorage.setItem('cupom:' + tenant, code); } catch (e) {} };
+
         window.money = (cents) => 'R$ ' + (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         window.normalize = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 

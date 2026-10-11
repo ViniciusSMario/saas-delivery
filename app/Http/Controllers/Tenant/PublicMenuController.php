@@ -14,6 +14,7 @@ use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
+use App\Modules\Promotions\CouponRules;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -77,6 +78,8 @@ class PublicMenuController
             'popular' => $popular,
             'etaDelivery' => OrderEta::minutes(Fulfillment::Delivery),
             'etaPickup' => OrderEta::minutes(Fulfillment::Pickup),
+            'coupons' => app(CouponRules::class)->publicCoupons(),
+            'timezone' => $timezone,
             'combos' => $combos,
             'deliveryFee' => app(DeliveryFees::class)->cheapest(),
             'zones' => DeliveryFees::byZone() ? app(DeliveryFees::class)->zones() : collect(),

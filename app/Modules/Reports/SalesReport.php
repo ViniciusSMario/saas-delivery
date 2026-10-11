@@ -229,7 +229,7 @@ class SalesReport
     public function discounts(CarbonImmutable $from, CarbonImmutable $to): Collection
     {
         $orders = $this->orders($from, $to)->where('discount_cents', '>', 0)->with('createdBy')->get()
-            ->map(fn (Order $o) => ['when' => $o->created_at, 'what' => "Pedido #{$o->number}", 'amount' => $o->discount_cents, 'note' => null, 'by' => $o->createdBy?->name]);
+            ->map(fn (Order $o) => ['when' => $o->created_at, 'what' => "Pedido #{$o->number}", 'amount' => $o->discount_cents, 'note' => $o->coupon_code ? "cupom {$o->coupon_code}" : null, 'by' => $o->createdBy?->name]);
 
         $commands = $this->commands($from, $to)
             ->where(fn ($q) => $q->where('discount_cents', '>', 0)->orWhere('service_fee_enabled', false))

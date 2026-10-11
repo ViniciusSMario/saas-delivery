@@ -7,10 +7,14 @@ use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
 use App\Modules\Orders\Actions\PlaceOrder;
+use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderSource;
+use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
+use App\Modules\Promotions\CouponRules;
+use App\Modules\Promotions\Models\Coupon;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -80,6 +84,7 @@ class PublicOrderController
                 'address' => (array) $request->input('address', []),
                 'payment_method' => (string) $request->input('payment_method'),
                 'change_for' => $changeFor,
+                'coupon' => is_string($request->input('coupon')) ? $request->input('coupon') : null,
                 'notes' => $request->input('notes'),
             ], OrderSource::Online);
         } catch (ValidationException $e) {
@@ -106,6 +111,42 @@ class PublicOrderController
             'eta' => $order->status->isFinal() ? null : OrderEta::for($order),
             // Só o primeiro nome do entregador aparece para o cliente.
             'courierName' => $order->courier ? Str::before($order->courier->name, ' ') : null,
+            // Pedido entregue: "volte e ganhe" (se o restaurante tiver um cupom para isso e o cliente ainda puder usar).
+            'returnCoupon' => $order->status === OrderStatus::Completed ? app(CouponRules::class)->returnOffer($order->customer_phone) : null,
+        ]);
+    }
+
+    /**
+     * Prévia do cupom no checkout: diz se o código vale e devolve a regra para o carrinho
+     * calcular o desconto enquanto o cliente mexe nos itens. O valor final é conferido no pedido.
+     */
+    public function coupon(Request $request, CouponRules $rules): JsonResponse
+    {
+        $coupon = Coupon::findByCode(is_string($request->input('code')) ? $request->input('code') : null);
+
+        if (! $coupon) {
+            return response()->json(['message' => 'Cupom não encontrado. Confira o código.'], 422);
+        }
+
+        $problem = $rules->problem(
+            $coupon,
+            Money::cents(max(0, (int) $request->input('subtotal'))),
+            is_string($request->input('phone')) && $request->input('phone') !== '' ? $request->input('phone') : null,
+            Fulfillment::tryFrom((string) $request->input('fulfillment')),
+        );
+
+        if ($problem) {
+            return response()->json(['message' => $problem], 422);
+        }
+
+        return response()->json([
+            'code' => $coupon->code,
+            'benefit' => $coupon->benefit(),
+            'type' => $coupon->type->value,
+            'percent' => $coupon->percent,
+            'amount' => $coupon->amount_cents?->cents,
+            'max' => $coupon->max_discount_cents?->cents,
+            'min' => $coupon->min_order_cents?->cents ?? 0,
         ]);
     }
 

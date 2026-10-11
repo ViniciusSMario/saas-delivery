@@ -18,6 +18,9 @@ use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Events\OrderPlaced;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Promotions\CouponRules;
+use App\Modules\Promotions\Models\Coupon;
+use App\Modules\Promotions\Models\CouponRedemption;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +41,7 @@ class PlaceOrder
     public function __construct(
         private readonly CashLedger $ledger,
         private readonly DeliveryFees $fees,
+        private readonly CouponRules $coupons,
     ) {
     }
 
@@ -50,6 +54,7 @@ class PlaceOrder
      *     payment_method: string,
      *     change_for?: Money|null,
      *     discount?: Money|null,
+     *     coupon?: string|null,
      *     notes?: string|null,
      * }  $input
      */
@@ -84,6 +89,19 @@ class PlaceOrder
             $address['district'] = $zone->name; // grafia do cadastro
         }
 
+        // Cupom do cardápio online: substitui o desconto (que só existe no balcão).
+        $coupon = null;
+
+        if (Coupon::normalize($input['coupon'] ?? null) !== '') {
+            if (! $online) {
+                $this->fail('coupon', 'Cupom só vale no cardápio online.');
+            }
+
+            $coupon = Coupon::findByCode($input['coupon']) ?? $this->fail('coupon', 'Cupom não encontrado. Confira o código.');
+            $this->assertCoupon($coupon, $subtotal, $customer['phone'], $fulfillment);
+            $discount = $coupon->discountFor($subtotal, $deliveryFee);
+        }
+
         $total = $subtotal->subtract($discount)->add($deliveryFee);
 
         if ($online) {
@@ -102,8 +120,14 @@ class PlaceOrder
         $cashSession = $paidNow ? $this->ledger->requireSession($actor) : null;
 
         $order = DB::connection('tenant')->transaction(function () use (
-            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $zone, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession
+            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $zone, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession, $coupon
         ) {
+            // Cupom travado e conferido de novo: dois pedidos juntos não passam do limite de usos.
+            if ($coupon) {
+                $locked = Coupon::query()->lockForUpdate()->find($coupon->id) ?? $this->fail('coupon', 'Cupom não encontrado. Confira o código.');
+                $this->assertCoupon($locked, $subtotal, $customer['phone'], $fulfillment);
+            }
+
             $customerModel = $customer['phone'] ? $this->rememberCustomer($customer, $address) : null;
 
             $order = Order::create([
@@ -128,8 +152,18 @@ class PlaceOrder
                 'delivery_fee_cents' => $deliveryFee,
                 'delivery_zone_id' => $zone?->id,
                 'total_cents' => $total,
+                'coupon_code' => $coupon?->code,
                 'created_by' => $actor?->id,
             ]);
+
+            if ($coupon) {
+                CouponRedemption::create([
+                    'coupon_id' => $coupon->id,
+                    'order_id' => $order->id,
+                    'customer_phone' => $customer['phone'],
+                    'discount_cents' => $discount,
+                ]);
+            }
 
             foreach ($lines as $line) {
                 $item = $order->items()->create([
@@ -354,6 +388,13 @@ class PlaceOrder
             'notes' => $this->clean($line['notes'] ?? null, 255),
             'addons' => [],
         ];
+    }
+
+    private function assertCoupon(Coupon $coupon, Money $subtotal, ?string $phone, Fulfillment $fulfillment): void
+    {
+        if ($problem = $this->coupons->problem($coupon, $subtotal, $phone, $fulfillment)) {
+            $this->fail('coupon', $problem);
+        }
     }
 
     private function discount(?Money $discount, Money $subtotal, bool $online, ?User $actor): Money

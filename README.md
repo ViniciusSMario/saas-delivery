@@ -96,7 +96,13 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Venda no balcão** (`/balcao`, permissão `pos.use`): busca por nome ou código, adicionais, balcão/retirada/entrega por telefone. No balcão, o pagamento é registrado na hora.
 - **Histórico** (`/pedidos/historico`): por dia, status, número, nome ou telefone. O detalhe do pedido tem impressão.
 - **Configurações:** liga/desliga pedidos online e escolhe as formas de pagamento aceitas.
-- Fica para fases seguintes: pagamento online, taxa por bairro, mesas e comandas, caixa (abertura e fechamento) e baixa de estoque.
+- **Cupons de desconto** (Cardápio → Cupons, `/cupons`, permissão `menu.manage`; módulo `App\Modules\Promotions`):
+  - **Tipos:** porcentagem (com teto opcional), valor fixo ou entrega grátis (desconta a taxa; o entregador continua com ela nos relatórios). O desconto incide sobre os itens e nunca passa deles.
+  - **Regras:** pedido mínimo (sobre os itens), início e fim (dias inteiros no fuso do restaurante), usos no total, usos por cliente (pelo telefone; padrão 1) e "só no primeiro pedido". Pedido cancelado devolve o uso. Tudo é conferido em `CouponRules` e de novo em `PlaceOrder` com o cupom travado (`FOR UPDATE`), então dois pedidos ao mesmo tempo não passam do limite.
+  - **Checkout:** campo "Cupom de desconto" com "Aplicar": a prévia (`POST .../cardapio/pedido/cupom`, limite de 20 por minuto contra tentativa de códigos) diz se vale e o desconto é recalculado na tela conforme o carrinho, a entrega e o mínimo. O valor final é sempre o do servidor. Só no cardápio online; o balcão continua com o desconto manual.
+  - **Divulgação:** "Divulgar no cardápio" mostra o cupom no topo do cardápio com o botão "Usar" (o checkout aplica sozinho). "Volte e ganhe" oferece o cupom na página do pedido entregue, com "Copiar" e "Pedir de novo", para quem ainda pode usar.
+  - O pedido guarda o código (`orders.coupon_code`) e cada uso fica em `coupon_redemptions` (desconto e telefone). O código aparece no pedido do painel, no cupom impresso, na página do cliente e nos descontos dos relatórios. A tela de cupons mostra usos, clientes, desconto dado e vendas de cada um. Excluir libera o código e mantém o histórico.
+- Fica para fases seguintes: pagamento online.
 
 ## Mesas, PDV e caixa
 

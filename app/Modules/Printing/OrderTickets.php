@@ -129,7 +129,7 @@ class OrderTickets
         $ticket->rule()->pair('Subtotal', $order->subtotal_cents->format());
 
         if (! $order->discount_cents->isZero()) {
-            $ticket->pair('Desconto', '- '.$order->discount_cents->format());
+            $ticket->pair($order->coupon_code ? 'Cupom '.$order->coupon_code : 'Desconto', '- '.$order->discount_cents->format());
         }
 
         if ($order->fulfillment === Fulfillment::Delivery) {

@@ -136,5 +136,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
         Route::get('/combos/novo', Menu\Combos\Form::class)->name('combos.create');
         Route::get('/combos/{combo}', Menu\Combos\Form::class)->whereNumber('combo')->name('combos.edit');
         Route::get('/combos/{combo}/imagem', [MenuImageController::class, 'combo'])->whereNumber('combo')->name('combos.image');
+
+        Route::get('/cupons', \App\Livewire\Tenant\Promotions\Coupons::class)->name('coupons');
     });
 });

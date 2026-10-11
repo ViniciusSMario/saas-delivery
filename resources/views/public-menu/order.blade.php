@@ -153,6 +153,27 @@
             </section>
         @endunless
 
+        {{-- "Volte e ganhe": cupom para o próximo pedido, oferecido quando este foi entregue. --}}
+        @if ($returnCoupon)
+            <section class="card overflow-hidden border-2 border-dashed border-brand-300" x-data="{ copied: false }">
+                <div class="flex items-center gap-3 bg-brand-50 p-4">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white"><x-icon name="ticket" class="size-6" /></span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-brand-800">Volte e ganhe</p>
+                        <p class="font-bold">{{ $returnCoupon->benefit() }} no próximo pedido</p>
+                        @if ($conditions = $returnCoupon->conditions($timezone))<p class="text-xs text-stone-500">{{ ucfirst($conditions) }}</p>@endif
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 p-3">
+                    <span class="flex-1 rounded-xl bg-stone-100 px-3 py-2 text-center font-mono text-lg font-bold tracking-widest">{{ $returnCoupon->code }}</span>
+                    <button type="button" class="btn-secondary h-11" @click="navigator.clipboard?.writeText(@js($returnCoupon->code)); copied = true; setTimeout(() => copied = false, 2000)">
+                        <x-icon name="copy" class="size-4" /> <span x-text="copied ? 'Copiado' : 'Copiar'">Copiar</span>
+                    </button>
+                    <a href="{{ $menuUrl }}" class="btn-primary h-11" @click="saveCoupon(@js($returnCoupon->code))">Pedir de novo</a>
+                </div>
+            </section>
+        @endif
+
         {{-- Itens --}}
         <section class="card">
             <div class="card-header"><h2 class="section-title">Itens</h2><span class="text-xs text-stone-500">{{ $placedAt->format('d/m/Y \à\s H:i') }}</span></div>
@@ -172,7 +193,7 @@
             <div class="space-y-1.5 border-t border-stone-100 px-5 py-4 text-sm">
                 <div class="flex justify-between text-stone-600"><span>Subtotal</span><span>{{ $order->subtotal_cents->format() }}</span></div>
                 @unless ($order->discount_cents->isZero())
-                    <div class="flex justify-between text-stone-600"><span>Desconto</span><span>- {{ $order->discount_cents->format() }}</span></div>
+                    <div class="flex justify-between text-emerald-700"><span>{{ $order->coupon_code ? "Cupom {$order->coupon_code}" : 'Desconto' }}</span><span>- {{ $order->discount_cents->format() }}</span></div>
                 @endunless
                 @if ($order->fulfillment === Fulfillment::Delivery)
                     <div class="flex justify-between text-stone-600"><span>Entrega</span><span>{{ $order->delivery_fee_cents->isZero() ? 'Grátis' : $order->delivery_fee_cents->format() }}</span></div>
@@ -224,7 +245,10 @@
 
     @if (request()->boolean('novo'))
         <script>
-            try { localStorage.removeItem('cart:{{ tenant()->getKey() }}'); } catch (e) {}
+            try {
+                localStorage.removeItem('cart:{{ tenant()->getKey() }}');
+                localStorage.removeItem('cupom:{{ tenant()->getKey() }}');
+            } catch (e) {}
         </script>
     @endif
     @include('public-menu.partials.cart-script')

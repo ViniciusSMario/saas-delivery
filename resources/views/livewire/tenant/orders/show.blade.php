@@ -71,7 +71,7 @@
             <div class="space-y-1 border-t border-stone-100 p-4 text-sm">
                 <div class="flex justify-between"><span>Subtotal</span><span>{{ $order->subtotal_cents->format() }}</span></div>
                 @unless ($order->discount_cents->isZero())
-                    <div class="flex justify-between text-green-700"><span>Desconto</span><span>- {{ $order->discount_cents->format() }}</span></div>
+                    <div class="flex justify-between text-green-700"><span>{{ $order->coupon_code ? 'Cupom '.$order->coupon_code : 'Desconto' }}</span><span>- {{ $order->discount_cents->format() }}</span></div>
                 @endunless
                 @if ($order->fulfillment === Fulfillment::Delivery)
                     <div class="flex justify-between"><span>Taxa de entrega</span><span>{{ $order->delivery_fee_cents->format() }}</span></div>
