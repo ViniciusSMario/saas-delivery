@@ -178,6 +178,43 @@ class SalesReport
         return collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => (int) ($rows[$h] ?? 0)])->all();
     }
 
+    /** Vendas (R$) por hora do dia: pedidos pela hora em que entraram, contas de mesa pela hora do fechamento. */
+    public function hourlyRevenue(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $hour = fn (string $column) => "extract(hour from ({$column} at time zone 'UTC') at time zone ?)::int";
+
+        $orders = $this->orders($from, $to)->selectRaw($hour('created_at').' as h, sum(total_cents) as total', [$this->timezone])
+            ->groupBy('h')->pluck('total', 'h');
+        $commands = $this->commands($from, $to)->selectRaw($hour('closed_at').' as h, sum(total_cents) as total', [$this->timezone])
+            ->groupBy('h')->pluck('total', 'h');
+
+        return collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => Money::cents((int) ($orders[$h] ?? 0) + (int) ($commands[$h] ?? 0))])->all();
+    }
+
+    /**
+     * Pedidos por dia da semana e hora (mapa de calor). Dias: 0 = domingo … 6 = sábado.
+     *
+     * @return array<int, array<int, int>>
+     */
+    public function weekdayHours(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $local = "((created_at at time zone 'UTC') at time zone ?)";
+
+        $rows = Order::where('status', '!=', OrderStatus::Cancelled->value)
+            ->whereBetween('created_at', [$from, $to])
+            ->selectRaw("extract(dow from {$local})::int as d, extract(hour from {$local})::int as h, count(*) as n", [$this->timezone, $this->timezone])
+            ->groupBy('d', 'h')
+            ->get();
+
+        $grid = array_fill(0, 7, array_fill(0, 24, 0));
+
+        foreach ($rows as $row) {
+            $grid[(int) $row->d][(int) $row->h] = (int) $row->n;
+        }
+
+        return $grid;
+    }
+
     /** Cancelamentos com motivo e quem cancelou. */
     public function cancellations(CarbonImmutable $from, CarbonImmutable $to): Collection
     {

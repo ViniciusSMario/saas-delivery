@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Modules\Reports\OperationsReport;
 use App\Modules\Reports\SalesReport;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,6 +26,13 @@ class ReportExportController
             'produtos' => [
                 ['Produto', 'Quantidade', 'Faturamento', 'Custo (ficha)', 'Margem %'],
                 $report->topProducts($start, $end, 1000)->map(fn ($p) => [$p['name'], $p['quantity'], $decimal($p['revenue']), $decimal($p['cost']), $p['margin'] !== null ? number_format($p['margin'], 1, ',', '') : '']),
+            ],
+            'entregadores' => [
+                ['Entregador', 'Entregas', 'Taxas de entrega', 'Valor dos pedidos', 'Na rua (min)', 'Até o cliente (min)', 'Mais de 45 min na rua'],
+                app(OperationsReport::class)->couriers($start, $end)->map(fn ($c) => [
+                    $c['name'], $c['deliveries'], $decimal($c['fees']), $decimal($c['total']),
+                    $c['road'] !== null ? (int) round($c['road'] / 60) : '', $c['door'] !== null ? (int) round($c['door'] / 60) : '', $c['slow'],
+                ]),
             ],
             default => abort(404),
         };

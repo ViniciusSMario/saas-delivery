@@ -112,7 +112,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::get('/financeiro/contas', Finance\Accounts::class)->middleware('can:finance.manage')->name('finance.accounts');
 
     Route::get('/relatorios', Reports\Index::class)->middleware('can:reports.view')->name('reports.index');
-    Route::get('/relatorios/exportar/{type}', ReportExportController::class)->whereIn('type', ['vendas', 'produtos'])->middleware('can:reports.view')->name('reports.export');
+    Route::get('/relatorios/exportar/{type}', ReportExportController::class)->whereIn('type', ['vendas', 'produtos', 'entregadores'])->middleware('can:reports.view')->name('reports.export');
 
     Route::get('/caixa', Cash\Current::class)->middleware('can:cash.operate')->name('cash.current');
     Route::get('/caixa/sessoes', Cash\Sessions::class)->middleware('can:cash.manage')->name('cash.sessions');
