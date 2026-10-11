@@ -16,7 +16,9 @@ use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
 use App\Modules\Orders\Reorder;
 use App\Modules\Orders\RushMode;
+use App\Modules\Customers\Models\Customer;
 use App\Modules\Promotions\CouponRules;
+use App\Modules\Promotions\Loyalty;
 use App\Modules\Promotions\Models\Coupon;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
@@ -65,17 +67,7 @@ class PublicOrderController
             return back()->withInput()->withErrors(['lines' => 'Muitos pedidos em pouco tempo. Aguarde alguns minutos.']);
         }
 
-        $cart = json_decode((string) $request->input('cart'), true);
-        $lines = collect(is_array($cart) ? $cart : [])
-            ->map(fn ($line) => [
-                'type' => ($line['type'] ?? '') === 'combo' ? 'combo' : 'product',
-                'id' => (int) ($line['id'] ?? 0),
-                'quantity' => (int) ($line['quantity'] ?? 0),
-                'addons' => array_map('intval', (array) ($line['addons'] ?? [])),
-                'notes' => is_string($line['notes'] ?? null) ? $line['notes'] : null,
-            ])
-            ->values()
-            ->all();
+        $lines = self::cartLines($request);
 
         $changeFor = $request->filled('change_for') && Money::isValid($request->input('change_for'))
             ? Money::parse($request->input('change_for'))
@@ -101,7 +93,25 @@ class PublicOrderController
         return redirect($base.'/'.$order->public_token.'?novo=1');
     }
 
-    public function show(Request $request, string $token): View
+    /** Itens do carrinho do navegador (JSON no campo "cart"); preços e regras são conferidos no PlaceOrder. */
+    public static function cartLines(Request $request): array
+    {
+        $cart = json_decode((string) $request->input('cart'), true);
+
+        return collect(is_array($cart) ? $cart : [])
+            ->filter(fn ($line) => is_array($line))
+            ->map(fn ($line) => [
+                'type' => ($line['type'] ?? '') === 'combo' ? 'combo' : 'product',
+                'id' => (int) ($line['id'] ?? 0),
+                'quantity' => (int) ($line['quantity'] ?? 0),
+                'addons' => array_map('intval', (array) ($line['addons'] ?? [])),
+                'notes' => is_string($line['notes'] ?? null) ? $line['notes'] : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function show(Request $request, string $token, Loyalty $loyalty): View
     {
         abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
 
@@ -118,6 +128,12 @@ class PublicOrderController
             'courierName' => $order->courier ? Str::before($order->courier->name, ' ') : null,
             // Pedido entregue: "volte e ganhe" (se o restaurante tiver um cupom para isso e o cliente ainda puder usar).
             'returnCoupon' => $order->status === OrderStatus::Completed ? app(CouponRules::class)->returnOffer($order->customer_phone) : null,
+            // Cartão fidelidade do cliente (pedidos do cardápio e do balcão com telefone).
+            'loyalty' => $order->customer_id && $order->source !== OrderSource::Table && $order->status !== OrderStatus::Cancelled
+                ? $loyalty->status(Customer::find($order->customer_id))
+                : null,
+            'loyaltyHeadline' => $loyalty->headline(),
+            'loyaltyCounts' => $order->subtotal_cents->cents >= (int) $loyalty->config()['min_cents'],
         ]);
     }
 

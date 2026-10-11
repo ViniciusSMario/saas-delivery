@@ -13,6 +13,7 @@ use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Promotions\CouponRules;
+use App\Modules\Promotions\Loyalty;
 use App\Modules\Promotions\Models\Coupon;
 use App\Modules\Tables\CommandStatus;
 use App\Modules\Tables\Models\Command;
@@ -99,6 +100,13 @@ class Counter extends Component
 
         $this->coupon = $coupon->code;
         $this->couponInput = '';
+    }
+
+    /** Prêmio da fidelidade do cliente, mostrado quando o telefone é digitado. */
+    public function useReward(string $code): void
+    {
+        $this->couponInput = $code;
+        $this->applyCoupon();
     }
 
     public function removeCoupon(): void
@@ -200,6 +208,7 @@ class Counter extends Component
 
         return view('livewire.tenant.orders.counter', $this->pickerData() + [
             'appliedCoupon' => $coupon,
+            'loyalty' => Customer::isValidPhone($this->customerPhone) ? app(Loyalty::class)->statusForPhone($this->customerPhone) : null,
             'couponProblem' => $this->coupon !== '' && ! $coupon ? 'Este cupom não existe mais.' : $couponProblem,
             'couponDiscount' => Money::cents($coupon && ! $couponProblem ? $discount : 0),
             'paymentMethods' => PaymentMethod::active()->get(),

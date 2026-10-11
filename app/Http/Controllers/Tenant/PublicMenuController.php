@@ -16,6 +16,10 @@ use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
 use App\Modules\Orders\RushMode;
 use App\Modules\Promotions\CouponRules;
+use App\Modules\Promotions\Loyalty;
+use App\Modules\Tables\Models\Command;
+use App\Modules\Tables\Models\DiningTable;
+use App\Modules\Tables\TableOrdering;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -35,10 +39,24 @@ class PublicMenuController
 {
     public function index(Request $request): View
     {
+        return $this->render($request);
+    }
+
+    /** Cardápio aberto pelo QR code da mesa: os pedidos vão para a comanda (TableOrdering). */
+    public function table(Request $request, string $token, TableOrdering $ordering): View
+    {
+        $table = $ordering->find($token) ?? abort(404);
+
+        return $this->render($request, $table, $ordering);
+    }
+
+    private function render(Request $request, ?DiningTable $table = null, ?TableOrdering $ordering = null): View
+    {
         $timezone = Setting::read('timezone', 'America/Sao_Paulo');
         $now = CarbonImmutable::now($timezone);
         $schedule = OpeningSchedule::load();
-        $base = $this->base($request);
+        $base = $this->base($request, $table ? '/mesa/'.$table->qr_token : '');
+        $tableState = $table ? $ordering->state($table) : null;
 
         $categories = Category::active()->ordered()
             ->with(['products' => fn ($q) => $q->active()
@@ -68,7 +86,16 @@ class PublicMenuController
             'welcome' => Setting::read('welcome_message'),
             'isOpen' => $isOpen,
             // Pedido online liberado: aberto agora, recebendo pedidos (sem pausa) e com entrega ou retirada.
-            'ordering' => $isOpen && Setting::read('accepts_online_orders', true) && ! $pausedUntil && ($acceptsDelivery || $acceptsPickup),
+            // Na mesa: conforme o pedido pelo QR code (modo e comanda aberta).
+            'ordering' => $table
+                ? $tableState['ordering']
+                : $isOpen && Setting::read('accepts_online_orders', true) && ! $pausedUntil && ($acceptsDelivery || $acceptsPickup),
+            'table' => $table,
+            'tableState' => $tableState,
+            'tableUrl' => $table ? $base.'/mesa/'.$table->qr_token : null,
+            'tableBill' => ($tableState['command'] ?? null) ? $this->bill($tableState['command']) : null,
+            'tableSent' => $table && $request->filled('enviado') ? (int) $request->query('enviado') : null,
+            'loyaltyHeadline' => ! $table && app(Loyalty::class)->enabled() ? app(Loyalty::class)->headline() : null,
             'pausedUntil' => $isOpen && Setting::read('accepts_online_orders', true) ? $pausedUntil : null,
             'rushMinutes' => RushMode::extraMinutes(),
             'catalog' => $this->catalog($categories, $base),
@@ -93,6 +120,20 @@ class PublicMenuController
             'paymentMethods' => PaymentMethod::active()->get(),
             'base' => $base,
         ]);
+    }
+
+    /**
+     * Conta da mesa para o cliente: pedidos (com itens e situação), taxa de serviço e total.
+     *
+     * @return array{orders: Collection, subtotal: Money, service: Money, total: Money}
+     */
+    private function bill(Command $command): array
+    {
+        $orders = $command->orders()->where('status', '!=', OrderStatus::Cancelled->value)->with('items.addons')->get();
+        $subtotal = Money::cents((int) $orders->sum(fn ($order) => $order->total_cents->cents));
+        $service = Command::serviceFeeFor($subtotal, $command->service_fee_enabled);
+
+        return ['orders' => $orders, 'subtotal' => $subtotal, 'service' => $service, 'total' => $subtotal->add($service)];
     }
 
     /** Manifesto para "Adicionar à tela inicial": o cardápio abre como um app. */

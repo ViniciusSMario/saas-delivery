@@ -253,6 +253,39 @@
             </section>
         @endif
 
+        {{-- Cartão fidelidade: selos do cliente e prêmio disponível --}}
+        @if ($loyalty)
+            <section class="card overflow-hidden">
+                @foreach ($loyalty['rewards'] as $reward)
+                    <div class="border-b-2 border-dashed border-brand-200 bg-brand-50 p-4" x-data="{ copied: false }">
+                        <p class="flex items-center gap-2 font-bold text-brand-800"><x-icon name="gift" class="size-5" /> Você ganhou {{ $reward->benefitInline() }}!</p>
+                        <p class="mt-0.5 text-sm text-stone-600">Prêmio do cartão fidelidade, só para você. Vale uma vez{{ $reward->ends_at ? ', até '.$reward->ends_at->timezone($timezone)->format('d/m') : '' }}{{ $reward->type->value === 'free_delivery' ? ', em pedido com entrega' : '' }}.</p>
+                        <div class="mt-3 flex items-center gap-2">
+                            <span class="min-w-0 flex-1 truncate rounded-xl bg-white px-2 py-2 text-center font-mono text-base font-bold tracking-wider whitespace-nowrap ring-1 ring-brand-200">{{ $reward->code }}</span>
+                            <button type="button" class="btn-secondary h-11" @click="navigator.clipboard?.writeText(@js($reward->code)); copied = true; setTimeout(() => copied = false, 2000)">
+                                <x-icon name="copy" class="size-4" /> <span x-text="copied ? 'Copiado' : 'Copiar'">Copiar</span>
+                            </button>
+                            <a href="{{ $menuUrl }}?cupom={{ $reward->code }}" class="btn-primary h-11">Usar</a>
+                        </div>
+                    </div>
+                @endforeach
+                <div class="p-4">
+                    <p class="flex items-center gap-2 font-bold"><x-icon name="star" class="size-5 text-brand-600" /> Cartão fidelidade</p>
+                    <p class="mt-0.5 text-sm text-stone-600">{{ $loyaltyHeadline }}.</p>
+                    <x-loyalty-stamps :stamps="$loyalty['stamps']" :goal="$loyalty['goal']" class="mt-3" />
+                    <p class="mt-2 text-sm font-semibold">
+                        @if (! $final && $loyaltyCounts)
+                            {{ $loyalty['stamps'] }} de {{ $loyalty['goal'] }}. Este pedido entra no cartão quando for concluído.
+                        @elseif ($loyalty['missing'] === 1)
+                            Falta só 1 pedido para o seu prêmio!
+                        @else
+                            Faltam {{ $loyalty['missing'] }} pedidos para o seu prêmio.
+                        @endif
+                    </p>
+                </div>
+            </section>
+        @endif
+
         {{-- Itens --}}
         <section class="card">
             <div class="card-header"><h2 class="section-title">Itens</h2><span class="text-xs text-stone-500">{{ $placedAt->format('d/m/Y \à\s H:i') }}</span></div>

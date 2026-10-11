@@ -63,6 +63,8 @@ class PlaceOrder
     {
         $online = $source === OrderSource::Online;
         $table = $source === OrderSource::Table;
+        // Pedido do cliente pelo QR code da mesa: confere o cardápio como no pedido online.
+        $viaQr = $table && ! empty($input['via_qr']);
         $fulfillment = Fulfillment::tryFrom($input['fulfillment'] ?? '')
             ?? $this->fail('fulfillment', 'Escolha entrega ou retirada.');
 
@@ -77,7 +79,7 @@ class PlaceOrder
 
         $customer = $this->customerData($input['customer'] ?? [], required: $online || $fulfillment === Fulfillment::Delivery);
         $address = $fulfillment === Fulfillment::Delivery ? $this->addressData($input['address'] ?? []) : null;
-        $lines = $this->priceLines($input['lines'] ?? [], $online);
+        $lines = $this->priceLines($input['lines'] ?? [], $online || $viaQr);
 
         $subtotal = array_reduce($lines, fn (Money $sum, array $line) => $sum->add($line['total']), Money::zero());
         $discount = $this->discount($input['discount'] ?? null, $subtotal, $online, $actor);
@@ -125,7 +127,7 @@ class PlaceOrder
         $cashSession = $paidNow ? $this->ledger->requireSession($actor) : null;
 
         $order = DB::connection('tenant')->transaction(function () use (
-            $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $zone, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession, $coupon
+            $viaQr, $source, $fulfillment, $customer, $address, $lines, $subtotal, $discount, $deliveryFee, $zone, $total, $method, $changeFor, $input, $actor, $paidNow, $cashSession, $coupon
         ) {
             // Cupom travado e conferido de novo: dois pedidos juntos não passam do limite de usos.
             if ($coupon) {
@@ -158,6 +160,7 @@ class PlaceOrder
                 'delivery_zone_id' => $zone?->id,
                 'total_cents' => $total,
                 'coupon_code' => $coupon?->code,
+                'via_qr' => $viaQr,
                 'eta_extra_minutes' => in_array($fulfillment, [Fulfillment::Delivery, Fulfillment::Pickup], true) ? RushMode::extraMinutes() : 0,
                 'created_by' => $actor?->id,
             ]);

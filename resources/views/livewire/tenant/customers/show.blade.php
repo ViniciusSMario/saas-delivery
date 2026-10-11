@@ -35,6 +35,16 @@
         </form>
 
         <div class="space-y-6 lg:col-span-2">
+            @if ($loyalty)
+                <section class="card card-body">
+                    <h2 class="section-title flex items-center gap-2"><x-icon name="star" class="size-5 text-brand-600" /> Cartão fidelidade</h2>
+                    <x-loyalty-stamps :stamps="$loyalty['stamps']" :goal="$loyalty['goal']" class="mt-3" />
+                    <p class="mt-2 text-sm text-stone-600">{{ $loyalty['stamps'] }} de {{ $loyalty['goal'] }} pedidos · {{ $loyalty['missing'] === 1 ? 'falta 1' : 'faltam '.$loyalty['missing'] }} para o próximo prêmio.</p>
+                    @foreach ($loyalty['rewards'] as $reward)
+                        <p class="mt-2 text-sm"><span class="badge-amber">Prêmio disponível</span> <strong class="font-mono">{{ $reward->code }}</strong> · {{ $reward->benefit() }}{{ $reward->ends_at ? ' · até '.$reward->ends_at->timezone($tz)->format('d/m') : '' }}</p>
+                    @endforeach
+                </section>
+            @endif
             <section class="card card-body">
                 <h2 class="section-title">Endereços</h2>
                 <ul class="mt-2 divide-y divide-stone-100 text-sm">

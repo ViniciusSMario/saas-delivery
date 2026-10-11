@@ -1,7 +1,10 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="page-title">Cadastro de mesas</h1>
-        <a href="{{ route('tables.map') }}" class="btn-secondary" wire:navigate>Ver mapa</a>
+        <div class="flex gap-2">
+            <a href="{{ route('tables.qr') }}" class="btn-secondary" wire:navigate><x-icon name="qr" class="size-4" /> QR codes</a>
+            <a href="{{ route('tables.map') }}" class="btn-secondary" wire:navigate>Ver mapa</a>
+        </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">

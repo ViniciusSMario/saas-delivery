@@ -38,7 +38,8 @@
         window.normalize = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
         Alpine.store('cart', {
-            key: 'cart:' + tenant,
+            // A mesa (QR code) tem o carrinho dela: não mistura com o pedido de entrega/retirada.
+            key: 'cart:' + tenant + (window.cartScope ? ':' + window.cartScope : ''),
             items: [],
             toast: '',
             pulse: false,

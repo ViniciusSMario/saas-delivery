@@ -15,6 +15,7 @@
         ['route' => 'menu.addon-groups.index', 'label' => 'Adicionais', 'icon' => 'plus-circle', 'can' => 'menu.manage'],
         ['route' => 'menu.combos.index', 'label' => 'Combos', 'icon' => 'gift', 'can' => 'menu.manage'],
         ['route' => 'menu.coupons', 'label' => 'Cupons', 'icon' => 'ticket', 'can' => 'menu.manage'],
+        ['route' => 'menu.loyalty', 'label' => 'Fidelidade', 'icon' => 'star', 'can' => 'menu.manage'],
         ['section' => 'Gestão', 'can' => ['customers.manage', 'finance.view', 'reports.view']],
         ['route' => 'customers.index', 'label' => 'Clientes', 'icon' => 'users', 'can' => 'customers.manage', 'match' => ['customers.index', 'customers.show']],
         ['route' => 'customers.winback', 'label' => 'Clientes sumidos', 'icon' => 'message', 'can' => 'customers.manage'],

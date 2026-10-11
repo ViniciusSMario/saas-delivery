@@ -36,7 +36,8 @@ class ManageCommand
     ) {
     }
 
-    public function open(?DiningTable $table, ?string $label, int $people, User $actor): Command
+    /** Sem $actor: aberta pelo cliente no pedido pelo QR code da mesa. */
+    public function open(?DiningTable $table, ?string $label, int $people, ?User $actor): Command
     {
         $label = trim((string) $label) ?: null;
 
@@ -55,7 +56,7 @@ class ManageCommand
                 'status' => CommandStatus::Open,
                 'people' => max(1, min(99, $people)),
                 'service_fee_enabled' => (bool) Setting::read('service_fee_enabled', true),
-                'opened_by' => $actor->id,
+                'opened_by' => $actor?->id,
             ]);
         } catch (QueryException $e) {
             if ($e->getCode() === '23505') {
@@ -86,7 +87,7 @@ class ManageCommand
         ], OrderSource::Table, $actor);
     }
 
-    public function requestBill(Command $command, User $actor): void
+    public function requestBill(Command $command, ?User $actor): void
     {
         $this->assertOpen($command);
         $command->update(['status' => CommandStatus::Closing]);

@@ -34,6 +34,7 @@ class Order extends TenantModel
             'completed_at' => 'datetime',
             'dispatched_at' => 'datetime',
             'runner_claimed_at' => 'datetime',
+            'via_qr' => 'boolean',
         ];
     }
 

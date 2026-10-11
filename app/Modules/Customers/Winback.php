@@ -99,13 +99,12 @@ class Winback
 
         $timezone = Setting::read('timezone', 'America/Sao_Paulo');
         $establishment = Establishment::current();
-        $benefit = $coupon?->benefit() ?? '';
 
         return trim(strtr($template, [
             '{nome}' => self::firstName($customer->name),
             '{restaurante}' => $establishment->trade_name ?: tenant()->name,
             '{cupom}' => $coupon?->code ?? '',
-            '{desconto}' => mb_strtolower(mb_substr($benefit, 0, 1)).mb_substr($benefit, 1),
+            '{desconto}' => $coupon?->benefitInline() ?? '',
             '{validade}' => $coupon?->ends_at ? $coupon->ends_at->timezone($timezone)->format('d/m') : 'por tempo limitado',
             '{produto}' => $favorite ?? 'seu pedido de sempre',
             '{link}' => $this->menuLink($coupon),
@@ -171,7 +170,7 @@ class Winback
     /** Cupons que servem para chamar de volta: ativos, válidos e que não são só de primeiro pedido. */
     public function coupons()
     {
-        return Coupon::where('is_active', true)->where('first_order_only', false)
+        return Coupon::whereNull('customer_id')->where('is_active', true)->where('first_order_only', false)
             ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
             ->orderByDesc('id')
             ->get();

@@ -1,5 +1,7 @@
 @php
     $productImage = fn ($image) => $base.'/imagens/'.$image->id;
+    // Na mesa (QR code), o carrinho fecha no pedido da mesa; no cardápio normal, no checkout de entrega/retirada.
+    $checkoutUrl = $table ? $tableUrl.'/pedido' : $base.'/pedido';
     $name = $establishment->trade_name ?: tenant()->name;
     $digits = preg_replace('/\D/', '', (string) $establishment->phone);
     $whatsapp = strlen($digits) >= 10 ? 'https://wa.me/'.(strlen($digits) <= 11 ? '55' : '').$digits : null;
@@ -72,6 +74,11 @@
                         @endif
 
                         <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium text-stone-700">
+                            @if ($table)
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-3 py-1 font-bold text-white">
+                                    <x-icon name="table" class="size-4" /> Mesa {{ $table->name }}
+                                </span>
+                            @else
                             @if ($acceptsDelivery)
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
                                     <x-icon name="truck" class="size-4 text-brand-600" />
@@ -94,6 +101,7 @@
                                     <x-icon name="cash" class="size-4 text-brand-600" /> Mínimo {{ $minOrder->format() }}
                                 </span>
                             @endunless
+                            @endif
                         </div>
 
                         @if ($welcome)
@@ -102,7 +110,7 @@
                     </div>
 
                     {{-- Cupons divulgados: "Usar" guarda o código, que o checkout já aplica. --}}
-                    @if ($ordering && $coupons->isNotEmpty())
+                    @if (! $table && $ordering && $coupons->isNotEmpty())
                         <div @class(['mt-3 space-y-2', '-mx-4 flex snap-x gap-3 space-y-0 overflow-x-auto px-4 scroll-px-4 scrollbar-none' => $coupons->count() > 1])>
                             @foreach ($coupons as $coupon)
                                 <div x-data="{ saved: false }" @class(['flex items-center gap-3 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 p-3', 'w-[85%] shrink-0 snap-start' => $coupons->count() > 1])>
@@ -122,7 +130,24 @@
                         </div>
                     @endif
 
-                    @if ($pausedUntil && ! $ordering)
+                    {{-- Cartão fidelidade: só o convite (o progresso aparece na página de cada pedido). --}}
+                    @if ($loyaltyHeadline && $ordering)
+                        <div class="mt-3 flex items-center gap-3 rounded-2xl bg-white p-3 shadow-xs ring-1 ring-stone-200">
+                            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><x-icon name="star" class="size-5" /></span>
+                            <p class="min-w-0 text-sm leading-snug"><strong class="block">Cartão fidelidade</strong> <span class="text-stone-600">{{ $loyaltyHeadline }}. Conta sozinho pelo seu telefone.</span></p>
+                        </div>
+                    @endif
+
+                    @if ($table)
+                        @if ($ordering)
+                            <div class="mt-3 flex items-center gap-3 rounded-2xl bg-white p-3 shadow-xs ring-1 ring-stone-200">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><x-icon name="qr" class="size-5" /></span>
+                                <p class="min-w-0 text-sm leading-snug"><strong class="block">Peça por aqui</strong> <span class="text-stone-600">Seu pedido vai direto para a cozinha e entra na conta da mesa {{ $table->name }}.</span></p>
+                            </div>
+                        @else
+                            <div class="alert-warning mt-3"><x-icon name="info" class="mt-0.5 size-4" /> <span>{{ $tableState['reason'] }}</span></div>
+                        @endif
+                    @elseif ($pausedUntil && ! $ordering)
                         {{-- Hora do sufoco: pausa curta, com o horário em que os pedidos voltam. --}}
                         <div class="alert-warning mt-3">
                             <x-icon name="pause" class="mt-0.5 size-4" />
@@ -159,7 +184,7 @@
                         <button type="button" x-show="term" x-cloak @click="term = ''" class="shrink-0 px-1 text-sm font-semibold text-brand-700">Limpar</button>
                         @if ($ordering)
                             {{-- Carrinho sempre à mão, com a quantidade de itens. --}}
-                            <a href="{{ $base }}/pedido" class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-700 shadow-xs transition active:scale-95"
+                            <a href="{{ $checkoutUrl }}" class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-700 shadow-xs transition active:scale-95"
                                :class="$store.cart.count > 0 && 'border-brand-200 bg-brand-50 text-brand-700'" :aria-label="'Carrinho, ' + $store.cart.count + ' itens'">
                                 <x-icon name="bag" class="size-5" />
                                 <span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count"
@@ -371,13 +396,16 @@
 
         {{-- ============ ABA PEDIDOS ============ --}}
         <div x-show="tab === 'pedidos'" x-cloak class="space-y-4 px-4 pt-6">
+            @if ($table)
+                @include('public-menu.partials.table-bill')
+            @else
             <div>
                 <h1 class="text-2xl font-extrabold tracking-tight">Seus pedidos</h1>
                 <p class="mt-1 text-sm text-stone-500">Pedidos feitos neste aparelho.</p>
             </div>
 
             @if ($ordering)
-                <a href="{{ $base }}/pedido" x-show="$store.cart.count > 0" class="card flex items-center gap-3 border-brand-200 bg-brand-50 p-4">
+                <a href="{{ $checkoutUrl }}" x-show="$store.cart.count > 0" class="card flex items-center gap-3 border-brand-200 bg-brand-50 p-4">
                     <span class="flex size-10 items-center justify-center rounded-xl bg-brand-600 text-white"><x-icon name="bag" class="size-5" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold">Sacola em aberto</span>
@@ -420,6 +448,7 @@
                     </a>
                 </template>
             </div>
+            @endif
         </div>
 
         {{-- ============ ABA LOJA ============ --}}
@@ -518,7 +547,7 @@
         @if ($ordering)
             <div x-cloak x-show="$store.cart.count > 0" x-transition.opacity
                  class="fixed inset-x-0 z-30 mx-auto max-w-xl px-3" style="bottom: calc(max(env(safe-area-inset-bottom), 0.5rem) + 4.25rem)">
-                <a href="{{ $base }}/pedido" class="flex items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-float transition duration-200 active:scale-[0.98]"
+                <a href="{{ $checkoutUrl }}" class="flex items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-float transition duration-200 active:scale-[0.98]"
                    :class="$store.cart.pulse && 'scale-[1.03] bg-brand-700'">
                     <span class="relative">
                         <x-icon name="bag" class="size-6" />
@@ -649,13 +678,15 @@
             </section>
         </div>
 
-        @include('public-menu.partials.bottom-nav', ['menuUrl' => $base, 'current' => null])
+        @include('public-menu.partials.bottom-nav', ['menuUrl' => $table ? $tableUrl : $base, 'current' => null, 'tableMode' => (bool) $table])
     </div>
 
     <script>
         window.menuCatalog = @js($catalog);
         window.menuCombos = @js($combosCatalog);
         window.menuOrdering = @js($ordering);
+        // Carrinho da mesa separado do carrinho de entrega/retirada.
+        window.cartScope = @js($table ? 'mesa-'.$table->id : null);
 
         document.addEventListener('alpine:init', () => {
             // Casca do app: abas pelo #hash (o "voltar" do celular troca de aba), categorias que

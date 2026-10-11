@@ -2,12 +2,14 @@
 
 namespace App\Modules\Promotions\Models;
 
+use App\Modules\Customers\Models\Customer;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Promotions\CouponType;
 use App\Support\Casts\MoneyCast;
 use App\Support\Money;
 use App\Tenancy\TenantModel;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -55,6 +57,12 @@ class Coupon extends TenantModel
         return $code === '' ? null : self::where('code', $code)->first();
     }
 
+    /** Cupom pessoal (prêmio da fidelidade): só este cliente usa. */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class)->withTrashed();
+    }
+
     public function redemptions(): HasMany
     {
         return $this->hasMany(CouponRedemption::class);
@@ -95,6 +103,12 @@ class Coupon extends TenantModel
             CouponType::Fixed => "{$this->amount_cents?->format()} de desconto",
             CouponType::FreeDelivery => 'Entrega grátis',
         };
+    }
+
+    /** Benefício no meio de uma frase: "ganhe entrega grátis", "ganhe R$ 15,00 de desconto". */
+    public function benefitInline(): string
+    {
+        return preg_replace('/^Entrega/u', 'entrega', $this->benefit());
     }
 
     /** Condições para mostrar ao cliente: "Pedidos a partir de R$ 50,00 · primeiro pedido · até 31/12". */

@@ -116,6 +116,7 @@
                                 <p class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     <span class="{{ $badge }}"><x-icon :name="$badgeIcon" class="size-3.5" /> {{ $order->fulfillment->label() }}</span>
                                     @if ($order->source->value === 'online')<span class="badge-brand">online</span>@endif
+                                    @if ($order->via_qr)<span class="badge-brand"><x-icon name="qr" class="size-3.5" /> pelo celular</span>@endif
                                     <span class="truncate text-xs font-medium text-stone-600">{{ $order->customer_name }}</span>
                                     @if ($order->courier_id)<span class="badge-violet"><x-icon name="truck" class="size-3.5" /> {{ $order->courier?->name }}</span>@endif
                                     @if ($order->address_district && $order->fulfillment->value === 'delivery')<span class="text-xs text-stone-500">· {{ $order->address_district }}</span>@endif

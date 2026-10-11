@@ -212,7 +212,8 @@ class Coupons extends Component
             ->keyBy('coupon_id');
 
         return view('livewire.tenant.promotions.coupons', [
-            'coupons' => Coupon::orderByDesc('is_active')->orderByDesc('id')->get(),
+            // Prêmios da fidelidade (cupons pessoais) ficam na tela de fidelidade.
+            'coupons' => Coupon::whereNull('customer_id')->orderByDesc('is_active')->orderByDesc('id')->get(),
             'stats' => $stats,
             'timezone' => $this->timezone(),
         ]);

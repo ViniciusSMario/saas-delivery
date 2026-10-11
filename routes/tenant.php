@@ -93,6 +93,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
 
     Route::get('/mesas', Tables\Map::class)->middleware('can:tables.manage')->name('tables.map');
     Route::get('/mesas/prontos', Tables\ReadyToServe::class)->middleware('can:tables.manage')->name('tables.ready');
+    Route::get('/mesas/qrcodes', Tables\QrCodes::class)->middleware('can:establishment.manage')->name('tables.qr');
     Route::get('/mesas/cadastro', Tables\Manage::class)->middleware('can:establishment.manage')->name('tables.manage');
     Route::get('/comandas/{command}', Tables\CommandPage::class)->whereNumber('command')->middleware('can:tables.manage')->name('tables.command');
 
@@ -139,5 +140,6 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
         Route::get('/combos/{combo}/imagem', [MenuImageController::class, 'combo'])->whereNumber('combo')->name('combos.image');
 
         Route::get('/cupons', \App\Livewire\Tenant\Promotions\Coupons::class)->name('coupons');
+        Route::get('/fidelidade', \App\Livewire\Tenant\Promotions\Loyalty::class)->name('loyalty');
     });
 });

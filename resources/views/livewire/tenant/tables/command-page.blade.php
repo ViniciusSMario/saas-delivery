@@ -144,6 +144,7 @@
                             <span @class(['badge', 'badge-green' => $order->status === OrderStatus::Ready, 'badge-amber' => in_array($order->status, [OrderStatus::Received, OrderStatus::Preparing], true), 'badge-gray' => $order->status === OrderStatus::Completed, 'badge-red' => $cancelled])>
                                 {{ $order->status === OrderStatus::Completed ? 'Servido' : $order->status->label() }}
                             </span>
+                            @if ($order->via_qr)<span class="badge-brand" title="{{ $order->customer_name }}"><x-icon name="qr" class="size-3.5" /> pelo celular</span>@endif
                             @if ($order->status === OrderStatus::Ready && $order->runner)
                                 <span class="truncate">· {{ \Illuminate\Support\Str::before($order->runner->name, ' ') }} levando</span>
                             @endif

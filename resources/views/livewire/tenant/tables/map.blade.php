@@ -16,10 +16,26 @@
         <div class="flex gap-2">
             <button type="button" wire:click="startLoose" class="btn-secondary"><x-icon name="plus" class="size-4" /> Comanda avulsa</button>
             @can('establishment.manage')
+                <a href="{{ route('tables.qr') }}" class="btn-secondary hidden sm:inline-flex" wire:navigate><x-icon name="qr" class="size-4" /> QR codes</a>
                 <a href="{{ route('tables.manage') }}" class="btn-secondary hidden sm:inline-flex" wire:navigate><x-icon name="sliders" class="size-4" /> Cadastrar mesas</a>
             @endcan
         </div>
     </div>
+
+    {{-- Chamados pelo celular (QR code da mesa) --}}
+    @foreach ($calls as $called)
+        <div wire:key="call-{{ $called->id }}" class="flex items-center gap-3 rounded-2xl bg-amber-500 px-4 py-3 text-white shadow-sm">
+            <span class="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                <span class="absolute inset-0 animate-ping rounded-xl bg-white/25"></span>
+                <x-icon :name="$called->call_reason === 'bill' ? 'file' : 'hand'" class="size-5" />
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block font-bold">Mesa {{ $called->name }} · {{ \App\Modules\Tables\TableOrdering::CALL_REASONS[$called->call_reason] ?? 'Chamando' }}</span>
+                <span class="block text-xs text-white/85">Pelo celular, {{ $called->called_at->locale('pt_BR')->diffForHumans() }}</span>
+            </span>
+            <button type="button" wire:click="answer({{ $called->id }})" class="btn-sm shrink-0 rounded-xl bg-white font-semibold text-amber-700 hover:bg-amber-50">Atendi</button>
+        </div>
+    @endforeach
 
     @if ($toServe > 0)
         <a href="{{ route('tables.ready') }}" wire:navigate class="flex items-center gap-3 rounded-2xl bg-emerald-600 px-4 py-3 text-white shadow-sm active:bg-emerald-700">
@@ -66,7 +82,7 @@
                            ])>
                             <span class="flex w-full items-start justify-between gap-1">
                                 <span class="text-3xl leading-none font-extrabold tracking-tight">{{ $table->name }}</span>
-                                @if ($isClosing)<x-icon name="file" class="size-5 shrink-0" />@endif
+                                @if ($table->pendingCall())<x-icon name="bell" class="size-5 shrink-0 animate-pulse" />@elseif ($isClosing)<x-icon name="file" class="size-5 shrink-0" />@endif
                             </span>
                             <span class="w-full min-w-0">
                                 <span class="block truncate text-sm font-bold tabular-nums sm:text-lg">{{ ($subtotals[$command->id] ?? \App\Support\Money::zero())->format() }}</span>
@@ -81,7 +97,11 @@
                                 class="group flex aspect-square flex-col justify-between rounded-2xl border-2 border-dashed border-stone-300 bg-white p-3 text-left transition active:scale-[0.97] active:border-brand-400 sm:aspect-[4/3] sm:p-4 sm:hover:border-brand-400">
                             <span class="flex w-full items-start justify-between">
                                 <span class="text-3xl leading-none font-extrabold tracking-tight text-stone-400">{{ $table->name }}</span>
-                                <x-icon name="plus" class="size-5 text-stone-300" />
+                                @if ($table->pendingCall())
+                                    <x-icon name="bell" class="size-5 animate-pulse text-amber-500" />
+                                @else
+                                    <x-icon name="plus" class="size-5 text-stone-300" />
+                                @endif
                             </span>
                             <span class="flex w-full items-center justify-between gap-1 text-xs font-medium text-stone-500">
                                 Livre

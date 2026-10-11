@@ -7,6 +7,7 @@ use App\Modules\Tables\CommandStatus;
 use App\Modules\Tables\Models\Command;
 use App\Modules\Tables\Models\DiningTable;
 use App\Modules\Tables\ServeQueue;
+use App\Modules\Tables\TableOrdering;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -76,6 +77,13 @@ class Map extends Component
         $this->redirectRoute('tables.command', $command, navigate: true);
     }
 
+    /** Chamado do cliente pelo celular atendido: sai da lista. */
+    public function answer(int $tableId, TableOrdering $ordering): void
+    {
+        $this->authorize('tables.manage');
+        $ordering->answer(DiningTable::findOrFail($tableId));
+    }
+
     public function render()
     {
         $tables = DiningTable::where('is_active', true)->ordered()->with('openCommand')->get();
@@ -91,6 +99,7 @@ class Map extends Component
             'loose' => Command::open()->whereNull('table_id')->latest()->get(),
             'hasTables' => $tables->isNotEmpty(),
             'toServe' => ServeQueue::countFor(Auth::guard('web')->user()),
+            'calls' => $tables->filter(fn (DiningTable $t) => $t->pendingCall())->sortBy('called_at')->values(),
             'opening' => $this->openingTableId ? $tables->firstWhere('id', $this->openingTableId) : null,
         ]);
     }

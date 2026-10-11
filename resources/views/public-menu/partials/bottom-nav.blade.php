@@ -6,7 +6,7 @@
     $tabs = [
         ['id' => 'cardapio', 'label' => 'Cardápio', 'icon' => 'utensils'],
         ['id' => 'buscar', 'label' => 'Buscar', 'icon' => 'search'],
-        ['id' => 'pedidos', 'label' => 'Pedidos', 'icon' => 'bag'],
+        ($tableMode ?? false) ? ['id' => 'pedidos', 'label' => 'Conta', 'icon' => 'file'] : ['id' => 'pedidos', 'label' => 'Pedidos', 'icon' => 'bag'],
         ['id' => 'loja', 'label' => 'Loja', 'icon' => 'store'],
     ];
 @endphp
@@ -27,7 +27,7 @@
                    ])>
                     <x-icon :name="$tab['icon']" class="size-6" />
                     {{ $tab['label'] }}
-                    @if ($tab['id'] === 'pedidos')
+                    @if ($tab['id'] === 'pedidos' && ! ($tableMode ?? false))
                         <span x-data x-cloak x-show="$store.orders?.active > 0" class="absolute top-1.5 left-1/2 ml-2 size-2.5 rounded-full bg-brand-600 ring-2 ring-white"></span>
                     @endif
                 </a>

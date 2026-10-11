@@ -91,6 +91,7 @@ class Show extends Component
 
         return view('livewire.tenant.customers.show', [
             'customer' => $customer,
+            'loyalty' => app(\App\Modules\Promotions\Loyalty::class)->status($customer),
             'orders' => Order::where('customer_id', $customer->id)->latest()->paginate(15),
             'count' => $count,
             'spent' => Money::cents($spent),

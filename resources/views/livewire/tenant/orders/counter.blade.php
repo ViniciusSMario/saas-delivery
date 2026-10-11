@@ -77,6 +77,20 @@
             @if ($customerNotes)
                 <p class="flex items-start gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-medium text-amber-800"><x-icon name="user" class="size-3.5" /> {{ $customerNotes }}</p>
             @endif
+            @if ($loyalty)
+                {{-- Cartão fidelidade do cliente: quanto falta e prêmio para usar agora. --}}
+                <div class="rounded-lg bg-brand-50 px-2.5 py-2 text-xs text-brand-900">
+                    <p class="flex items-center gap-1.5 font-semibold"><x-icon name="star" class="size-3.5" /> Fidelidade: {{ $loyalty['stamps'] }} de {{ $loyalty['goal'] }} pedidos</p>
+                    @foreach ($loyalty['rewards'] as $reward)
+                        <p class="mt-1.5 flex items-center gap-2">
+                            <span class="min-w-0 flex-1">Prêmio disponível: <strong class="font-mono">{{ $reward->code }}</strong> · {{ $reward->benefit() }}</span>
+                            @if ($coupon !== $reward->code)
+                                <button type="button" wire:click="useReward(@js($reward->code))" class="btn-primary btn-sm shrink-0">Usar</button>
+                            @endif
+                        </p>
+                    @endforeach
+                </div>
+            @endif
 
             @if ($fulfillment === 'delivery')
                 <div class="grid grid-cols-3 gap-2">

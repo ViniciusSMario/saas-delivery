@@ -8,6 +8,7 @@ use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\OrderEta;
+use App\Modules\Promotions\Models\LoyaltyReward;
 use App\Modules\Push\Jobs\SendOrderPush;
 use App\Modules\Push\Models\OrderPushSubscription;
 use Illuminate\Support\Str;
@@ -56,11 +57,28 @@ class CustomerAlerts
                 ($courier = $order->courier()->value('name')) ? 'Com '.Str::before($courier, ' ') : null,
                 $at ? "previsão {$at}" : null,
             ])->filter()->implode(' · ') ?: 'Está a caminho.'],
-            OrderStatus::Completed => $pickup
+            OrderStatus::Completed => $this->rewardMessage($order) ?? ($pickup
                 ? ["Pedido #{$number} retirado", "Obrigado por pedir em {$name}!"]
-                : ["Pedido #{$number} entregue", "Bom apetite! Obrigado por pedir em {$name}."],
+                : ["Pedido #{$number} entregue", "Bom apetite! Obrigado por pedir em {$name}."]),
             OrderStatus::Cancelled => ["Pedido #{$number} cancelado", $order->cancel_reason ? "Motivo: {$order->cancel_reason}" : "Dúvidas? Fale com {$name}."],
             default => null,
         };
+    }
+
+    /** Este pedido completou o cartão fidelidade: o aviso de entregue já conta do prêmio. */
+    private function rewardMessage(Order $order): ?array
+    {
+        $reward = LoyaltyReward::with('coupon')->where('order_id', $order->id)->first();
+
+        if (! $reward?->coupon) {
+            return null;
+        }
+
+        $benefit = $reward->coupon->benefitInline();
+
+        return [
+            "Você ganhou {$benefit}!",
+            "Pedido #{$order->number} concluído e cartão fidelidade completo. Seu cupom é {$reward->coupon->code}.",
+        ];
     }
 }

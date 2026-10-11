@@ -39,6 +39,11 @@ class CouponRules
             return 'Este cupom expirou.';
         }
 
+        // Prêmio da fidelidade: só o dono do cartão usa.
+        if ($coupon->customer_id && $phone && Customer::withTrashed()->whereKey($coupon->customer_id)->value('phone') !== $phone) {
+            return 'Este cupom é de outro cliente.';
+        }
+
         if ($coupon->type === CouponType::FreeDelivery && $fulfillment && $fulfillment !== Fulfillment::Delivery) {
             return 'Este cupom é de entrega grátis: escolha entrega para usar.';
         }
@@ -71,14 +76,14 @@ class CouponRules
     /** Cupom de "volte e ganhe" para oferecer a quem acabou de receber um pedido (se ainda puder usar). */
     public function returnOffer(?string $phone): ?Coupon
     {
-        return Coupon::where('show_after_order', true)->where('is_active', true)->orderBy('id')->get()
+        return Coupon::whereNull('customer_id')->where('show_after_order', true)->where('is_active', true)->orderBy('id')->get()
             ->first(fn (Coupon $coupon) => $this->problem($coupon, Money::cents(PHP_INT_MAX), $phone) === null);
     }
 
     /** Cupons divulgados no cardápio, válidos agora. */
     public function publicCoupons()
     {
-        return Coupon::where('is_public', true)->where('is_active', true)->orderBy('id')->get()
+        return Coupon::whereNull('customer_id')->where('is_public', true)->where('is_active', true)->orderBy('id')->get()
             ->filter(fn (Coupon $coupon) => ! $coupon->starts_at?->isFuture() && ! $coupon->ends_at?->isPast()
                 && ($coupon->usage_limit === null || $coupon->validRedemptions()->count() < $coupon->usage_limit))
             ->values();

@@ -15,6 +15,7 @@ use App\Modules\Push\Jobs\SendPush;
 use App\Modules\Push\Jobs\WarnWaitingOrder;
 use App\Modules\Push\Models\PushSubscription;
 use App\Modules\Tables\Models\Command;
+use App\Modules\Tables\Models\DiningTable;
 use Illuminate\Support\Str;
 
 /**
@@ -80,6 +81,12 @@ class StaffAlerts
     /** Pedido do cardápio online: avisa quem atende e agenda a cobrança se ninguém aceitar. */
     public function orderPlaced(Order $order): void
     {
+        if ($order->via_qr) {
+            $this->tableOrder($order);
+
+            return;
+        }
+
         if ($order->source !== OrderSource::Online || $order->status !== OrderStatus::Received) {
             return;
         }
@@ -163,6 +170,31 @@ class StaffAlerts
                 'tag' => "mesa-pedido-{$order->id}",
             ]);
         }
+    }
+
+    /** Cliente pediu pelo QR code da mesa: o garçom fica sabendo (a cozinha já vê no painel e na impressão). */
+    public function tableOrder(Order $order): void
+    {
+        $place = Command::with('diningTable')->find($order->command_id)?->displayName() ?? 'Mesa';
+
+        $this->send($this->fieldUsersWith(Permission::TablesManage), [
+            'title' => "{$place} pediu pelo celular",
+            'body' => Str::limit($order->items()->get()->map(fn ($item) => "{$item->quantity}× {$item->name}")->implode(', '), 120),
+            'url' => $order->command_id ? "/comandas/{$order->command_id}" : '/mesas',
+            'tag' => "mesa-qr-{$order->id}",
+        ]);
+    }
+
+    /** "Mesa 5 · Chamando o garçom" / "Mesa 5 · Pediu a conta". */
+    public function tableCall(DiningTable $table, string $label): void
+    {
+        $this->send($this->fieldUsersWith(Permission::TablesManage), [
+            'title' => "Mesa {$table->name} · {$label}",
+            'body' => 'Pelo celular, agora.',
+            'url' => '/mesas',
+            'tag' => "mesa-chamado-{$table->id}",
+            'sticky' => true,
+        ]);
     }
 
     public function courierAssigned(Order $order, User $courier): void

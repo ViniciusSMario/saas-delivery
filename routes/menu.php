@@ -10,6 +10,7 @@ use App\Http\Controllers\Tenant\EstablishmentLogoController;
 use App\Http\Controllers\Tenant\OrderPushController;
 use App\Http\Controllers\Tenant\PublicMenuController;
 use App\Http\Controllers\Tenant\PublicOrderController;
+use App\Http\Controllers\Tenant\PublicTableController;
 use App\Tenancy\Middleware\EnsureTenantVerified;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,12 @@ Route::middleware(EnsureTenantVerified::class)->group(function () {
     Route::get('/pedido/{token}/status', [PublicOrderController::class, 'status']);
     Route::get('/pedido/{token}/repetir', [PublicOrderController::class, 'reorder'])->middleware('throttle:30,1');
     Route::post('/pedido/{token}/avaliacao', [PublicOrderController::class, 'review'])->middleware('throttle:10,1');
+
+    // Pedido pela mesa (QR code da mesa): cardápio, fechamento, envio para a comanda e chamar o garçom.
+    Route::get('/mesa/{token}', [PublicMenuController::class, 'table']);
+    Route::get('/mesa/{token}/pedido', [PublicTableController::class, 'checkout']);
+    Route::post('/mesa/{token}/pedido', [PublicTableController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('/mesa/{token}/chamar', [PublicTableController::class, 'call'])->middleware('throttle:6,1');
 
     // Avisos do andamento no celular do cliente (Web Push).
     Route::post('/pedido/{token}/avisos', [OrderPushController::class, 'store'])->middleware('throttle:20,1');
