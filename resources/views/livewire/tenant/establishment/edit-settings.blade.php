@@ -17,6 +17,16 @@
         <label class="flex items-center gap-2 text-sm font-medium"><input type="checkbox" wire:model="accepts_online_orders" class="checkbox"> Receber pedidos online pelo cardápio</label>
         <p class="hint -mt-2">Desligado, o cardápio continua visível, mas sem carrinho. Os pedidos também só entram no horário de funcionamento.</p>
 
+        <div>
+            <label class="flex flex-wrap items-center gap-2 text-sm">
+                Avisar a gerência no celular quando um pedido ficar
+                <input wire:model="order_waiting_alert_minutes" type="number" min="0" max="60" class="input w-20" aria-label="Minutos sem aceite">
+                minutos sem ninguém aceitar
+            </label>
+            <p class="hint">0 = não avisar. O painel toca um alarme desde a chegada do pedido; este aviso vai para quem pode cancelar pedidos e ativou as notificações.</p>
+            @error('order_waiting_alert_minutes') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
         <div class="flex flex-wrap gap-6">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_delivery" class="checkbox"> Aceita entrega</label>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model="accepts_pickup" class="checkbox"> Aceita retirada no local</label>

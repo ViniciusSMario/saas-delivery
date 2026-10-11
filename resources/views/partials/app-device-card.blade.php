@@ -2,10 +2,13 @@
 @php
     $user = auth()->user();
     $receives = \App\Modules\Push\StaffAlerts::receivesAlerts($user);
-    $alerts = array_filter([
-        $user->can('tables.manage') ? 'quando um prato da mesa ficar pronto' : null,
-        $user->can('deliveries.operate') ? 'quando uma entrega ficar pronta ou for mandada para você' : null,
-    ]);
+    $choices = \App\Modules\Push\StaffAlerts::choicesFor($user);
+    $alerts = $user->usesFieldMode()
+        ? array_filter([
+            $user->can('tables.manage') ? 'quando um prato da mesa ficar pronto' : null,
+            $user->can('deliveries.operate') ? 'quando uma entrega ficar pronta ou for mandada para você' : null,
+        ])
+        : ['quando chegar um pedido pelo cardápio online'];
 @endphp
 <section class="card card-body space-y-4" x-data="appDevice" x-cloak>
     <div>
@@ -68,6 +71,21 @@
 
             <p x-show="message" x-text="message" class="text-sm font-medium text-emerald-700"></p>
             <p x-show="error" x-text="error" class="field-error"></p>
+
+            @if ($choices)
+                {{-- Vale para todos os aparelhos da pessoa; salva ao marcar. --}}
+                <fieldset class="space-y-2 border-t border-stone-100 pt-3" x-data="{ saved: false }" @alerts-saved.window="saved = true; setTimeout(() => saved = false, 2000)">
+                    <legend class="flex w-full items-center justify-between text-sm font-semibold">
+                        Quero ser avisado de
+                        <span x-show="saved" x-transition.opacity class="text-xs font-medium text-emerald-700">Salvo</span>
+                    </legend>
+                    @foreach ($choices as $type => $label)
+                        <label class="flex items-center gap-2 text-sm" wire:key="alert-{{ $type }}">
+                            <input type="checkbox" wire:model.live="alerts.{{ $type }}" class="checkbox"> {{ $label }}
+                        </label>
+                    @endforeach
+                </fieldset>
+            @endif
         </div>
     @endif
 </section>

@@ -20,7 +20,9 @@ self.addEventListener('push', (event) => {
         renotify: Boolean(data.tag),
         icon: '/app-icon/192.png',
         badge: '/app-icon/badge.png',
-        vibrate: [200, 100, 200],
+        vibrate: data.sticky ? [300, 120, 300, 120, 300] : [200, 100, 200],
+        // Pedido novo: no computador, fica na tela até alguém clicar.
+        requireInteraction: Boolean(data.sticky),
         timestamp: data.sent_at || Date.now(),
         data: { url: data.url || '/' },
     }));

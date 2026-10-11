@@ -3,6 +3,7 @@
 namespace App\Modules\Push;
 
 use App\Modules\Delivery\Events\CourierAssigned;
+use App\Modules\Orders\Events\OrderPlaced;
 use App\Modules\Orders\Events\OrderStatusChanged;
 use App\Modules\Push\Console\PushVapid;
 use App\Modules\Push\Listeners\AlertStaff;
@@ -20,6 +21,7 @@ class PushServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(OrderPlaced::class, AlertStaff::class);
         Event::listen(OrderStatusChanged::class, AlertStaff::class);
         Event::listen(CourierAssigned::class, AlertStaff::class);
 

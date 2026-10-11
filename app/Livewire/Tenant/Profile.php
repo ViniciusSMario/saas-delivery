@@ -4,6 +4,7 @@ namespace App\Livewire\Tenant;
 
 use App\Modules\Access\Audit;
 use App\Modules\Access\Models\User;
+use App\Modules\Push\StaffAlerts;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
@@ -21,9 +22,27 @@ class Profile extends Component
 
     public string $password_confirmation = '';
 
+    /** @var array<string, bool> avisos no celular ligados (tipo => sim/não) */
+    public array $alerts = [];
+
     public function mount(): void
     {
         $this->name = $this->user()->name;
+
+        foreach (array_keys(StaffAlerts::choicesFor($this->user())) as $type) {
+            $this->alerts[$type] = StaffAlerts::wants($this->user(), $type);
+        }
+    }
+
+    /** Cada caixinha salva na hora. */
+    public function updatedAlerts(): void
+    {
+        $user = $this->user();
+        $choices = array_keys(StaffAlerts::choicesFor($user));
+        $chosen = array_intersect_key(array_map(fn ($on) => (bool) $on, $this->alerts), array_flip($choices));
+
+        $user->forceFill(['alert_preferences' => array_merge($user->alert_preferences ?? [], $chosen)])->save();
+        $this->dispatch('alerts-saved');
     }
 
     public function saveName(): void

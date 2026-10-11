@@ -4,6 +4,7 @@ namespace App\Livewire\Tenant\Orders;
 
 use App\Modules\Access\Models\User;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Printing\OrderTickets;
@@ -87,9 +88,15 @@ class Board extends Component
         $orders = Order::open()->with(['items.addons', 'courier'])->oldest()->get()->groupBy(fn (Order $o) => $o->status->value);
         $newest = (int) Order::max('id');
 
-        // Pedido novo desde a última atualização: o navegador toca o aviso.
+        // Pedido novo de mesa ou balcão desde a última atualização: bipe curto. O pedido online
+        // tem o alarme próprio, que repete até alguém aceitar (OrderAlarm).
         if ($newest > $this->lastSeenId) {
-            $this->dispatch('new-order', count: Order::where('id', '>', $this->lastSeenId)->count());
+            $others = Order::where('id', '>', $this->lastSeenId)->where('source', '!=', OrderSource::Online->value)->count();
+
+            if ($others) {
+                $this->dispatch('new-order', count: $others);
+            }
+
             $this->lastSeenId = $newest;
         }
 

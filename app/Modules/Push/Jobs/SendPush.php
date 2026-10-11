@@ -21,7 +21,7 @@ class SendPush implements ShouldQueue
 
     /**
      * @param  list<int>  $userIds
-     * @param  array{title: string, body: string, url: string, tag: string}  $payload
+     * @param  array{title: string, body: string, url: string, tag: string, sticky?: bool}  $payload  sticky: fica na tela até a pessoa tocar (computador)
      */
     public function __construct(public array $userIds, public array $payload)
     {

@@ -2,7 +2,7 @@
     use App\Modules\Orders\Enums\Fulfillment;
 
     $nextLabel = fn ($order) => match ($order->status->next($order->fulfillment)?->value) {
-        'preparing' => 'Iniciar preparo',
+        'preparing' => $order->source->value === 'online' ? 'Aceitar e preparar' : 'Iniciar preparo',
         'ready' => 'Marcar pronto',
         'dispatched' => 'Saiu para entrega',
         'completed' => match ($order->fulfillment) { Fulfillment::Delivery => 'Entregue', Fulfillment::Table => 'Servido', default => 'Concluir' },
@@ -27,30 +27,30 @@
          sound: false,
          full: false,
          toast: '',
-         beep() {
-             if (! this.sound) return;
-             try {
-                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                 [0, 0.25].forEach((t) => {
-                     const o = ctx.createOscillator(), g = ctx.createGain();
-                     o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
-                     g.gain.setValueAtTime(0.2, ctx.currentTime + t);
-                     o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.15);
-                 });
-             } catch (e) {}
+         {{-- O som é o mesmo do alarme de pedido online (resources/js/alarm.js): ligado por aparelho. --}}
+         syncSound() {
+             this.sound = Boolean(window.orderAlarm?.soundEnabled() && ! window.orderAlarm.isBlocked());
          },
-         flash(count) {
-             const original = document.title.replace(/^\(\d+\) /, '');
-             document.title = '(' + count + ') ' + original;
-             setTimeout(() => document.title = original, 8000);
+         toggleSound() {
+             const alarm = window.orderAlarm;
+             if (! alarm) return;
+             if (this.sound) {
+                 alarm.toggleSound();
+             } else {
+                 if (! alarm.soundEnabled()) alarm.toggleSound();
+                 alarm.unlock().then(() => { this.syncSound(); alarm.beep(); });
+             }
+             this.syncSound();
          },
          toggleFull() {
              if (document.fullscreenElement) document.exitFullscreen(); else this.$refs.board.requestFullscreen?.();
          },
      }"
+     x-init="syncSound()"
+     @order-alarm-changed.document="syncSound()"
      @fullscreenchange.document="full = !! document.fullscreenElement"
      @notify.window="toast = $event.detail.message; setTimeout(() => toast = '', 2500)"
-     @new-order.window="beep(); flash($event.detail.count)">
+     @new-order.window="window.orderAlarm?.beep()">
 
     <x-ui.page-header title="Painel de pedidos">
         <x-slot:subtitle>
@@ -58,9 +58,9 @@
             <span class="text-stone-300">•</span> {{ $todayDone }} concluídos/cancelados hoje
         </x-slot:subtitle>
 
-        <button type="button" class="btn-secondary" @click="sound = ! sound; beep()" :class="sound && 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">
-            <span x-show="sound"><x-icon name="bell" class="size-4" /></span>
-            <span x-show="! sound"><x-icon name="bell-off" class="size-4" /></span>
+        <button type="button" class="btn-secondary" @click="toggleSound()" :class="sound && 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">
+            <span x-show="sound"><x-icon name="volume" class="size-4" /></span>
+            <span x-show="! sound"><x-icon name="volume-off" class="size-4" /></span>
             <span x-text="sound ? 'Som ligado' : 'Ligar som'">Ligar som</span>
         </button>
         <button type="button" class="btn-secondary" @click="toggleFull()">

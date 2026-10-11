@@ -5,6 +5,7 @@ namespace App\Livewire\Tenant\Establishment;
 use App\Modules\Access\Audit;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Push\StaffAlerts;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -26,6 +27,9 @@ class EditSettings extends Component
     public int $service_fee_percent = 10;
 
     public bool $stock_auto_sold_out = false;
+
+    /** Minutos sem aceite até avisar a gerência no celular (0 = não avisa). */
+    public int $order_waiting_alert_minutes = StaffAlerts::WAITING_MINUTES_DEFAULT;
 
     /** @var array<int, bool> id da forma de pagamento => ativa */
     public array $paymentMethods = [];
@@ -53,6 +57,7 @@ class EditSettings extends Component
         $this->service_fee_enabled = (bool) Setting::read('service_fee_enabled', true);
         $this->service_fee_percent = (int) Setting::read('service_fee_percent', 10);
         $this->stock_auto_sold_out = (bool) Setting::read('stock_auto_sold_out', false);
+        $this->order_waiting_alert_minutes = StaffAlerts::waitingMinutes();
         $this->min_order = $this->toMoney((int) Setting::read('min_order_cents', 0));
         $this->delivery_fee = $this->toMoney((int) Setting::read('delivery_fee_cents', 0));
     }
@@ -69,6 +74,7 @@ class EditSettings extends Component
             'service_fee_enabled' => ['boolean'],
             'service_fee_percent' => ['required', 'integer', 'min:0', 'max:30'],
             'stock_auto_sold_out' => ['boolean'],
+            'order_waiting_alert_minutes' => ['required', 'integer', 'min:0', 'max:60'],
             'min_order' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
             'delivery_fee' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
         ];
@@ -81,6 +87,7 @@ class EditSettings extends Component
             'timezone' => 'fuso horário',
             'min_order' => 'pedido mínimo',
             'delivery_fee' => 'taxa de entrega',
+            'order_waiting_alert_minutes' => 'minutos sem aceite',
         ];
     }
 
@@ -98,6 +105,7 @@ class EditSettings extends Component
             'service_fee_enabled' => $this->service_fee_enabled,
             'service_fee_percent' => $this->service_fee_percent,
             'stock_auto_sold_out' => $this->stock_auto_sold_out,
+            StaffAlerts::WAITING_MINUTES_SETTING => $this->order_waiting_alert_minutes,
             'min_order_cents' => $this->toCents($this->min_order),
             'delivery_fee_cents' => $this->toCents($this->delivery_fee),
         ];

@@ -54,6 +54,9 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.pwa-head')
+    @if ($user->canAny(['orders.view', 'orders.manage']))
+        @vite('resources/js/alarm.js')
+    @endif
 </head>
 <body class="min-h-screen" x-data="{ menu: false }" @keydown.escape.window="menu = false">
     <div class="lg:flex">
@@ -201,9 +204,18 @@
                     </div>
                 @endif
 
+                @if (! request()->routeIs('profile') && \App\Modules\Push\StaffAlerts::receivesAlerts($user))
+                    @include('partials.push-banner', ['what' => 'quando chegar um pedido pelo cardápio online', 'class' => 'mb-6'])
+                @endif
+
                 {{ $slot }}
             </main>
         </div>
     </div>
+
+    {{-- Pedido online esperando aceite: cartão e som em qualquer tela do painel. --}}
+    @can('orders.manage')
+        <livewire:tenant.order-alarm />
+    @endcan
 </body>
 </html>

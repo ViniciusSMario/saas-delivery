@@ -1,17 +1,29 @@
 <?php
 
+use App\Livewire\Tenant\Establishment\EditSettings;
+use App\Livewire\Tenant\OrderAlarm;
+use App\Livewire\Tenant\Profile;
+use App\Modules\Access\Models\Role;
 use App\Modules\Access\Models\User;
+use App\Modules\Access\Permission;
 use App\Modules\Delivery\Actions\Deliveries;
 use App\Modules\Establishment\Models\Establishment;
+use App\Modules\Menu\Models\Product;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
+use App\Modules\Orders\Actions\PlaceOrder;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Push\Jobs\WarnWaitingOrder;
 use App\Modules\Push\Models\PushSubscription;
 use App\Modules\Push\PushTransport;
 use App\Modules\Push\StaffAlerts;
 use App\Modules\Push\Transports\FakePushTransport;
 use App\Modules\Tables\Actions\ManageCommand;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 
 beforeEach(fn () => FakePushTransport::reset());
 
@@ -101,9 +113,10 @@ it('entrega pronta avisa os entregadores; prato de mesa pronto avisa os garçons
     $delivery = readyDeliveryOrder($burger);
     expect(pushesTo($entregador))->toHaveCount(1)
         ->and(pushesTo($garcom))->toBeEmpty()
-        ->and(pushesTo($gerente))->toBeEmpty()
         ->and(pushesTo($semCelular))->toBeEmpty()
         ->and(pushesTo($inativo))->toBeEmpty();
+    // A gerência só soube do pedido novo (do cardápio), não da entrega pronta.
+    expect(collect(pushesTo($gerente))->pluck('payload.title')->all())->toBe(["Pedido novo · #{$delivery->number} · {$delivery->total_cents->format()}"]);
 
     $payload = pushesTo($entregador)[0]['payload'];
     expect($payload['title'])->toBe("Entrega pronta · #{$delivery->number}")
@@ -172,13 +185,15 @@ it('celular que desinstalou o app sai da lista; aviso que falha não atrapalha o
     expect($order->status)->toBe(OrderStatus::Ready);
 });
 
-it('garçom e entregador ativam e testam pela tela; a gerência só vê a instalação', function () {
+it('garçom e entregador ativam e testam pela tela; quem não atende pedidos só vê a instalação', function () {
     $tenant = provisionTenant('push');
     $entregador = createTenantUser($tenant, ['entregador']);
-    $gerente = createTenantUser($tenant, ['gerente']);
+    inTenant($tenant, fn () => Role::create(['slug' => 'estoquista', 'name' => 'Estoquista'])->syncPermissions([Permission::StockManage]));
+    $estoquista = createTenantUser($tenant, ['estoquista']);
 
-    inTenant($tenant, function () use ($entregador, $gerente) {
-        expect(StaffAlerts::receivesAlerts($entregador))->toBeTrue()->and(StaffAlerts::receivesAlerts($gerente))->toBeFalse();
+    inTenant($tenant, function () use ($entregador, $estoquista) {
+        expect(StaffAlerts::receivesAlerts($entregador))->toBeTrue()->and(StaffAlerts::receivesAlerts($estoquista))->toBeFalse()
+            ->and(StaffAlerts::choicesFor($entregador))->toBe([]);
     });
 
     $this->actingAs($entregador)->get(tenantUrl($tenant, '/minha-conta'))->assertOk()
@@ -191,6 +206,136 @@ it('garçom e entregador ativam e testam pela tela; a gerência só vê a instal
     expect(pushesTo($entregador)[0]['payload']['title'])->toBe('Notificações ativadas');
 
     $this->flushSession();
-    $this->actingAs($gerente)->get(tenantUrl($tenant, '/minha-conta'))->assertOk()
+    $this->actingAs($estoquista)->get(tenantUrl($tenant, '/minha-conta'))->assertOk()
         ->assertSee('App no celular')->assertDontSee('Ativar notificações');
+});
+
+/** Pedido do cardápio online (entrega no Centro, cliente Rita). */
+function menuOrder(Product $product, int $quantity = 1): Order
+{
+    return app(PlaceOrder::class)->handle([
+        'lines' => [line($product, $quantity)],
+        'fulfillment' => 'delivery',
+        'payment_method' => 'cash',
+        'customer' => ['name' => 'Rita', 'phone' => '11977775555'],
+        'address' => ['street' => 'Rua A', 'number' => '10', 'district' => 'Centro', 'city' => 'Campinas'],
+    ], OrderSource::Online);
+}
+
+it('pedido novo do cardápio avisa cozinha, caixa e gerência; cada um pode desligar', function () {
+    ['tenant' => $tenant, 'burger' => $burger, 't1' => $t1] = salon();
+    $cozinha = createTenantUser($tenant, ['cozinha']);
+    $caixa = createTenantUser($tenant, ['caixa']);
+    $gerente = createTenantUser($tenant, ['gerente']);
+    $garcom = createTenantUser($tenant, ['garcom']);
+    $entregador = createTenantUser($tenant, ['entregador']);
+    foreach ([$cozinha, $caixa, $gerente, $garcom, $entregador] as $user) {
+        phoneOf($user);
+    }
+
+    $order = menuOrder($burger, 2);
+    foreach ([$cozinha, $caixa, $gerente] as $user) {
+        expect(pushesTo($user))->toHaveCount(1);
+    }
+    expect(pushesTo($garcom))->toBeEmpty()->and(pushesTo($entregador))->toBeEmpty();
+    expect(pushesTo($caixa)[0]['payload'])->toMatchArray([
+        'title' => "Pedido novo · #{$order->number} · {$order->total_cents->format()}",
+        'body' => 'Entrega · Centro · Rita · 2 itens',
+        'url' => "/pedidos/{$order->id}",
+        'tag' => "pedido-{$order->id}",
+        'sticky' => true,
+    ]);
+
+    // Pedido lançado pela equipe (mesa) não é "pedido novo do cardápio".
+    FakePushTransport::reset();
+    $manage = app(ManageCommand::class);
+    $manage->addItems($manage->open($t1, null, 2, $garcom), [line($burger)], $garcom);
+    expect(FakePushTransport::$sent)->toBeEmpty();
+
+    // A caixa desligou o aviso em Minha conta: só ela deixa de receber.
+    Livewire::actingAs($caixa)->test(Profile::class)
+        ->assertSet('alerts', [StaffAlerts::NEW_ORDER => true])
+        ->set('alerts.'.StaffAlerts::NEW_ORDER, false)
+        ->assertDispatched('alerts-saved');
+    expect($caixa->fresh()->alert_preferences)->toBe([StaffAlerts::NEW_ORDER => false]);
+
+    menuOrder($burger);
+    expect(pushesTo($caixa))->toBeEmpty()->and(pushesTo($cozinha))->toHaveCount(1)->and(pushesTo($gerente))->toHaveCount(1);
+});
+
+it('pedido sem aceite avisa a gerência depois do tempo das configurações', function () {
+    ['tenant' => $tenant, 'burger' => $burger] = salon();
+    $gerente = createTenantUser($tenant, ['gerente']);
+    $caixa = createTenantUser($tenant, ['caixa']);
+    phoneOf($gerente);
+    phoneOf($caixa);
+
+    Bus::fake([WarnWaitingOrder::class]);
+    $order = menuOrder($burger);
+    Bus::assertDispatched(WarnWaitingOrder::class, fn ($job) => $job->orderId === $order->id
+        && abs(now()->addMinutes(5)->diffInSeconds($job->delay)) < 5);
+    FakePushTransport::reset();
+
+    $warn = fn () => (new WarnWaitingOrder($order->id))->handle(app(StaffAlerts::class));
+
+    // A fila rodou antes do prazo: não avisa.
+    $warn();
+    expect(FakePushTransport::$sent)->toBeEmpty();
+
+    $this->travel(6)->minutes();
+    $warn();
+    expect(pushesTo($caixa))->toBeEmpty(); // a caixa não cancela pedidos: o aviso é da gerência
+    expect(pushesTo($gerente)[0]['payload'])->toMatchArray([
+        'title' => "Pedido #{$order->number} esperando há 6 min",
+        'body' => 'Ninguém aceitou ainda · Entrega · Centro · Rita · 1 item',
+        'tag' => "pedido-{$order->id}",
+    ]);
+
+    // Aceito: não cobra mais.
+    FakePushTransport::reset();
+    app(ChangeOrderStatus::class)->handle($order, OrderStatus::Preparing);
+    $warn();
+    expect(FakePushTransport::$sent)->toBeEmpty();
+
+    // Configurações: 0 desliga o aviso (e a opção some de Minha conta).
+    Livewire::actingAs($gerente)->test(EditSettings::class)
+        ->assertSet('order_waiting_alert_minutes', 5)
+        ->set('order_waiting_alert_minutes', 0)->call('save')->assertHasNoErrors();
+    expect(StaffAlerts::choicesFor($gerente))->toBe([StaffAlerts::NEW_ORDER => 'Pedido novo do cardápio online']);
+    menuOrder($burger);
+    Bus::assertDispatchedTimes(WarnWaitingOrder::class, 1);
+});
+
+it('o painel mostra o pedido online esperando e o aceite vale uma vez só', function () {
+    ['tenant' => $tenant, 'burger' => $burger, 't1' => $t1] = salon();
+    $caixa = createTenantUser($tenant, ['caixa']);
+    $cozinha = createTenantUser($tenant, ['cozinha']);
+    $garcom = createTenantUser($tenant, ['garcom']);
+
+    $manage = app(ManageCommand::class);
+    $manage->addItems($manage->open($t1, null, 2, $garcom), [line($burger)], $garcom);
+    $order = menuOrder($burger, 3);
+
+    $alarm = Livewire::actingAs($caixa)->test(OrderAlarm::class)
+        ->assertSee('Pedido novo esperando aceite')
+        ->assertSee("#{$order->number}")
+        ->assertSee('Entrega · Centro · Rita · 3 itens')
+        ->assertDispatched('order-alarm', waiting: 1, newest: $order->id);
+
+    // Cozinha e caixa tocam "Aceitar" juntos: o pedido vai para o preparo uma vez só.
+    $outro = Livewire::actingAs($cozinha)->test(OrderAlarm::class);
+    $this->actingAs($caixa);
+    $alarm->call('accept', $order->id)->assertHasNoErrors()->assertDontSee('Pedido novo esperando aceite')
+        ->assertDispatched('order-alarm', waiting: 0, newest: 0);
+    $outro->call('accept', $order->id)->assertHasNoErrors();
+    expect($order->fresh()->status)->toBe(OrderStatus::Preparing)
+        ->and($order->history()->where('to_status', OrderStatus::Preparing->value)->count())->toBe(1)
+        ->and($order->history()->where('to_status', OrderStatus::Preparing->value)->first()->user_id)->toBe($caixa->id);
+
+    // O alarme aparece no painel de quem atende pedidos, em qualquer tela.
+    menuOrder($burger);
+    $this->actingAs($caixa)->get(tenantUrl($tenant, '/minha-conta'))->assertOk()
+        ->assertSeeLivewire(OrderAlarm::class)->assertSee('Pedido novo esperando aceite');
+    $this->get(tenantUrl($tenant, '/pedidos'))->assertOk()
+        ->assertSeeLivewire(OrderAlarm::class)->assertDontSee('Pedido novo esperando aceite'); // no painel o pedido já está na coluna
 });
