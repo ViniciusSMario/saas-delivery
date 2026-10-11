@@ -1,7 +1,7 @@
 <x-layouts.public :title="'Finalizar pedido · '.$establishment->trade_name">
     @php
         $menuUrl = \Illuminate\Support\Str::beforeLast($base, '/pedido');
-        $ordering = $isOpen && $acceptsOnline && ($acceptsDelivery || $acceptsPickup);
+        $ordering = $isOpen && $acceptsOnline && ! $pausedUntil && ($acceptsDelivery || $acceptsPickup);
         $defaultFulfillment = old('fulfillment', $acceptsDelivery ? 'delivery' : 'pickup');
         $cashCodes = $paymentMethods->where('accepts_change', true)->pluck('code')->values();
         $option = 'flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-3.5 transition';
@@ -151,7 +151,11 @@
         @unless ($ordering)
             <div class="alert-warning">
                 <x-icon name="clock" class="mt-0.5 size-4" />
-                <span>{{ $isOpen ? 'Pedidos online indisponíveis no momento.' : 'Estamos fechados agora. Os pedidos voltam no próximo horário de funcionamento.' }}</span>
+                <span>{{ match (true) {
+                    ! $isOpen => 'Estamos fechados agora. Os pedidos voltam no próximo horário de funcionamento.',
+                    $acceptsOnline && (bool) $pausedUntil => 'Estamos com muitos pedidos e pausamos os pedidos online por alguns minutos. Voltamos às '.$pausedUntil->timezone($timezone)->format('H:i').'.',
+                    default => 'Pedidos online indisponíveis no momento.',
+                } }}</span>
             </div>
         @endunless
 

@@ -14,6 +14,7 @@ use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
+use App\Modules\Orders\RushMode;
 use App\Modules\Promotions\CouponRules;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
@@ -55,6 +56,7 @@ class PublicMenuController
             ->values();
 
         $isOpen = $schedule->isOpenAt($now);
+        $pausedUntil = RushMode::pausedUntil();
         $acceptsDelivery = (bool) Setting::read('accepts_delivery', true);
         $acceptsPickup = (bool) Setting::read('accepts_pickup', true);
         $products = $categories->flatMap->products;
@@ -65,8 +67,10 @@ class PublicMenuController
             'establishment' => Establishment::current(),
             'welcome' => Setting::read('welcome_message'),
             'isOpen' => $isOpen,
-            // Pedido online liberado: aberto agora, recebendo pedidos e com entrega ou retirada.
-            'ordering' => $isOpen && Setting::read('accepts_online_orders', true) && ($acceptsDelivery || $acceptsPickup),
+            // Pedido online liberado: aberto agora, recebendo pedidos (sem pausa) e com entrega ou retirada.
+            'ordering' => $isOpen && Setting::read('accepts_online_orders', true) && ! $pausedUntil && ($acceptsDelivery || $acceptsPickup),
+            'pausedUntil' => $isOpen && Setting::read('accepts_online_orders', true) ? $pausedUntil : null,
+            'rushMinutes' => RushMode::extraMinutes(),
             'catalog' => $this->catalog($categories, $base),
             'todayLabel' => $schedule->todayLabel($now),
             'week' => $schedule->week(),
@@ -76,8 +80,8 @@ class PublicMenuController
             'featured' => $featured->isNotEmpty() ? $featured : $products->whereIn('id', $popular)->sortBy(fn ($p) => array_search($p->id, $popular))->values(),
             'featuredTitle' => $featured->isNotEmpty() ? 'Destaques' : 'Mais pedidos',
             'popular' => $popular,
-            'etaDelivery' => OrderEta::minutes(Fulfillment::Delivery),
-            'etaPickup' => OrderEta::minutes(Fulfillment::Pickup),
+            'etaDelivery' => OrderEta::now(Fulfillment::Delivery),
+            'etaPickup' => OrderEta::now(Fulfillment::Pickup),
             'coupons' => app(CouponRules::class)->publicCoupons(),
             'timezone' => $timezone,
             'combos' => $combos,

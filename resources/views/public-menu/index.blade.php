@@ -122,12 +122,27 @@
                         </div>
                     @endif
 
-                    @unless ($ordering)
+                    @if ($pausedUntil && ! $ordering)
+                        {{-- Hora do sufoco: pausa curta, com o horário em que os pedidos voltam. --}}
+                        <div class="alert-warning mt-3">
+                            <x-icon name="pause" class="mt-0.5 size-4" />
+                            <span>Estamos com muitos pedidos e pausamos os pedidos online por alguns minutos. <strong>Voltamos às {{ $pausedUntil->timezone($timezone)->format('H:i') }}.</strong></span>
+                        </div>
+                    @elseif (! $ordering)
                         <div class="alert-warning mt-3">
                             <x-icon name="clock" class="mt-0.5 size-4" />
                             <span>{{ $isOpen ? 'Pedidos online indisponíveis no momento.' : 'Estamos fechados agora. Você pode ver o cardápio; os pedidos voltam no próximo horário de funcionamento.' }}</span>
                         </div>
-                    @endunless
+                    @elseif ($rushMinutes)
+                        <div class="alert-warning mt-3">
+                            <x-icon name="flame" class="mt-0.5 size-4" />
+                            <span>Estamos com muitos pedidos agora e o preparo está levando um pouco mais.
+                                @if ($etaDelivery && $acceptsDelivery) Entrega em cerca de <strong>{{ $etaDelivery }} min</strong>@if ($etaPickup && $acceptsPickup), retirada em cerca de <strong>{{ $etaPickup }} min</strong>@endif.
+                                @elseif ($etaPickup && $acceptsPickup) Retirada em cerca de <strong>{{ $etaPickup }} min</strong>.
+                                @endif
+                            </span>
+                        </div>
+                    @endif
                 </div>
             </header>
 

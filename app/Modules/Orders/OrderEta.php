@@ -34,6 +34,14 @@ class OrderEta
         return $minutes > 0 ? $minutes : null;
     }
 
+    /** Previsão para quem pede agora: a configurada mais o tempo extra da hora do sufoco. */
+    public static function now(Fulfillment $fulfillment): ?int
+    {
+        $minutes = self::minutes($fulfillment);
+
+        return $minutes ? $minutes + RushMode::extraMinutes() : null;
+    }
+
     /** Horário previsto para o pedido ficar pronto para retirada ou chegar ao cliente. */
     public static function for(Order $order): ?CarbonImmutable
     {
@@ -43,6 +51,7 @@ class OrderEta
             $minutes = DeliveryZone::whereKey($order->delivery_zone_id)->value('eta_minutes') ?: $minutes;
         }
 
-        return $minutes ? CarbonImmutable::parse($order->created_at)->addMinutes($minutes) : null;
+        // O tempo extra é o de quando o pedido entrou: voltar ao normal não adianta a previsão dele.
+        return $minutes ? CarbonImmutable::parse($order->created_at)->addMinutes($minutes + (int) $order->eta_extra_minutes) : null;
     }
 }

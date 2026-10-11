@@ -78,6 +78,8 @@
 
     @error('board') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
 
+    <livewire:tenant.orders.rush-control />
+
     <div class="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
         @foreach ($columns as $column)
             @php($list = $orders->get($column->value, collect()))

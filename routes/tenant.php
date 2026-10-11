@@ -106,6 +106,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     });
 
     Route::get('/clientes', Customers\Index::class)->middleware('can:customers.manage')->name('customers.index');
+    Route::get('/clientes/sumidos', Customers\Winback::class)->middleware('can:customers.manage')->name('customers.winback');
     Route::get('/clientes/{customer}', Customers\Show::class)->whereNumber('customer')->middleware('can:customers.manage')->name('customers.show');
 
     Route::get('/financeiro', Finance\Index::class)->middleware('can:finance.view')->name('finance.index');

@@ -3,10 +3,9 @@
     $tz = \App\Modules\Establishment\Models\Setting::read('timezone', 'America/Sao_Paulo');
 @endphp
 <div class="space-y-6">
-    <div>
-        <h1 class="page-title">Clientes</h1>
-        <p class="mt-1 text-sm text-stone-500">Cadastrados automaticamente pelo telefone nos pedidos online e de balcão.</p>
-    </div>
+    <x-ui.page-header title="Clientes" subtitle="Cadastrados automaticamente pelo telefone nos pedidos online e de balcão.">
+        <a href="{{ route('customers.winback') }}" class="btn-secondary" wire:navigate><x-icon name="message" class="size-4" /> Clientes sumidos</a>
+    </x-ui.page-header>
 
     <div class="flex flex-wrap gap-3">
         <input wire:model.live.debounce.300ms="search" type="search" class="input max-w-xs" placeholder="Nome ou telefone" aria-label="Buscar cliente">

@@ -15,6 +15,7 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
 use App\Modules\Orders\Reorder;
+use App\Modules\Orders\RushMode;
 use App\Modules\Promotions\CouponRules;
 use App\Modules\Promotions\Models\Coupon;
 use App\Support\Money;
@@ -44,6 +45,8 @@ class PublicOrderController
             'base' => $this->base($request, '/pedido'),
             'isOpen' => OpeningSchedule::load()->isOpenAt(CarbonImmutable::now($timezone)),
             'acceptsOnline' => (bool) Setting::read('accepts_online_orders', true),
+            'pausedUntil' => RushMode::pausedUntil(),
+            'timezone' => $timezone,
             'acceptsDelivery' => (bool) Setting::read('accepts_delivery', true),
             'acceptsPickup' => (bool) Setting::read('accepts_pickup', true),
             'deliveryFee' => app(DeliveryFees::class)->cheapest(),

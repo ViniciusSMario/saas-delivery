@@ -18,6 +18,7 @@ use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Events\OrderPlaced;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Orders\RushMode;
 use App\Modules\Promotions\CouponRules;
 use App\Modules\Promotions\Models\Coupon;
 use App\Modules\Promotions\Models\CouponRedemption;
@@ -157,6 +158,7 @@ class PlaceOrder
                 'delivery_zone_id' => $zone?->id,
                 'total_cents' => $total,
                 'coupon_code' => $coupon?->code,
+                'eta_extra_minutes' => in_array($fulfillment, [Fulfillment::Delivery, Fulfillment::Pickup], true) ? RushMode::extraMinutes() : 0,
                 'created_by' => $actor?->id,
             ]);
 
@@ -214,6 +216,11 @@ class PlaceOrder
     {
         if (! Setting::read('accepts_online_orders', true)) {
             $this->fail('lines', 'O estabelecimento não está recebendo pedidos online no momento.');
+        }
+
+        if ($paused = RushMode::pausedUntil()) {
+            $at = $paused->timezone(Setting::read('timezone', 'America/Sao_Paulo'))->format('H:i');
+            $this->fail('lines', "Estamos com muitos pedidos e pausamos os pedidos online até as {$at}. Tente de novo em alguns minutos.");
         }
 
         $now = CarbonImmutable::now(Setting::read('timezone', 'America/Sao_Paulo'));

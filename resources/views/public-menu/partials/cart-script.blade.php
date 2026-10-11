@@ -44,6 +44,16 @@
             pulse: false,
             init() {
                 this.items = read(this.key, []);
+
+                // Link com cupom (ex.: mensagem de "sentimos sua falta"): guarda o código e avisa.
+                const params = new URLSearchParams(location.search);
+                const linked = (params.get('cupom') || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                if (linked) {
+                    window.saveCoupon(linked);
+                    params.delete('cupom');
+                    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash);
+                    setTimeout(() => this.notify('Cupom ' + linked + ' guardado: ele entra no fechamento do pedido'), 400);
+                }
             },
             save() {
                 write(this.key, this.items);
