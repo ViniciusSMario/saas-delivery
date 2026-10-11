@@ -5,6 +5,7 @@ namespace App\Modules\Delivery\Actions;
 use App\Modules\Access\Audit;
 use App\Modules\Access\Models\User;
 use App\Modules\Access\Permission;
+use App\Modules\Delivery\Events\CourierAssigned;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderStatus;
@@ -39,9 +40,15 @@ class Deliveries
             throw ValidationException::withMessages(['courier' => "{$courier->name} não faz entregas (perfil sem a permissão de entregas)."]);
         }
 
-        return $order->status === OrderStatus::Dispatched
+        $order = $order->status === OrderStatus::Dispatched
             ? $this->reassign($order, $courier, $actor)
             : $this->dispatch($order, $courier, $actor);
+
+        if ($courier->id !== $actor->id) {
+            event(new CourierAssigned($order, $courier, $actor));
+        }
+
+        return $order;
     }
 
     public function complete(Order $order, User $actor): Order

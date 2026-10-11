@@ -131,6 +131,18 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Garçom reserva antes de buscar:** em "Prontos", "Vou levar" reserva o prato (os outros veem "Com Fulano" e a aba deles não conta esse prato); só quem reservou marca "Servido" ou solta ("Não vou mais levar"). Quem usa o painel completo (gerência) pode liberar ou concluir a reserva de outro. Regras em `App\Modules\Tables\ServeQueue`.
 - As abas mostram quantos pedidos estão prontos e o celular vibra quando chega um novo (abas a cada 10 s; telas de Prontos e Entregas a cada 5 s, e na hora depois de cada ação). No celular, os campos usam letra de 16 px para o iPhone não dar zoom, e a busca de produtos não abre o teclado sozinha.
 
+## App no celular e notificações
+
+- **App instalável por restaurante:** cada estabelecimento tem o próprio manifesto (`/manifest.webmanifest`, com o nome fantasia) e ícones (`/app-icon/{192,512,maskable,apple,badge}.png`). Com logo, o ícone é o logo em fundo branco; sem logo, uma cloche na cor da marca. Em **Minha conta → App no celular**: botão "Instalar app" (Android/Chrome) ou o passo a passo do iPhone (Compartilhar → Adicionar à Tela de Início). Dá para instalar já pela tela de login.
+- **Notificações (Web Push)** para quem usa o modo app:
+  - **Entregador:** "Entrega pronta · #N" (bairro, cliente e quanto cobrar) quando a cozinha marca uma entrega como pronta, e "Entrega para você · #N" quando a gerência escolhe ou troca o entregador.
+  - **Garçom:** "Mesa 1 · pedido pronto" com os itens quando um pedido de mesa fica pronto.
+  - Tocar na notificação abre a tela certa (Entregas ou Prontos). Ao abrir o app, as notificações dele saem da bandeja.
+- **Ativar:** aviso no topo do modo app ("Ativar") ou em Minha conta, onde também há "Enviar teste" e "Desativar neste celular". Cada celular é uma inscrição (`push_subscriptions`, no schema do estabelecimento) ligada a quem está logado: outra pessoa entrando no mesmo celular passa a receber os avisos dela, e sair da conta desliga o celular. Celular que desinstalou o app sai da lista no próximo envio.
+- **Como funciona:** o evento do pedido (`OrderStatusChanged`, `CourierAssigned`) chama `App\Modules\Push\StaffAlerts`, que enfileira `SendPush` (sai depois do commit, pela fila, dentro do estabelecimento). A biblioteca é `minishlink/web-push`. Só são aceitos endereços dos serviços de push conhecidos (Google, Mozilla, Apple, Microsoft), com HTTPS. Falha no envio nunca atrapalha o pedido.
+- **Configuração:** gere as chaves uma vez com `php artisan push:vapid` e coloque `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` (`mailto:` seu e-mail) no `.env`. Trocar as chaves invalida as inscrições: cada celular precisa ativar de novo. Nos testes, `PUSH_DRIVER=fake` guarda os envios em memória.
+- **Limites:** exige HTTPS (em `localhost` o navegador libera para desenvolvimento). No iPhone, só com iOS 16.4+ e o app adicionado à Tela de Início. Notificação bloqueada no celular só volta pelas configurações dele.
+
 ## Impressão, entregas e WhatsApp
 
 - **Impressão na cozinha** (Administração → Impressoras, `/impressoras`): cadastre os setores (Cozinha, Bar, Expedição) e diga em qual setor sai cada categoria. Todo pedido novo (online, balcão ou lançamento de mesa) vira um cupom por setor, só com os itens dele (combos são separados por componente). Itens de categoria sem setor vão para o setor padrão. Setor marcado como "pedido completo" recebe o pedido inteiro com valores, troco e endereço (expedição/caixa). Há reimpressão no painel de pedidos e na página do pedido.

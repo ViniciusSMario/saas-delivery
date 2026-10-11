@@ -1,6 +1,8 @@
 <div class="space-y-6">
     <h1 class="page-title">Minha conta</h1>
 
+    @include('partials.app-device-card')
+
     <form wire:submit="saveName" class="card card-body space-y-4">
         <h2 class="section-title">Dados</h2>
         <div class="grid gap-4 sm:grid-cols-2">

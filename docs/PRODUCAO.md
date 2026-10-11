@@ -52,6 +52,7 @@ nano .env    # preencha os campos <...>
 - `APP_KEY`: gere com `docker compose -f docker-compose.production.yml run --rm --no-deps app php -r 'echo "base64:".base64_encode(random_bytes(32)), PHP_EOL;'`
 - `CADDY_ASK_TOKEN`: `openssl rand -hex 32`
 - Senhas do banco: `openssl rand -base64 24`
+- Notificações no celular: `docker compose -f docker-compose.production.yml run --rm --no-deps app php artisan push:vapid` e copie as duas linhas para `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY`; em `VAPID_SUBJECT`, `mailto:` com o e-mail de contato. Gere uma vez só: trocar depois obriga cada celular a ativar as notificações de novo.
 - **Guarde o `.env` num gerenciador de senhas.** Sem a `APP_KEY`, as credenciais criptografadas (WhatsApp) e as sessões ficam inválidas.
 
 ## 5. Primeira subida

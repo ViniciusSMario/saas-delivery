@@ -53,6 +53,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.pwa-head')
 </head>
 <body class="min-h-screen" x-data="{ menu: false }" @keydown.escape.window="menu = false">
     <div class="lg:flex">

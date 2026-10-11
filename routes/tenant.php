@@ -3,7 +3,9 @@
 // App do estabelecimento: empresa1.meusistema.com ou domínio próprio.
 // O grupo "tenant" já identificou e ativou o tenant antes destas rotas.
 
+use App\Http\Controllers\Tenant\AppManifestController;
 use App\Http\Controllers\Tenant\EstablishmentLogoController;
+use App\Http\Controllers\Tenant\PushSubscriptionController;
 use App\Http\Controllers\Tenant\LogoutController;
 use App\Http\Controllers\Tenant\SupportAccessController;
 use App\Http\Controllers\Tenant\MenuImageController;
@@ -39,6 +41,10 @@ Route::middleware('guest')->group(function () {
 // Público: usado pelo cardápio.
 Route::get('/logo', EstablishmentLogoController::class)->name('establishment.logo');
 
+// App instalável no celular (PWA): manifesto e ícones com o nome e o logo do restaurante.
+Route::get('/manifest.webmanifest', [AppManifestController::class, 'manifest'])->name('app.manifest');
+Route::get('/app-icon/{variant}.png', [AppManifestController::class, 'icon'])->whereIn('variant', ['192', '512', 'maskable', 'apple', 'badge'])->name('app.icon');
+
 // Link de uso único gerado no admin da plataforma ("Entrar como suporte").
 Route::get('/suporte/entrar/{token}', [SupportAccessController::class, 'enter'])->middleware('throttle:20,1')->name('support.enter');
 
@@ -48,6 +54,10 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::post('/suporte/sair', [SupportAccessController::class, 'leave'])->name('support.leave');
     Route::post('/confirmar-email/reenviar', \App\Http\Controllers\Tenant\ResendVerificationController::class)->middleware('throttle:3,60')->name('verification.resend');
     Route::get('/minha-conta', Profile::class)->name('profile');
+
+    Route::post('/notificacoes/assinatura', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
+    Route::delete('/notificacoes/assinatura', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+    Route::post('/notificacoes/teste', [PushSubscriptionController::class, 'test'])->middleware('throttle:5,1')->name('push.test');
 
     Route::get('/estabelecimento', EditEstablishment::class)->middleware('can:establishment.manage')->name('establishment.edit');
     Route::get('/configuracoes', EditSettings::class)->middleware('can:settings.manage')->name('settings.edit');

@@ -5,6 +5,7 @@ use App\Modules\Finance\FinanceServiceProvider;
 use App\Modules\Messaging\MessagingServiceProvider;
 use App\Modules\Orders\OrdersServiceProvider;
 use App\Modules\Printing\PrintingServiceProvider;
+use App\Modules\Push\PushServiceProvider;
 use App\Modules\Stock\StockServiceProvider;
 use App\Platform\PlatformServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -21,4 +22,5 @@ return [
     PrintingServiceProvider::class,
     MessagingServiceProvider::class,
     OrdersServiceProvider::class,
+    PushServiceProvider::class,
 ];

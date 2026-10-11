@@ -13,15 +13,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="{{ $establishment->trade_name ?: tenant()->name }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Início' }} · {{ tenant()->name }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.pwa-head')
 </head>
 <body class="min-h-screen bg-stone-100">
     @unless ($detail)
@@ -72,6 +69,21 @@
             <div class="alert-success mb-4" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition>
                 <x-icon name="check" class="mt-0.5 size-4" />
                 <span>{{ session('status') }}</span>
+            </div>
+        @endif
+
+        {{-- Convite para ativar as notificações (ou instalar o app, no iPhone). Some ao ativar ou fechar. --}}
+        @if (! $detail && ! request()->routeIs('profile') && \App\Modules\Push\StaffAlerts::receivesAlerts($user))
+            <div x-data="appDevice" x-show="bannerMode" x-cloak class="mb-4 flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-3">
+                <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white"><x-icon name="bell" class="size-5" /></span>
+                <p class="min-w-0 flex-1 text-sm text-stone-800">
+                    <span x-show="bannerMode === 'enable'">Ative as notificações para saber na hora quando um pedido ficar pronto.</span>
+                    <span x-show="bannerMode === 'install'">Instale o app na Tela de Início para receber os avisos de pedido pronto.</span>
+                    <span x-show="error" x-text="error" class="mt-1 block font-medium text-red-700"></span>
+                </p>
+                <button type="button" x-show="bannerMode === 'enable'" @click="enable()" :disabled="busy" class="btn-primary btn-sm shrink-0">Ativar</button>
+                <a href="{{ route('profile') }}" x-show="bannerMode === 'install'" wire:navigate class="btn-primary btn-sm shrink-0">Como instalar</a>
+                <button type="button" @click="dismiss()" class="-mr-1 shrink-0 p-1 text-stone-400" aria-label="Fechar aviso"><x-icon name="x" class="size-5" /></button>
             </div>
         @endif
 
