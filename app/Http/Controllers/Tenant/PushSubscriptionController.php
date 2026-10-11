@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Modules\Push\Models\PushSubscription;
+use App\Modules\Push\PushEndpoint;
 use App\Modules\Push\StaffAlerts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,22 +14,11 @@ use Illuminate\Support\Str;
 /** Liga e desliga as notificações neste celular (o navegador manda a inscrição de push). */
 class PushSubscriptionController
 {
-    /**
-     * Quem o servidor vai chamar ao enviar um aviso: só os serviços de push dos navegadores,
-     * por HTTPS. Impede usar o cadastro para fazer o servidor chamar endereços internos.
-     */
-    private const PUSH_HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', 'updates.push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
-
     public function store(Request $request): Response
     {
-        $data = $request->validate([
-            'endpoint' => ['required', 'string', 'max:2000', 'starts_with:https://'],
-            'keys.p256dh' => ['required', 'string', 'max:255'],
-            'keys.auth' => ['required', 'string', 'max:255'],
-            'contentEncoding' => ['nullable', 'in:aesgcm,aes128gcm'],
-        ]);
+        $data = $request->validate(PushEndpoint::RULES);
 
-        abort_unless(self::isPushService($data['endpoint']), 422, 'Serviço de notificações não reconhecido.');
+        abort_unless(PushEndpoint::isAllowed($data['endpoint']), 422, 'Serviço de notificações não reconhecido.');
 
         // Mesmo celular, outra pessoa logada: a inscrição passa a ser dela.
         PushSubscription::updateOrCreate(['endpoint' => $data['endpoint']], [
@@ -66,24 +56,5 @@ class PushSubscriptionController
         $alerts->test($user);
 
         return response()->json(['message' => 'Aviso de teste enviado.'], 202);
-    }
-
-    public static function isPushService(string $endpoint): bool
-    {
-        $parts = parse_url($endpoint);
-
-        if (($parts['scheme'] ?? '') !== 'https' || isset($parts['port']) || isset($parts['user'])) {
-            return false;
-        }
-
-        $host = strtolower($parts['host'] ?? '');
-
-        foreach (self::PUSH_HOSTS as $allowed) {
-            if ($host === $allowed || str_ends_with($host, '.'.$allowed)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

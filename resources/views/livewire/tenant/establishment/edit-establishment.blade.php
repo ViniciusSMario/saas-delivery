@@ -73,6 +73,28 @@
     </section>
 
     <section class="card card-body">
+        <h2 class="section-title">Foto de capa do cardápio</h2>
+        <p class="hint">Aparece no topo do cardápio online. Use uma foto horizontal bonita da casa ou do prato mais famoso.</p>
+        <div class="mt-4 space-y-3">
+            <div class="flex aspect-[3/1] w-full max-w-xl items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-50">
+                @if ($cover && ! $errors->has('cover') && $cover->isPreviewable())
+                    <img src="{{ $cover->temporaryUrl() }}" alt="Pré-visualização da capa" class="size-full object-cover">
+                @elseif ($hasCover)
+                    <img src="{{ route('establishment.cover') }}?v={{ now()->timestamp }}" alt="Capa atual" class="size-full object-cover">
+                @else
+                    <span class="text-xs text-stone-400">Sem capa (o cardápio usa a cor da marca)</span>
+                @endif
+            </div>
+            <input wire:model="cover" type="file" accept="image/png,image/jpeg,image/webp" class="text-sm">
+            <p class="hint">PNG, JPG ou WEBP, até 4 MB. Ideal: 1200 × 400 px ou maior.</p>
+            @error('cover') <p class="field-error">{{ $message }}</p> @enderror
+            @if ($hasCover)
+                <button type="button" wire:click="removeCover" wire:confirm="Remover a foto de capa?" class="btn-link text-red-700">Remover capa</button>
+            @endif
+        </div>
+    </section>
+
+    <section class="card card-body">
         <h2 class="section-title">Horário de funcionamento</h2>
         <div class="mt-4 divide-y divide-stone-100">
             @foreach ($weekdays as $day => $label)

@@ -10,12 +10,17 @@ use App\Modules\Menu\Models\Category;
 use App\Modules\Menu\Models\Combo;
 use App\Modules\Menu\Models\Product;
 use App\Modules\Menu\Models\ProductImage;
+use App\Modules\Orders\Enums\Fulfillment;
+use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Orders\OrderEta;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -51,6 +56,9 @@ class PublicMenuController
         $isOpen = $schedule->isOpenAt($now);
         $acceptsDelivery = (bool) Setting::read('accepts_delivery', true);
         $acceptsPickup = (bool) Setting::read('accepts_pickup', true);
+        $products = $categories->flatMap->products;
+        $popular = $this->popularProductIds();
+        $featured = $products->where('is_featured', true)->values();
 
         return view('public-menu.index', [
             'establishment' => Establishment::current(),
@@ -63,7 +71,12 @@ class PublicMenuController
             'week' => $schedule->week(),
             'today' => $now->dayOfWeek,
             'categories' => $categories,
-            'featured' => $categories->flatMap->products->where('is_featured', true)->values(),
+            // Sem destaques escolhidos pelo restaurante, a vitrine mostra os mais pedidos.
+            'featured' => $featured->isNotEmpty() ? $featured : $products->whereIn('id', $popular)->sortBy(fn ($p) => array_search($p->id, $popular))->values(),
+            'featuredTitle' => $featured->isNotEmpty() ? 'Destaques' : 'Mais pedidos',
+            'popular' => $popular,
+            'etaDelivery' => OrderEta::minutes(Fulfillment::Delivery),
+            'etaPickup' => OrderEta::minutes(Fulfillment::Pickup),
             'combos' => $combos,
             'deliveryFee' => app(DeliveryFees::class)->cheapest(),
             'zones' => DeliveryFees::byZone() ? app(DeliveryFees::class)->zones() : collect(),
@@ -94,6 +107,28 @@ class PublicMenuController
                 ? [['src' => $base.'/logo', 'sizes' => '512x512', 'purpose' => 'any']]
                 : [],
         ], headers: ['Content-Type' => 'application/manifest+json']);
+    }
+
+    /**
+     * Os 3 produtos mais vendidos nos últimos 30 dias (mínimo de 3 unidades), para o selo
+     * "Mais pedido". Guardado por 10 minutos: o cardápio é a página mais acessada.
+     *
+     * @return list<int>
+     */
+    private function popularProductIds(): array
+    {
+        return Cache::remember('menu-popular:'.tenant()->getKey(), 600, fn () => DB::connection('tenant')->table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', '!=', OrderStatus::Cancelled->value)
+            ->where('orders.created_at', '>=', now()->subDays(30))
+            ->whereNotNull('order_items.product_id')
+            ->groupBy('order_items.product_id')
+            ->havingRaw('sum(order_items.quantity) >= 3')
+            ->orderByRaw('sum(order_items.quantity) desc')
+            ->limit(3)
+            ->pluck('order_items.product_id')
+            ->map(fn ($id) => (int) $id)
+            ->all());
     }
 
     /** Dados que o app do cardápio (JS) usa: detalhe do produto, adicionais e busca. */

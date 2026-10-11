@@ -10,6 +10,7 @@ use App\Modules\Orders\Actions\PlaceOrder;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Orders\OrderEta;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -95,13 +96,16 @@ class PublicOrderController
         abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
 
         // Busca no schema do tenant atual: token de outro estabelecimento não existe aqui.
-        $order = Order::where('public_token', $token)->with(['items.addons', 'payments.method', 'history'])->firstOrFail();
+        $order = Order::where('public_token', $token)->with(['items.addons', 'payments.method', 'history', 'courier'])->firstOrFail();
 
         return view('public-menu.order', [
             'order' => $order,
             'establishment' => Establishment::current(),
             'menuUrl' => Str::beforeLast($this->base($request, '/pedido/'.$token), '/pedido'),
             'timezone' => Setting::read('timezone', 'America/Sao_Paulo'),
+            'eta' => $order->status->isFinal() ? null : OrderEta::for($order),
+            // Só o primeiro nome do entregador aparece para o cliente.
+            'courierName' => $order->courier ? Str::before($order->courier->name, ' ') : null,
         ]);
     }
 

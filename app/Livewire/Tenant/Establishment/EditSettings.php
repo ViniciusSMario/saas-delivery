@@ -5,6 +5,7 @@ namespace App\Livewire\Tenant\Establishment;
 use App\Modules\Access\Audit;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Models\PaymentMethod;
+use App\Modules\Orders\OrderEta;
 use App\Modules\Push\StaffAlerts;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -30,6 +31,11 @@ class EditSettings extends Component
 
     /** Minutos sem aceite até avisar a gerência no celular (0 = não avisa). */
     public int $order_waiting_alert_minutes = StaffAlerts::WAITING_MINUTES_DEFAULT;
+
+    /** Previsão mostrada ao cliente (0 = não mostrar). */
+    public int $eta_delivery_minutes = OrderEta::DELIVERY_DEFAULT;
+
+    public int $eta_pickup_minutes = OrderEta::PICKUP_DEFAULT;
 
     /** @var array<int, bool> id da forma de pagamento => ativa */
     public array $paymentMethods = [];
@@ -58,6 +64,8 @@ class EditSettings extends Component
         $this->service_fee_percent = (int) Setting::read('service_fee_percent', 10);
         $this->stock_auto_sold_out = (bool) Setting::read('stock_auto_sold_out', false);
         $this->order_waiting_alert_minutes = StaffAlerts::waitingMinutes();
+        $this->eta_delivery_minutes = (int) Setting::read(OrderEta::DELIVERY_SETTING, OrderEta::DELIVERY_DEFAULT);
+        $this->eta_pickup_minutes = (int) Setting::read(OrderEta::PICKUP_SETTING, OrderEta::PICKUP_DEFAULT);
         $this->min_order = $this->toMoney((int) Setting::read('min_order_cents', 0));
         $this->delivery_fee = $this->toMoney((int) Setting::read('delivery_fee_cents', 0));
     }
@@ -75,6 +83,8 @@ class EditSettings extends Component
             'service_fee_percent' => ['required', 'integer', 'min:0', 'max:30'],
             'stock_auto_sold_out' => ['boolean'],
             'order_waiting_alert_minutes' => ['required', 'integer', 'min:0', 'max:60'],
+            'eta_delivery_minutes' => ['required', 'integer', 'min:0', 'max:300'],
+            'eta_pickup_minutes' => ['required', 'integer', 'min:0', 'max:300'],
             'min_order' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
             'delivery_fee' => ['required', 'regex:/^\d{1,6}([,.]\d{1,2})?$/'],
         ];
@@ -88,6 +98,8 @@ class EditSettings extends Component
             'min_order' => 'pedido mínimo',
             'delivery_fee' => 'taxa de entrega',
             'order_waiting_alert_minutes' => 'minutos sem aceite',
+            'eta_delivery_minutes' => 'tempo de entrega',
+            'eta_pickup_minutes' => 'tempo de retirada',
         ];
     }
 
@@ -106,6 +118,8 @@ class EditSettings extends Component
             'service_fee_percent' => $this->service_fee_percent,
             'stock_auto_sold_out' => $this->stock_auto_sold_out,
             StaffAlerts::WAITING_MINUTES_SETTING => $this->order_waiting_alert_minutes,
+            OrderEta::DELIVERY_SETTING => $this->eta_delivery_minutes,
+            OrderEta::PICKUP_SETTING => $this->eta_pickup_minutes,
             'min_order_cents' => $this->toCents($this->min_order),
             'delivery_fee_cents' => $this->toCents($this->delivery_fee),
         ];

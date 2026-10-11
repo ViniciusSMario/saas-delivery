@@ -11,7 +11,7 @@ class Establishment extends TenantModel
 
     protected $fillable = [
         'trade_name', 'legal_name', 'document', 'phone', 'email', 'zip_code', 'street',
-        'number', 'complement', 'district', 'city', 'state', 'logo_path',
+        'number', 'complement', 'district', 'city', 'state', 'logo_path', 'cover_path',
     ];
 
     public static function current(): self

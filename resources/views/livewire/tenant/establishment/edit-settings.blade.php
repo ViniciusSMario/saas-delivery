@@ -43,7 +43,18 @@
                 <input wire:model="delivery_fee" id="delivery_fee" type="text" inputmode="decimal" class="input">
                 @error('delivery_fee') <p class="field-error">{{ $message }}</p> @enderror
             </div>
+            <div>
+                <label for="eta_delivery_minutes" class="label">Tempo estimado de entrega (min)</label>
+                <input wire:model="eta_delivery_minutes" id="eta_delivery_minutes" type="number" min="0" max="300" class="input">
+                @error('eta_delivery_minutes') <p class="field-error">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="eta_pickup_minutes" class="label">Tempo estimado para retirada (min)</label>
+                <input wire:model="eta_pickup_minutes" id="eta_pickup_minutes" type="number" min="0" max="300" class="input">
+                @error('eta_pickup_minutes') <p class="field-error">{{ $message }}</p> @enderror
+            </div>
         </div>
+        <p class="hint -mt-2">O cliente vê no cardápio e a previsão de horário no acompanhamento do pedido. Com taxa por bairro, vale o tempo do bairro quando ele tiver um. 0 = não mostrar.</p>
     </section>
 
     <section class="card card-body space-y-3">

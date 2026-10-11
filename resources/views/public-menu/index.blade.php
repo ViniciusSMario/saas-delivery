@@ -26,8 +26,14 @@
         <div x-show="tab === 'cardapio'">
             {{-- Capa e cartão do estabelecimento --}}
             <header class="relative">
-                <div class="relative h-36 overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 pt-safe">
-                    <div class="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]"></div>
+                <div @class(['relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 pt-safe', 'h-52' => $establishment->cover_path, 'h-36' => ! $establishment->cover_path])>
+                    @if ($establishment->cover_path)
+                        {{-- Foto de capa; o degradê embaixo mantém os botões e o cartão legíveis. --}}
+                        <img src="{{ $base }}/capa?v={{ substr(md5($establishment->cover_path), 0, 8) }}" alt="" class="absolute inset-0 size-full object-cover" fetchpriority="high">
+                        <div class="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/40"></div>
+                    @else
+                        <div class="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]"></div>
+                    @endif
                     <div class="relative flex justify-end gap-2 p-3">
                         <button type="button" @click="share()" class="flex size-10 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur hover:bg-black/30" aria-label="Compartilhar cardápio">
                             <x-icon name="share" class="size-5" />
@@ -74,11 +80,13 @@
                                     @else
                                         {{ $deliveryFee->isZero() ? 'Entrega grátis' : 'Entrega '.$deliveryFee->format() }}
                                     @endif
+                                    @if ($etaDelivery)<span class="text-stone-500">· ~{{ $etaDelivery }} min</span>@endif
                                 </span>
                             @endif
                             @if ($acceptsPickup)
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1">
                                     <x-icon name="bag" class="size-4 text-brand-600" /> Retirada no local
+                                    @if ($etaPickup)<span class="text-stone-500">· ~{{ $etaPickup }} min</span>@endif
                                 </span>
                             @endif
                             @unless ($minOrder->isZero())
@@ -102,13 +110,31 @@
                 </div>
             </header>
 
-            {{-- Categorias (fixas no topo, acompanham a rolagem) --}}
-            @if ($categories->count() > 1 || $combos->isNotEmpty())
-                <div class="sticky top-0 z-20 mt-4 border-b border-stone-200/70 bg-stone-50/90 backdrop-blur-lg">
-                    <nav x-ref="chips" class="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-none" aria-label="Categorias">
-                        <a href="#buscar" class="chip size-9 justify-center px-0" aria-label="Buscar no cardápio">
-                            <x-icon name="search" class="size-4" />
-                        </a>
+            {{-- Barra fixa no topo: busca, carrinho e categorias (acompanham a rolagem) --}}
+            <div x-ref="menuTop" class="h-4"></div>
+            @if ($categories->isNotEmpty() || $combos->isNotEmpty())
+                <div x-ref="sticky" class="sticky top-0 z-20 border-b border-stone-200/70 bg-stone-50/95 backdrop-blur-lg">
+                    <div class="flex items-center gap-2 px-4 pt-3" :class="term.trim() && 'pb-3'">
+                        <label class="relative min-w-0 flex-1">
+                            <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-stone-400" />
+                            <input x-model.debounce.150ms="term" type="search" enterkeyhint="search" placeholder="Buscar no cardápio" autocomplete="off"
+                                   class="input h-11 rounded-2xl bg-white pl-11 text-base" aria-label="Buscar no cardápio">
+                        </label>
+                        <button type="button" x-show="term" x-cloak @click="term = ''" class="shrink-0 px-1 text-sm font-semibold text-brand-700">Limpar</button>
+                        @if ($ordering)
+                            {{-- Carrinho sempre à mão, com a quantidade de itens. --}}
+                            <a href="{{ $base }}/pedido" class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white text-stone-700 shadow-xs transition active:scale-95"
+                               :class="$store.cart.count > 0 && 'border-brand-200 bg-brand-50 text-brand-700'" :aria-label="'Carrinho, ' + $store.cart.count + ' itens'">
+                                <x-icon name="bag" class="size-5" />
+                                <span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count"
+                                      class="absolute -top-1.5 -right-1.5 flex min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white ring-2 ring-stone-50"></span>
+                            </a>
+                        @endif
+                    </div>
+                    <nav x-ref="chips" x-show="! term.trim()" class="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-none" aria-label="Categorias">
+                        @if ($featured->isNotEmpty())
+                            <button type="button" data-chip="vitrine" @click="goTo('vitrine')" class="chip" :class="active === 'vitrine' && 'chip-active'">{{ $featuredTitle }}</button>
+                        @endif
                         @if ($combos->isNotEmpty())
                             <button type="button" data-chip="combos" @click="goTo('combos')" class="chip" :class="active === 'combos' && 'chip-active'">Combos</button>
                         @endif
@@ -120,33 +146,53 @@
                 </div>
             @endif
 
-            <main class="space-y-8 px-4 pt-5">
+            {{-- Busca no próprio cardápio: os resultados tomam o lugar das seções. --}}
+            <div x-show="term.trim()" x-cloak class="px-4 pt-4">
+                @include('public-menu.partials.search-results')
+            </div>
+
+            <main x-show="! term.trim()" class="space-y-8 px-4 pt-5">
                 @if ($categories->isEmpty() && $combos->isEmpty())
                     <div class="card">
                         <x-ui.empty icon="utensils" title="Cardápio em preparação" text="O cardápio ainda está sendo montado. Volte em breve!" />
                     </div>
                 @endif
 
-                {{-- Destaques --}}
+                {{-- Vitrine: destaques escolhidos pelo restaurante (ou os mais pedidos), com foto grande --}}
                 @if ($featured->isNotEmpty())
-                    <section>
+                    <section id="vitrine" data-menu-section>
                         <h2 class="flex items-center gap-2 text-lg font-bold tracking-tight">
-                            <x-icon name="flame" class="size-5 text-brand-600" /> Destaques
+                            <x-icon name="flame" class="size-5 text-brand-600" /> {{ $featuredTitle }}
                         </h2>
-                        <div class="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none">
+                        <div class="-mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 scrollbar-none">
                             @foreach ($featured as $product)
                                 <button type="button" @click="$dispatch('open-product', {{ $product->id }})"
-                                        class="w-40 shrink-0 snap-start overflow-hidden rounded-2xl border border-stone-200/80 bg-white text-left shadow-(--shadow-card) transition active:scale-[0.98]">
-                                    @if ($product->images->first())
-                                        <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" class="aspect-[4/3] w-full object-cover">
-                                    @else
-                                        <div class="flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 text-brand-400">
-                                            <x-icon name="utensils" class="size-8" />
+                                        class="relative w-[78%] max-w-80 shrink-0 snap-start overflow-hidden rounded-3xl border border-stone-200/80 bg-white text-left shadow-(--shadow-card) transition active:scale-[0.98]">
+                                    <div class="relative">
+                                        @if ($product->images->first())
+                                            <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" @class(['aspect-[16/10] w-full object-cover', 'grayscale' => ! $product->is_available])>
+                                        @else
+                                            <div class="flex h-24 w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 text-brand-400">
+                                                <x-icon name="utensils" class="size-8" />
+                                            </div>
+                                        @endif
+                                        @if (in_array($product->id, $popular, true))
+                                            <span class="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-brand-700 shadow-sm"><x-icon name="flame" class="size-3.5" /> Mais pedido</span>
+                                        @endif
+                                        <span x-cloak x-show="$store.cart.qty({{ $product->id }})" x-text="$store.cart.qty({{ $product->id }}) + ' no carrinho'"
+                                              class="absolute top-3 right-3 rounded-full bg-brand-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm"></span>
+                                    </div>
+                                    <div class="flex items-end gap-3 p-4">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate font-bold">{{ $product->name }}</p>
+                                            @if ($product->description)<p class="mt-0.5 truncate text-sm text-stone-500">{{ $product->description }}</p>@endif
+                                            <p class="mt-1.5 font-bold text-brand-700">{{ $product->price_cents->format() }}</p>
                                         </div>
-                                    @endif
-                                    <div class="p-3">
-                                        <p class="truncate text-sm font-semibold">{{ $product->name }}</p>
-                                        <p class="mt-0.5 text-sm font-bold text-brand-700">{{ $product->price_cents->format() }}</p>
+                                        @if ($ordering && $product->is_available)
+                                            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white shadow-md"><x-icon name="plus" class="size-5" stroke="2.4" /></span>
+                                        @elseif (! $product->is_available)
+                                            <span class="badge-gray shrink-0">Esgotado</span>
+                                        @endif
                                     </div>
                                 </button>
                             @endforeach
@@ -204,6 +250,9 @@
                                 <button type="button" @click="$dispatch('open-product', {{ $product->id }})"
                                         class="flex w-full gap-3 p-4 text-left transition hover:bg-stone-50 active:bg-stone-100">
                                     <div @class(['min-w-0 flex-1', 'opacity-60' => ! $product->is_available])>
+                                        @if (in_array($product->id, $popular, true))
+                                            <span class="mb-1 inline-flex items-center gap-1 text-xs font-bold text-brand-700"><x-icon name="flame" class="size-3.5" /> Mais pedido</span>
+                                        @endif
                                         <h3 class="font-semibold text-stone-900">{{ $product->name }}</h3>
                                         @if ($product->description)
                                             <p class="mt-1 line-clamp-2 text-sm text-stone-500">{{ $product->description }}</p>
@@ -216,11 +265,12 @@
                                             @unless ($product->is_available)
                                                 <span class="badge-gray">Esgotado</span>
                                             @endunless
+                                            <span x-cloak x-show="$store.cart.qty({{ $product->id }})" x-text="$store.cart.qty({{ $product->id }}) + ' no carrinho'" class="badge-brand"></span>
                                         </p>
                                     </div>
                                     <div class="relative shrink-0">
                                         @if ($product->images->first())
-                                            <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" @class(['size-24 rounded-xl object-cover', 'grayscale' => ! $product->is_available])>
+                                            <img src="{{ $productImage($product->images->first()) }}" alt="" loading="lazy" @class(['size-28 rounded-2xl object-cover', 'grayscale' => ! $product->is_available])>
                                         @endif
                                         @if ($ordering && $product->is_available)
                                             <span @class([
@@ -277,41 +327,8 @@
                 </div>
 
                 {{-- Resultados --}}
-                <div x-show="term.trim()" class="space-y-3">
-                    <template x-for="combo in comboResults" :key="'c' + combo.id">
-                        <div class="card flex items-center gap-3 p-3">
-                            <template x-if="combo.image"><img :src="combo.image" alt="" class="size-16 rounded-xl object-cover"></template>
-                            <div class="min-w-0 flex-1">
-                                <p class="font-semibold" x-text="combo.name"></p>
-                                <p class="truncate text-xs text-stone-500" x-text="combo.items"></p>
-                                <p class="mt-1 text-sm font-bold" x-text="money(combo.price)"></p>
-                            </div>
-                            <button type="button" x-show="ordering" class="btn-icon btn-primary rounded-full" aria-label="Adicionar combo"
-                                    @click="$store.cart.add({ type: 'combo', id: combo.id, name: combo.name, unit: combo.price, addons: [], quantity: 1, notes: '' })">
-                                <x-icon name="plus" class="size-5" />
-                            </button>
-                        </div>
-                    </template>
-                    <template x-for="product in results" :key="product.id">
-                        <button type="button" @click="$dispatch('open-product', product.id)" class="card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99]">
-                            <template x-if="product.images.length"><img :src="product.images[0]" alt="" class="size-16 rounded-xl object-cover"></template>
-                            <template x-if="! product.images.length">
-                                <span class="flex size-16 items-center justify-center rounded-xl bg-stone-100 text-stone-400"><x-icon name="utensils" class="size-6" /></span>
-                            </template>
-                            <span class="min-w-0 flex-1">
-                                <span class="block truncate font-semibold" x-text="product.name"></span>
-                                <span class="block text-xs text-stone-500" x-text="product.category"></span>
-                                <span class="mt-1 flex items-center gap-2 text-sm font-bold">
-                                    <span x-text="money(product.price)"></span>
-                                    <span class="badge-gray" x-show="! product.available">Esgotado</span>
-                                </span>
-                            </span>
-                            <x-icon name="chevron-right" class="size-5 text-stone-400" />
-                        </button>
-                    </template>
-                    <div class="card" x-show="! results.length && ! comboResults.length">
-                        <x-ui.empty icon="search" title="Nada encontrado" text="Tente outro nome ou veja as categorias do cardápio." />
-                    </div>
+                <div x-show="term.trim()">
+                    @include('public-menu.partials.search-results')
                 </div>
             </div>
         </div>
@@ -459,13 +476,18 @@
         @if ($ordering)
             <div x-cloak x-show="$store.cart.count > 0" x-transition.opacity
                  class="fixed inset-x-0 z-30 mx-auto max-w-xl px-3" style="bottom: calc(max(env(safe-area-inset-bottom), 0.5rem) + 4.25rem)">
-                <a href="{{ $base }}/pedido" class="flex items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-float transition active:scale-[0.98]">
+                <a href="{{ $base }}/pedido" class="flex items-center gap-3 rounded-2xl bg-brand-600 px-4 py-3 text-white shadow-float transition duration-200 active:scale-[0.98]"
+                   :class="$store.cart.pulse && 'scale-[1.03] bg-brand-700'">
                     <span class="relative">
                         <x-icon name="bag" class="size-6" />
                         <span class="absolute -top-1.5 -right-2 flex min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-brand-700" x-text="$store.cart.count"></span>
                     </span>
-                    <span class="flex-1 font-semibold">Ver carrinho</span>
+                    <span class="flex-1 leading-tight">
+                        <span class="block font-semibold">Ver carrinho</span>
+                        <span class="block text-xs text-white/80" x-text="$store.cart.count === 1 ? '1 item' : $store.cart.count + ' itens'"></span>
+                    </span>
                     <span class="font-bold" x-text="money($store.cart.subtotal)"></span>
+                    <x-icon name="chevron-right" class="size-5" />
                 </a>
             </div>
         @endif
@@ -610,6 +632,16 @@
                     window.addEventListener('hashchange', () => this.route());
                     this.spy();
                     this.$store.orders.refresh();
+                    // Começou a buscar pelo topo do cardápio: leva até o início dos resultados.
+                    this.$watch('term', (value, old) => {
+                        if (this.tab !== 'cardapio' || ! value.trim() || old.trim()) return;
+                        const top = this.$refs.menuTop?.offsetTop ?? 0;
+                        if (window.scrollY > top) window.scrollTo({ top });
+                    });
+                },
+                // Altura da barra fixa (busca + categorias), para a seção não ficar escondida atrás dela.
+                stickyOffset() {
+                    return (this.$refs.sticky?.offsetHeight ?? 56) + 8;
                 },
                 route() {
                     const hash = location.hash.slice(1);
@@ -635,16 +667,17 @@
                 goTo(id) {
                     const scroll = () => {
                         const el = document.getElementById(id);
-                        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 64, behavior: 'smooth' });
+                        if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - this.stickyOffset(), behavior: 'smooth' });
                     };
-                    if (this.tab === 'cardapio') return scroll();
+                    this.term = '';
+                    if (this.tab === 'cardapio') return this.$nextTick(scroll);
                     history.pushState(null, '', '#cardapio');
                     this.switchTo('cardapio', scroll);
                 },
                 spy() {
                     const observer = new IntersectionObserver((entries) => {
                         entries.forEach((entry) => { if (entry.isIntersecting) this.active = entry.target.id; });
-                    }, { rootMargin: '-80px 0px -70% 0px' });
+                    }, { rootMargin: '-120px 0px -65% 0px' });
                     document.querySelectorAll('[data-menu-section][id]').forEach((section) => observer.observe(section));
                     this.$watch('active', (id) => {
                         const bar = this.$refs.chips;

@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 /** Para testes: guarda o que seria enviado e simula celulares que não existem mais. */
 class FakePushTransport implements PushTransport
 {
-    /** @var list<array{user_id: int, endpoint: string, payload: array}> */
+    /** @var list<array{user_id: ?int, order_id: ?int, endpoint: string, payload: array}> user_id: equipe; order_id: cliente acompanhando o pedido */
     public static array $sent = [];
 
     /** @var list<string> endpoints que o "serviço de push" responde como expirados */
@@ -17,7 +17,12 @@ class FakePushTransport implements PushTransport
     public function send(Collection $subscriptions, array $payload): array
     {
         foreach ($subscriptions as $subscription) {
-            static::$sent[] = ['user_id' => $subscription->user_id, 'endpoint' => $subscription->endpoint, 'payload' => $payload];
+            static::$sent[] = [
+                'user_id' => $subscription->getAttribute('user_id'),
+                'order_id' => $subscription->getAttribute('order_id'),
+                'endpoint' => $subscription->endpoint,
+                'payload' => $payload,
+            ];
         }
 
         return array_values(array_intersect(static::$expired, $subscriptions->pluck('endpoint')->all()));

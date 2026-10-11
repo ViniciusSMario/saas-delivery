@@ -26,17 +26,23 @@ class EditEstablishment extends Component
 
     public bool $hasLogo = false;
 
+    /** Foto de capa do cardápio público. */
+    public $cover;
+
+    public bool $hasCover = false;
+
     public function mount(): void
     {
         $establishment = Establishment::current();
 
         foreach ((new Establishment)->getFillable() as $field) {
-            if ($field !== 'logo_path') {
+            if (! in_array($field, ['logo_path', 'cover_path'], true)) {
                 $this->form[$field] = $establishment->{$field};
             }
         }
 
         $this->hasLogo = (bool) $establishment->logo_path;
+        $this->hasCover = (bool) $establishment->cover_path;
 
         OpeningHour::seedDefaults();
 
@@ -65,6 +71,7 @@ class EditEstablishment extends Component
             'form.city' => ['nullable', 'string', 'max:120'],
             'form.state' => ['nullable', 'string', 'size:2'],
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'cover' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
             'hours.*.is_closed' => ['boolean'],
             'hours.*.opens_at' => ['nullable', 'required_if:hours.*.is_closed,false', 'date_format:H:i'],
             'hours.*.closes_at' => ['nullable', 'required_if:hours.*.is_closed,false', 'date_format:H:i'],
@@ -112,6 +119,15 @@ class EditEstablishment extends Component
                 }
             }
 
+            if ($this->cover) {
+                $old = $establishment->cover_path;
+                $establishment->cover_path = $this->cover->store('establishment', 'tenant');
+
+                if ($old && $old !== $establishment->cover_path) {
+                    Storage::disk('tenant')->delete($old);
+                }
+            }
+
             $isNew = ! $establishment->exists;
             $establishment->save();
 
@@ -139,8 +155,9 @@ class EditEstablishment extends Component
             }
         });
 
-        $this->reset('logo');
+        $this->reset('logo', 'cover');
         $this->hasLogo = (bool) Establishment::current()->logo_path;
+        $this->hasCover = (bool) Establishment::current()->cover_path;
 
         session()->flash('status', 'Dados do estabelecimento salvos.');
         $this->redirectRoute('establishment.edit', navigate: true);
@@ -159,6 +176,21 @@ class EditEstablishment extends Component
         }
 
         $this->hasLogo = false;
+    }
+
+    public function removeCover(): void
+    {
+        $this->authorize('establishment.manage');
+
+        $establishment = Establishment::current();
+
+        if ($establishment->exists && $establishment->cover_path) {
+            Storage::disk('tenant')->delete($establishment->cover_path);
+            $establishment->update(['cover_path' => null]);
+            Audit::record('establishment.updated', $establishment, ['capa' => 'removida']);
+        }
+
+        $this->hasCover = false;
     }
 
     public function render()

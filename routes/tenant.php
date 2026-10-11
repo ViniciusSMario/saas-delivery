@@ -4,6 +4,7 @@
 // O grupo "tenant" já identificou e ativou o tenant antes destas rotas.
 
 use App\Http\Controllers\Tenant\AppManifestController;
+use App\Http\Controllers\Tenant\EstablishmentCoverController;
 use App\Http\Controllers\Tenant\EstablishmentLogoController;
 use App\Http\Controllers\Tenant\PushSubscriptionController;
 use App\Http\Controllers\Tenant\LogoutController;
@@ -40,6 +41,7 @@ Route::middleware('guest')->group(function () {
 
 // Público: usado pelo cardápio.
 Route::get('/logo', EstablishmentLogoController::class)->name('establishment.logo');
+Route::get('/capa', EstablishmentCoverController::class)->name('establishment.cover');
 
 // App instalável no celular (PWA): manifesto e ícones com o nome e o logo do restaurante.
 Route::get('/manifest.webmanifest', [AppManifestController::class, 'manifest'])->name('app.manifest');

@@ -6,6 +6,7 @@ use App\Modules\Delivery\Events\CourierAssigned;
 use App\Modules\Orders\Events\OrderPlaced;
 use App\Modules\Orders\Events\OrderStatusChanged;
 use App\Modules\Push\Console\PushVapid;
+use App\Modules\Push\Listeners\AlertCustomer;
 use App\Modules\Push\Listeners\AlertStaff;
 use App\Modules\Push\Transports\FakePushTransport;
 use App\Modules\Push\Transports\WebPushTransport;
@@ -24,6 +25,7 @@ class PushServiceProvider extends ServiceProvider
         Event::listen(OrderPlaced::class, AlertStaff::class);
         Event::listen(OrderStatusChanged::class, AlertStaff::class);
         Event::listen(CourierAssigned::class, AlertStaff::class);
+        Event::listen(OrderStatusChanged::class, AlertCustomer::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([PushVapid::class]);

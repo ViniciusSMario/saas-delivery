@@ -18,7 +18,8 @@ self.addEventListener('push', (event) => {
         body: data.body || '',
         tag: data.tag || undefined,
         renotify: Boolean(data.tag),
-        icon: '/app-icon/192.png',
+        // Aviso do cliente traz o logo pelo endereço do cardápio (funciona também em /cardapio/{slug}).
+        icon: data.icon || '/app-icon/192.png',
         badge: '/app-icon/badge.png',
         vibrate: data.sticky ? [300, 120, 300, 120, 300] : [200, 100, 200],
         // Pedido novo: no computador, fica na tela até alguém clicar.

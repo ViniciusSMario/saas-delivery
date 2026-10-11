@@ -16,6 +16,7 @@
             key: 'cart:' + tenant,
             items: [],
             toast: '',
+            pulse: false,
             init() {
                 this.items = read(this.key, []);
             },
@@ -33,6 +34,14 @@
                 this.save();
                 this.notify(item.name + ' na sacola');
                 navigator.vibrate?.(15);
+                // A barra do carrinho "pula" para mostrar onde o item foi parar.
+                this.pulse = true;
+                clearTimeout(this.pulseTimer);
+                this.pulseTimer = setTimeout(() => { this.pulse = false; }, 350);
+            },
+            // Quantas unidades do produto (ou combo) já estão no carrinho, somando as variações.
+            qty(id, type = 'product') {
+                return this.items.filter((i) => i.type === type && i.id === id).reduce((sum, i) => sum + i.quantity, 0);
             },
             notify(message) {
                 this.toast = message;
