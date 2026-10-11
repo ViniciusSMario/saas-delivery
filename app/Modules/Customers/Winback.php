@@ -33,8 +33,8 @@ class Winback
     /** Janela para contar quem voltou depois de chamado. */
     public const RESULT_DAYS = 30;
 
-    public const DEFAULT_MESSAGE = 'Oi, {nome}! Aqui é do {restaurante}. Faz tempo que você não pede com a gente e sentimos sua falta! '
-        .'Para matar a saudade, use o cupom {cupom} e ganhe {desconto} no próximo pedido. Peça por aqui: {link}';
+    public const DEFAULT_MESSAGE = "Oi, {nome}! Faz tempo que você não pede com a gente e sentimos sua falta! "
+        ."Para matar a saudade, use o cupom {cupom} e ganhe {desconto} no próximo pedido. Peça por aqui: {link}\n\n{restaurante}";
 
     /**
      * Clientes com pelo menos $minOrders pedidos (não cancelados) e nenhum nos últimos $days dias,

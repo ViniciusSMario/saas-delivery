@@ -9,23 +9,23 @@
     </x-ui.page-header>
 
     {{-- Resultado dos contatos --}}
-    <div class="grid gap-3 sm:grid-cols-3">
-        <div class="card card-body">
-            <p class="text-xs font-semibold text-stone-500 uppercase">Chamados em {{ Winback::RESULT_DAYS }} dias</p>
-            <p class="mt-1 text-2xl font-extrabold tabular-nums">{{ $results['contacted'] }}</p>
+    <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <div class="card card-body p-3 sm:p-5">
+            <p class="text-[11px] leading-tight font-semibold text-stone-500 uppercase sm:text-xs">Chamados em {{ Winback::RESULT_DAYS }} dias</p>
+            <p class="mt-1 text-lg font-extrabold tabular-nums sm:text-2xl">{{ $results['contacted'] }}</p>
         </div>
-        <div class="card card-body">
-            <p class="text-xs font-semibold text-stone-500 uppercase">Voltaram a pedir</p>
-            <p class="mt-1 text-2xl font-extrabold tabular-nums">
+        <div class="card card-body p-3 sm:p-5">
+            <p class="text-[11px] leading-tight font-semibold text-stone-500 uppercase sm:text-xs">Voltaram a pedir</p>
+            <p class="mt-1 text-lg font-extrabold tabular-nums sm:text-2xl">
                 {{ $results['returned'] }}
                 @if ($results['contacted'])
-                    <span class="text-base font-semibold text-emerald-700">{{ round($results['returned'] * 100 / $results['contacted']) }}%</span>
+                    <span class="text-sm font-semibold text-emerald-700 sm:text-base">{{ round($results['returned'] * 100 / $results['contacted']) }}%</span>
                 @endif
             </p>
         </div>
-        <div class="card card-body">
-            <p class="text-xs font-semibold text-stone-500 uppercase">Vendas de quem voltou</p>
-            <p class="mt-1 text-2xl font-extrabold tabular-nums">{{ Money::cents($results['revenue_cents'])->format() }}</p>
+        <div class="card card-body p-3 sm:p-5">
+            <p class="text-[11px] leading-tight font-semibold text-stone-500 uppercase sm:text-xs">Vendas de quem voltou</p>
+            <p class="mt-1 text-lg font-extrabold tabular-nums sm:text-2xl">{{ Money::cents($results['revenue_cents'])->format() }}</p>
         </div>
     </div>
 
@@ -69,7 +69,7 @@
                 <div class="flex items-center justify-between gap-2">
                     <span class="label mb-0">Mensagem</span>
                     @unless ($editingMessage)
-                        <button type="button" wire:click="$set('editingMessage', true)" class="btn-link text-sm"><x-icon name="edit" class="size-4" /> Editar</button>
+                        <button type="button" wire:click="$set('editingMessage', true)" class="btn-link inline-flex items-center gap-1 text-sm"><x-icon name="edit" class="size-4" /> Editar</button>
                     @endunless
                 </div>
 
