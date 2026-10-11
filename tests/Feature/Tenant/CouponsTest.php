@@ -88,11 +88,12 @@ it('recusa cupom inexistente, pausado, fora do prazo ou abaixo do mínimo', func
     // Nada foi gravado nas tentativas recusadas.
     expect(Order::count())->toBe(0)->and(CouponRedemption::count())->toBe(0);
 
-    // Cupom é só do cardápio online: o balcão usa o desconto manual.
+    // No balcão vale o cupom ou o desconto manual, nunca os dois.
+    makeCoupon(['code' => 'BALCAO']);
     expect(couponError(fn () => app(PlaceOrder::class)->handle([
         'lines' => [line($burger)], 'fulfillment' => 'pickup', 'payment_method' => 'cash',
-        'customer' => ['name' => 'Rita', 'phone' => '11977775555'], 'coupon' => 'MINIMO',
-    ], OrderSource::Counter)))->toBe('Cupom só vale no cardápio online.');
+        'customer' => ['name' => 'Rita', 'phone' => '11977775555'], 'coupon' => 'BALCAO', 'discount' => Money::parse('2'),
+    ], OrderSource::Counter, createTenantUser(tenant(), ['gerente']))))->toBe('Use o cupom ou o desconto manual, não os dois.');
 });
 
 it('controla usos no total, por cliente e primeiro pedido; cancelar devolve o uso', function () {

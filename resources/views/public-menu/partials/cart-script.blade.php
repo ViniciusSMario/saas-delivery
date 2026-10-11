@@ -12,6 +12,28 @@
         // Cupom escolhido no cardápio ("Usar", "Pedir de novo"): o checkout aplica sozinho.
         window.saveCoupon = (code) => { try { localStorage.setItem('cupom:' + tenant, code); } catch (e) {} };
 
+        // "Pedir de novo": itens do pedido (conferidos no servidor) vão para o carrinho e abre o checkout.
+        window.reorder = async (orderUrl, checkoutUrl, coupon = null) => {
+            const cart = Alpine.store('cart');
+            try {
+                const response = await fetch(orderUrl + '/repetir', { headers: { Accept: 'application/json' } });
+                if (! response.ok) throw new Error('falhou');
+                const { lines, skipped } = await response.json();
+                if (! lines.length) {
+                    cart.notify('Os itens desse pedido não estão disponíveis agora.');
+                    return;
+                }
+                cart.addMany(lines);
+                if (coupon) window.saveCoupon(coupon);
+                try {
+                    sessionStorage.setItem('reorder-note:' + tenant, skipped.length ? 'Fora do cardápio agora (não entraram): ' + skipped.join(', ') + '.' : '');
+                } catch (e) {}
+                location.href = checkoutUrl;
+            } catch (e) {
+                cart.notify('Não foi possível repetir o pedido agora.');
+            }
+        };
+
         window.money = (cents) => 'R$ ' + (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         window.normalize = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -41,6 +63,16 @@
                 this.pulse = true;
                 clearTimeout(this.pulseTimer);
                 this.pulseTimer = setTimeout(() => { this.pulse = false; }, 350);
+            },
+            // Vários itens de uma vez ("Pedir de novo"), somando aos que já estão no carrinho.
+            addMany(lines) {
+                for (const item of lines) {
+                    const sig = [item.type, item.id, item.addons.map((a) => a.id).sort().join('.'), item.notes || ''].join('|');
+                    const found = this.items.find((i) => i.sig === sig);
+                    if (found) found.quantity = Math.min(99, found.quantity + item.quantity);
+                    else this.items.push({ ...item, sig });
+                }
+                this.save();
             },
             // Quantas unidades do produto (ou combo) já estão no carrinho, somando as variações.
             qty(id, type = 'product') {

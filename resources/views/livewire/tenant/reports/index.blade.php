@@ -235,6 +235,76 @@
             </table>
             <p class="hint px-5 pb-4">Entregas concluídas de pedidos feitos no período. Intervalos acima de 4 horas (pedido esquecido aberto) não entram nas médias.</p>
         </section>
+    @elseif ($tab === 'reviews')
+        <div class="grid gap-4 sm:grid-cols-3">
+            <x-ui.stat label="Nota média" :value="$reviews['average'] !== null ? number_format($reviews['average'], 1, ',', '').' ★' : '—'" icon="trending" tone="brand" />
+            <x-ui.stat label="Clientes satisfeitos" :value="$reviews['satisfied'] !== null ? $reviews['satisfied'].'%' : '—'" icon="check" tone="green" hint="4 ou 5 estrelas" />
+            <x-ui.stat label="Avaliações" :value="$reviews['count']" icon="users" tone="blue" />
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-3">
+            @php($maxStars = max(1, max($reviews['distribution'])))
+            <section class="card card-body">
+                <h2 class="section-title">Notas</h2>
+                <dl class="mt-3 space-y-2 text-sm">
+                    @foreach ($reviews['distribution'] as $stars => $count)
+                        <div class="flex items-center gap-2">
+                            <dt class="w-10 shrink-0 font-semibold text-amber-600">{{ $stars }} ★</dt>
+                            <dd class="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100"><div @class(['h-full rounded-full', 'bg-emerald-500' => $stars >= 4, 'bg-amber-400' => $stars === 3, 'bg-red-500' => $stars <= 2]) style="width: {{ round($count / $maxStars * 100) }}%"></div></dd>
+                            <dd class="w-8 text-right tabular-nums text-stone-600">{{ $count }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </section>
+            <section class="card card-body">
+                <h2 class="section-title">Motivos citados</h2>
+                <ul class="mt-3 space-y-1.5 text-sm">
+                    @forelse ($reviewTags as $tag)
+                        <li class="flex items-center justify-between gap-2">
+                            <span class="flex items-center gap-2"><span @class(['size-2 rounded-full', 'bg-red-500' => $tag['negative'], 'bg-emerald-500' => ! $tag['negative']])></span> {{ $tag['label'] }}</span>
+                            <span class="font-semibold tabular-nums">{{ $tag['count'] }}</span>
+                        </li>
+                    @empty
+                        <li class="text-stone-500">Nenhum motivo marcado no período.</li>
+                    @endforelse
+                </ul>
+            </section>
+            <section class="card card-body">
+                <h2 class="section-title">Por entregador</h2>
+                <ul class="mt-3 space-y-1.5 text-sm">
+                    @forelse ($reviewCouriers as $row)
+                        <li class="flex items-center justify-between gap-2">
+                            <span class="min-w-0 truncate">{{ $row['name'] }} <span class="text-xs text-stone-500">({{ $row['count'] }})</span></span>
+                            <span class="shrink-0 font-semibold tabular-nums">{{ number_format($row['average'], 1, ',', '') }} ★ @if ($row['bad'])<span class="text-xs font-medium text-red-700">· {{ $row['bad'] }} ruim</span>@endif</span>
+                        </li>
+                    @empty
+                        <li class="text-stone-500">Nenhuma entrega avaliada no período.</li>
+                    @endforelse
+                </ul>
+            </section>
+        </div>
+
+        <section class="card overflow-x-auto">
+            <div class="card-header"><h2 class="section-title">Últimas avaliações</h2></div>
+            <table class="table">
+                <tbody>
+                    @forelse ($latestReviews as $review)
+                        <tr wire:key="review-{{ $review->id }}">
+                            <td class="whitespace-nowrap text-stone-500">{{ $review->created_at->timezone($timezone)->format('d/m H:i') }}</td>
+                            <td class="whitespace-nowrap text-lg tracking-wider @if ($review->rating <= 2) text-red-500 @elseif ($review->rating === 3) text-amber-500 @else text-emerald-600 @endif">{{ $review->stars() }}</td>
+                            <td class="min-w-64">
+                                <a href="{{ route('orders.show', $review->order_id) }}" class="font-semibold hover:text-brand-700" wire:navigate>#{{ $review->order?->number }}</a>
+                                <span class="text-stone-500">· {{ $review->order?->customer_name }}{{ $review->courier ? ' · entregue por '.$review->courier->name : '' }}</span>
+                                @if ($review->tags)<span class="mt-1 flex flex-wrap gap-1">@foreach ($review->tagLabels() as $label)<span class="badge-gray">{{ $label }}</span>@endforeach</span>@endif
+                                @if ($review->comment)<span class="mt-1 block text-sm text-stone-700">“{{ $review->comment }}”</span>@endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td><x-ui.empty icon="users" title="Nenhuma avaliação no período" text="Depois da entrega, o cliente avalia o pedido pela página de acompanhamento." /></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </section>
     @elseif ($tab === 'losses')
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="card overflow-x-auto">

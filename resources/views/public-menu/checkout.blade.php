@@ -90,6 +90,15 @@
                   this.couponError = '';
                   try { localStorage.removeItem(this.couponKey); } catch (e) {}
               },
+              // Veio do Pedir de novo: avisa o que ficou de fora.
+              reorderNote: '',
+              loadReorderNote() {
+                  const key = 'reorder-note:{{ tenant()->getKey() }}';
+                  try {
+                      this.reorderNote = sessionStorage.getItem(key) || '';
+                      sessionStorage.removeItem(key);
+                  } catch (e) {}
+              },
               loadCoupon() {
                   // Veio do banner do cardápio (ou voltou com erro): já aplica o código.
                   if (! this.couponCode) {
@@ -118,7 +127,7 @@
                   try { localStorage.setItem(this.profileKey, JSON.stringify(p)); } catch (e) {}
               },
           }"
-          x-init="loadProfile(); $nextTick(() => loadCoupon())">
+          x-init="loadProfile(); loadReorderNote(); $nextTick(() => loadCoupon())">
 
         @if ($errors->any())
             <div class="alert-error">
@@ -133,6 +142,11 @@
                 </div>
             </div>
         @endif
+
+        <div class="alert-warning" x-show="reorderNote" x-cloak>
+            <x-icon name="info" class="mt-0.5 size-4" />
+            <span x-text="reorderNote"></span>
+        </div>
 
         @unless ($ordering)
             <div class="alert-warning">

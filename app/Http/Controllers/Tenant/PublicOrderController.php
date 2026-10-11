@@ -7,12 +7,14 @@ use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Establishment\OpeningSchedule;
 use App\Modules\Orders\Actions\PlaceOrder;
+use App\Modules\Orders\Actions\ReviewOrder;
 use App\Modules\Orders\Enums\Fulfillment;
 use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\PaymentMethod;
 use App\Modules\Orders\OrderEta;
+use App\Modules\Orders\Reorder;
 use App\Modules\Promotions\CouponRules;
 use App\Modules\Promotions\Models\Coupon;
 use App\Support\Money;
@@ -101,7 +103,7 @@ class PublicOrderController
         abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
 
         // Busca no schema do tenant atual: token de outro estabelecimento não existe aqui.
-        $order = Order::where('public_token', $token)->with(['items.addons', 'payments.method', 'history', 'courier'])->firstOrFail();
+        $order = Order::where('public_token', $token)->with(['items.addons', 'payments.method', 'history', 'courier', 'review'])->firstOrFail();
 
         return view('public-menu.order', [
             'order' => $order,
@@ -114,6 +116,34 @@ class PublicOrderController
             // Pedido entregue: "volte e ganhe" (se o restaurante tiver um cupom para isso e o cliente ainda puder usar).
             'returnCoupon' => $order->status === OrderStatus::Completed ? app(CouponRules::class)->returnOffer($order->customer_phone) : null,
         ]);
+    }
+
+    /** Avaliação do cliente na página do pedido (quem tem o link do pedido). */
+    public function review(Request $request, string $token, ReviewOrder $reviewOrder): JsonResponse
+    {
+        abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
+        $order = Order::where('public_token', $token)->firstOrFail();
+
+        try {
+            $review = $reviewOrder->handle(
+                $order,
+                (int) $request->input('rating'),
+                array_filter((array) $request->input('tags', []), 'is_string'),
+                is_string($request->input('comment')) ? $request->input('comment') : null,
+            );
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+
+        return response()->json(['rating' => $review->rating], 201);
+    }
+
+    /** "Pedir de novo": os itens do pedido, conferidos contra o cardápio de hoje, para o carrinho. */
+    public function reorder(string $token, Reorder $reorder): JsonResponse
+    {
+        abort_unless(preg_match('/^[A-Za-z0-9]{32}$/', $token), 404);
+
+        return response()->json($reorder->linesFor(Order::where('public_token', $token)->firstOrFail()));
     }
 
     /**

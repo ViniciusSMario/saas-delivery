@@ -29,6 +29,8 @@ Route::middleware(EnsureTenantVerified::class)->group(function () {
     Route::post('/pedido/cupom', [PublicOrderController::class, 'coupon'])->middleware('throttle:20,1');
     Route::get('/pedido/{token}', [PublicOrderController::class, 'show']);
     Route::get('/pedido/{token}/status', [PublicOrderController::class, 'status']);
+    Route::get('/pedido/{token}/repetir', [PublicOrderController::class, 'reorder'])->middleware('throttle:30,1');
+    Route::post('/pedido/{token}/avaliacao', [PublicOrderController::class, 'review'])->middleware('throttle:10,1');
 
     // Avisos do andamento no celular do cliente (Web Push).
     Route::post('/pedido/{token}/avisos', [OrderPushController::class, 'store'])->middleware('throttle:20,1');

@@ -301,7 +301,7 @@ it('pedido sem aceite avisa a gerência depois do tempo das configurações', fu
     Livewire::actingAs($gerente)->test(EditSettings::class)
         ->assertSet('order_waiting_alert_minutes', 5)
         ->set('order_waiting_alert_minutes', 0)->call('save')->assertHasNoErrors();
-    expect(StaffAlerts::choicesFor($gerente))->toBe([StaffAlerts::NEW_ORDER => 'Pedido novo do cardápio online']);
+    expect(StaffAlerts::choicesFor($gerente))->not->toHaveKey(StaffAlerts::WAITING_ORDER)->toHaveKey(StaffAlerts::NEW_ORDER);
     menuOrder($burger);
     Bus::assertDispatchedTimes(WarnWaitingOrder::class, 1);
 });

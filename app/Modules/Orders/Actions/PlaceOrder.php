@@ -89,12 +89,16 @@ class PlaceOrder
             $address['district'] = $zone->name; // grafia do cadastro
         }
 
-        // Cupom do cardápio online: substitui o desconto (que só existe no balcão).
+        // Cupom (cardápio online ou PDV): no lugar do desconto manual, nunca junto.
         $coupon = null;
 
         if (Coupon::normalize($input['coupon'] ?? null) !== '') {
-            if (! $online) {
-                $this->fail('coupon', 'Cupom só vale no cardápio online.');
+            if ($table) {
+                $this->fail('coupon', 'Cupom não vale em pedido de mesa.');
+            }
+
+            if (! $discount->isZero()) {
+                $this->fail('coupon', 'Use o cupom ou o desconto manual, não os dois.');
             }
 
             $coupon = Coupon::findByCode($input['coupon']) ?? $this->fail('coupon', 'Cupom não encontrado. Confira o código.');
@@ -392,7 +396,7 @@ class PlaceOrder
 
     private function assertCoupon(Coupon $coupon, Money $subtotal, ?string $phone, Fulfillment $fulfillment): void
     {
-        if ($problem = $this->coupons->problem($coupon, $subtotal, $phone, $fulfillment)) {
+        if ($problem = $this->coupons->problem($coupon, $subtotal, $phone, $fulfillment, requirePhone: true)) {
             $this->fail('coupon', $problem);
         }
     }

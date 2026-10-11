@@ -395,7 +395,13 @@
                             <span class="block truncate text-sm text-stone-700" x-text="order.label"></span>
                             <span class="block text-xs text-stone-500" x-text="[order.placed_at, order.total].filter(Boolean).join(' · ')"></span>
                         </span>
-                        <x-icon name="chevron-right" class="size-5 text-stone-400" />
+                        @if ($ordering)
+                            <button type="button" x-show="order.final" class="btn-secondary btn-sm shrink-0 rounded-full"
+                                    @click.prevent.stop="reorder(order.url, @js($base.'/pedido'))">
+                                <x-icon name="refresh" class="size-4" /> Pedir de novo
+                            </button>
+                        @endif
+                        <x-icon name="chevron-right" class="size-5 text-stone-400" x-show="! order.final || ! ordering" />
                     </a>
                 </template>
             </div>

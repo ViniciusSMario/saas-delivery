@@ -10,6 +10,7 @@ use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderReview;
 use App\Modules\Push\Jobs\SendPush;
 use App\Modules\Push\Jobs\WarnWaitingOrder;
 use App\Modules\Push\Models\PushSubscription;
@@ -28,6 +29,11 @@ class StaffAlerts
     public const NEW_ORDER = 'new_order';
 
     public const WAITING_ORDER = 'waiting_order';
+
+    public const BAD_REVIEW = 'bad_review';
+
+    /** Nota que gera aviso para a gerência (1 ou 2 estrelas). */
+    public const BAD_REVIEW_MAX = 2;
 
     /** Minutos sem aceite até avisar a gerência (0 = não avisa). */
     public const WAITING_MINUTES_SETTING = 'order_waiting_alert_minutes';
@@ -57,6 +63,7 @@ class StaffAlerts
             self::WAITING_ORDER => $minutes && $user->hasPermission(Permission::OrdersCancel)
                 ? "Pedido sem aceite depois de {$minutes} min"
                 : null,
+            self::BAD_REVIEW => $user->hasPermission(Permission::OrdersCancel) ? 'Avaliação ruim (1 ou 2 estrelas)' : null,
         ]);
     }
 
@@ -111,6 +118,23 @@ class StaffAlerts
             'url' => "/pedidos/{$order->id}",
             'tag' => "pedido-{$order->id}",
             'sticky' => true,
+        ]);
+    }
+
+    /** Cliente deu 1 ou 2 estrelas: a gerência fica sabendo na hora, para resolver enquanto dá tempo. */
+    public function badReview(OrderReview $review): void
+    {
+        if ($review->rating > self::BAD_REVIEW_MAX) {
+            return;
+        }
+
+        $order = $review->order;
+
+        $this->send($this->panelUsers(Permission::OrdersCancel, self::BAD_REVIEW), [
+            'title' => "Avaliação ruim · #{$order->number} · {$review->stars()}",
+            'body' => Str::limit(collect([$order->customer_name, implode(', ', $review->tagLabels()), $review->comment ? "“{$review->comment}”" : null])->filter()->implode(' · '), 160),
+            'url' => "/pedidos/{$order->id}",
+            'tag' => "avaliacao-{$review->id}",
         ]);
     }
 

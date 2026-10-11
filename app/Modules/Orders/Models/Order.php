@@ -13,6 +13,7 @@ use App\Tenancy\TenantModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends TenantModel
 {
@@ -58,6 +59,19 @@ class Order extends TenantModel
     public function history(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->orderBy('id');
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(OrderReview::class);
+    }
+
+    /** O cliente ainda pode avaliar: concluído há no máximo 7 dias e sem avaliação. */
+    public function canBeReviewed(): bool
+    {
+        return $this->status === OrderStatus::Completed
+            && $this->completed_at?->greaterThan(now()->subDays(OrderReview::WINDOW_DAYS))
+            && ! $this->review()->exists();
     }
 
     public function payments(): HasMany

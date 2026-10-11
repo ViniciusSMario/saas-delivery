@@ -107,6 +107,16 @@
                 @endforeach
             </section>
 
+            @if ($review = $order->review)
+                <section @class(['card card-body space-y-1.5 text-sm print:hidden', 'border-red-200 bg-red-50/50' => $review->rating <= 2])>
+                    <h2 class="section-title">Avaliação do cliente</h2>
+                    <p @class(['text-xl tracking-wider', 'text-red-500' => $review->rating <= 2, 'text-amber-500' => $review->rating === 3, 'text-emerald-600' => $review->rating >= 4])>{{ $review->stars() }}</p>
+                    @if ($review->tags)<p class="flex flex-wrap gap-1">@foreach ($review->tagLabels() as $label)<span class="badge-gray">{{ $label }}</span>@endforeach</p>@endif
+                    @if ($review->comment)<p class="text-stone-700">“{{ $review->comment }}”</p>@endif
+                    <p class="text-xs text-stone-500">{{ $review->created_at->timezone($timezone)->format('d/m H:i') }}</p>
+                </section>
+            @endif
+
             <section class="card card-body text-sm print:hidden">
                 <h2 class="section-title">Histórico</h2>
                 <ol class="mt-2 space-y-1">

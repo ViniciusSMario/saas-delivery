@@ -3,6 +3,7 @@
 namespace App\Livewire\Tenant\Reports;
 
 use App\Modules\Reports\OperationsReport;
+use App\Modules\Reports\ReviewsReport;
 use App\Modules\Reports\SalesReport;
 use Carbon\CarbonImmutable;
 use Livewire\Attributes\Title;
@@ -17,6 +18,7 @@ class Index extends Component
         'products' => 'Produtos',
         'hours' => 'Horários',
         'operation' => 'Tempos e entregas',
+        'reviews' => 'Avaliações',
         'losses' => 'Cancelamentos e descontos',
         'cash' => 'Caixas',
     ];
@@ -69,6 +71,12 @@ class Index extends Component
                 'hours' => $report->hourly($start, $end),
                 'revenue' => $report->hourlyRevenue($start, $end),
                 'heatmap' => $report->weekdayHours($start, $end),
+            ],
+            'reviews' => $data += [
+                'reviews' => app(ReviewsReport::class)->summary($start, $end),
+                'reviewTags' => app(ReviewsReport::class)->tags($start, $end),
+                'reviewCouriers' => app(ReviewsReport::class)->couriers($start, $end),
+                'latestReviews' => app(ReviewsReport::class)->latest($start, $end),
             ],
             'operation' => $data += [
                 'timings' => $operations->timings($start, $end),

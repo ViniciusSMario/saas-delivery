@@ -60,6 +60,13 @@
     @endif
 
     {{-- Lançamento --}}
+    @if ($launching && $draftRestored && $cart)
+        <div class="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm text-sky-900 print:hidden">
+            <x-icon name="refresh" class="mt-0.5 size-4 shrink-0" />
+            <span class="flex-1">Recuperamos os itens que ainda não foram enviados à cozinha.</span>
+            <button type="button" wire:click="discardDraft" class="shrink-0 font-semibold underline">Começar do zero</button>
+        </div>
+    @endif
     @if ($launching)
         <section class="grid gap-6 xl:grid-cols-[1fr_22rem] xl:rounded-2xl xl:border-2 xl:border-dashed xl:border-brand-200 xl:bg-brand-50/30 xl:p-4">
             @include('livewire.tenant.partials.product-picker')

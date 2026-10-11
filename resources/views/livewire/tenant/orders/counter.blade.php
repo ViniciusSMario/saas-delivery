@@ -43,6 +43,13 @@
         </div>
 
         <div class="space-y-4 p-5">
+            @if ($draftRestored)
+                <div class="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
+                    <x-icon name="refresh" class="mt-0.5 size-4 shrink-0" />
+                    <span class="flex-1">Recuperamos o pedido que estava em andamento.</span>
+                    <button type="button" wire:click="clearCart" class="shrink-0 font-semibold underline">Começar do zero</button>
+                </div>
+            @endif
             @error('cart') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
             @error('cash') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
 
@@ -106,9 +113,26 @@
                     <input wire:model.live.debounce.400ms="changeFor" type="text" inputmode="decimal" class="input" placeholder="Troco para" aria-label="Troco para">
                 @endif
             </div>
-            @if ($canDiscount)
-                <input wire:model.live.debounce.400ms="discount" type="text" inputmode="decimal" class="input" placeholder="Desconto (R$)" aria-label="Desconto">
+            {{-- Cupom (o mesmo do cardápio online) ou desconto manual, nunca os dois. --}}
+            @if ($appliedCoupon)
+                <div @class(['flex items-center gap-3 rounded-xl border-2 border-dashed px-3 py-2', 'border-emerald-300 bg-emerald-50' => ! $couponProblem, 'border-amber-300 bg-amber-50' => $couponProblem])>
+                    <x-icon name="ticket" @class(['size-5 shrink-0', 'text-emerald-700' => ! $couponProblem, 'text-amber-700' => $couponProblem]) />
+                    <span class="min-w-0 flex-1 text-sm">
+                        <span class="block font-bold tracking-wide">{{ $appliedCoupon->code }}</span>
+                        <span @class(['block text-xs', 'text-emerald-800' => ! $couponProblem, 'font-medium text-amber-800' => $couponProblem])>{{ $couponProblem ?: $appliedCoupon->benefit() }}</span>
+                    </span>
+                    <button type="button" wire:click="removeCoupon" class="btn-ghost btn-sm text-stone-500">Remover</button>
+                </div>
+            @else
+                <div class="flex gap-2">
+                    <input wire:model="couponInput" wire:keydown.enter.prevent="applyCoupon" type="text" class="input min-w-0 flex-1 uppercase" placeholder="Cupom de desconto" aria-label="Cupom de desconto" autocomplete="off">
+                    <button type="button" wire:click="applyCoupon" class="btn-secondary shrink-0">Aplicar</button>
+                </div>
+                @if ($canDiscount)
+                    <input wire:model.live.debounce.400ms="discount" type="text" inputmode="decimal" class="input" placeholder="Desconto manual (R$)" aria-label="Desconto">
+                @endif
             @endif
+            @error('coupon') <p class="field-error">{{ $message }}</p> @enderror
             @error('payment_method') <p class="field-error">{{ $message }}</p> @enderror
             @error('change_for') <p class="field-error">{{ $message }}</p> @enderror
             @error('changeFor') <p class="field-error">{{ $message }}</p> @enderror
@@ -119,7 +143,9 @@
 
         <div class="space-y-1.5 border-t border-stone-100 bg-stone-50/70 p-5 text-sm">
             <div class="flex justify-between text-stone-600"><span>Subtotal</span><span class="tabular-nums">{{ $subtotal->format() }}</span></div>
-            @if ($discount !== '' && \App\Support\Money::isValid($discount) && ! \App\Support\Money::parse($discount)->isZero())
+            @if (! $couponDiscount->isZero())
+                <div class="flex justify-between text-emerald-700"><span>Cupom {{ $appliedCoupon->code }}</span><span class="tabular-nums">- {{ $couponDiscount->format() }}</span></div>
+            @elseif (! $appliedCoupon && $discount !== '' && \App\Support\Money::isValid($discount) && ! \App\Support\Money::parse($discount)->isZero())
                 <div class="flex justify-between text-emerald-700"><span>Desconto</span><span class="tabular-nums">- {{ \App\Support\Money::parse($discount)->format() }}</span></div>
             @endif
             @if ($fulfillment === 'delivery')

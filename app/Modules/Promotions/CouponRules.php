@@ -16,8 +16,13 @@ use App\Support\Money;
  */
 class CouponRules
 {
-    /** Motivo para recusar o cupom, ou null quando ele vale para este pedido. */
-    public function problem(Coupon $coupon, Money $subtotal, ?string $phone = null, ?Fulfillment $fulfillment = null): ?string
+    /**
+     * Motivo para recusar o cupom, ou null quando ele vale para este pedido.
+     *
+     * @param  bool  $requirePhone  pedido de verdade: cupom com limite por cliente precisa do telefone
+     *                              (na prévia do checkout o cliente pode ainda não ter digitado)
+     */
+    public function problem(Coupon $coupon, Money $subtotal, ?string $phone = null, ?Fulfillment $fulfillment = null, bool $requirePhone = false): ?string
     {
         $timezone = Setting::read('timezone', 'America/Sao_Paulo');
         $phone = $phone ? Customer::normalizePhone($phone) : null;
@@ -44,6 +49,10 @@ class CouponRules
 
         if ($coupon->usage_limit !== null && $coupon->validRedemptions()->count() >= $coupon->usage_limit) {
             return 'Este cupom já esgotou.';
+        }
+
+        if ($requirePhone && ! $phone && ($coupon->per_customer_limit !== null || $coupon->first_order_only)) {
+            return 'Informe o telefone do cliente para usar este cupom.';
         }
 
         if ($phone && $coupon->per_customer_limit !== null

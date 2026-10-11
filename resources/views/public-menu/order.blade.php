@@ -153,6 +153,85 @@
             </section>
         @endunless
 
+        {{-- Avaliação: depois de entregue (até 7 dias), uma vez --}}
+        @if ($order->review)
+            <section class="card p-5 text-center">
+                <p class="text-sm font-semibold text-stone-500">Sua avaliação</p>
+                <p class="mt-1 text-3xl tracking-widest text-amber-500" aria-label="{{ $order->review->rating }} de 5 estrelas">{{ $order->review->stars() }}</p>
+                @if ($order->review->tags)
+                    <p class="mt-2 flex flex-wrap justify-center gap-1.5">
+                        @foreach ($order->review->tagLabels() as $label)<span class="chip">{{ $label }}</span>@endforeach
+                    </p>
+                @endif
+                @if ($order->review->comment)<p class="mt-2 text-sm text-stone-600">“{{ $order->review->comment }}”</p>@endif
+                <p class="mt-2 text-sm font-medium text-emerald-700">Obrigado por avaliar!</p>
+            </section>
+        @elseif ($order->canBeReviewed())
+            <section class="card p-5" x-cloak
+                     x-data="{
+                         rating: 0, tags: [], comment: '', sending: false, error: '', done: false,
+                         labels: ['Péssimo', 'Ruim', 'Regular', 'Bom', 'Excelente'],
+                         negative: @js(\App\Modules\Orders\Models\OrderReview::NEGATIVE_TAGS),
+                         positive: @js(\App\Modules\Orders\Models\OrderReview::POSITIVE_TAGS),
+                         get options() { return this.rating === 0 ? {} : (this.rating <= 3 ? this.negative : this.positive) },
+                         pick(n) { if ((n <= 3) !== (this.rating <= 3)) this.tags = []; this.rating = n },
+                         toggle(tag) { this.tags = this.tags.includes(tag) ? this.tags.filter((t) => t !== tag) : [...this.tags, tag] },
+                         async send() {
+                             this.sending = true; this.error = '';
+                             try {
+                                 const response = await fetch(@js($orderUrl.'/avaliacao'), {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                                     body: JSON.stringify({ rating: this.rating, tags: this.tags, comment: this.comment }),
+                                 });
+                                 const data = await response.json().catch(() => ({}));
+                                 if (response.ok) this.done = true; else this.error = data.message || 'Não foi possível enviar agora.';
+                             } catch (e) { this.error = 'Sem conexão. Tente de novo.'; }
+                             this.sending = false;
+                         },
+                     }">
+                <template x-if="! done">
+                    <div class="space-y-4">
+                        <div class="text-center">
+                            <h2 class="text-lg font-bold">Como foi seu pedido?</h2>
+                            <p class="text-sm text-stone-500">Sua opinião ajuda {{ $establishment->trade_name ?: 'o restaurante' }} a melhorar.</p>
+                        </div>
+                        <div class="flex justify-center gap-1" role="radiogroup" aria-label="Nota de 1 a 5">
+                            <template x-for="n in 5" :key="n">
+                                <button type="button" role="radio" :aria-checked="rating === n" :aria-label="n + ' estrela' + (n > 1 ? 's' : '') + ': ' + labels[n - 1]" @click="pick(n)"
+                                        class="p-1 text-4xl leading-none transition active:scale-90" :class="n <= rating ? 'text-amber-500' : 'text-stone-300'">★</button>
+                            </template>
+                        </div>
+                        <p class="text-center text-sm font-semibold text-stone-700" x-show="rating" x-text="labels[rating - 1]"></p>
+                        <div x-show="rating" class="space-y-3">
+                            <p class="text-center text-sm text-stone-600" x-text="rating <= 3 ? 'O que deu errado?' : 'O que você mais gostou?'"></p>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <template x-for="(label, tag) in options" :key="tag">
+                                    <button type="button" class="chip" :class="tags.includes(tag) && 'chip-active'" @click="toggle(tag)" x-text="label"></button>
+                                </template>
+                            </div>
+                            <textarea x-model="comment" maxlength="500" rows="2" class="input" placeholder="Quer contar mais? (opcional)"></textarea>
+                            <button type="button" class="btn-primary btn-lg w-full" @click="send()" :disabled="sending" x-text="sending ? 'Enviando...' : 'Enviar avaliação'"></button>
+                            <p x-show="error" x-text="error" class="field-error text-center"></p>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="done">
+                    <div class="text-center">
+                        <p class="text-3xl tracking-widest text-amber-500" x-text="'★'.repeat(rating) + '☆'.repeat(5 - rating)"></p>
+                        <p class="mt-2 font-semibold text-emerald-700">Obrigado por avaliar!</p>
+                    </div>
+                </template>
+            </section>
+        @endif
+
+        {{-- Pedir de novo: os mesmos itens no carrinho, com o preço de hoje --}}
+        @if ($final && ! $returnCoupon)
+            <button type="button" class="btn-secondary btn-lg w-full" @click="reorder(@js($orderUrl), @js($menuUrl.'/pedido'))">
+                <x-icon name="refresh" class="size-5" /> Pedir de novo
+            </button>
+        @endif
+
         {{-- "Volte e ganhe": cupom para o próximo pedido, oferecido quando este foi entregue. --}}
         @if ($returnCoupon)
             <section class="card overflow-hidden border-2 border-dashed border-brand-300" x-data="{ copied: false }">
@@ -169,7 +248,7 @@
                     <button type="button" class="btn-secondary h-11" @click="navigator.clipboard?.writeText(@js($returnCoupon->code)); copied = true; setTimeout(() => copied = false, 2000)">
                         <x-icon name="copy" class="size-4" /> <span x-text="copied ? 'Copiado' : 'Copiar'">Copiar</span>
                     </button>
-                    <a href="{{ $menuUrl }}" class="btn-primary h-11" @click="saveCoupon(@js($returnCoupon->code))">Pedir de novo</a>
+                    <button type="button" class="btn-primary h-11" @click="reorder(@js($orderUrl), @js($menuUrl.'/pedido'), @js($returnCoupon->code))">Pedir de novo</button>
                 </div>
             </section>
         @endif
@@ -240,6 +319,13 @@
             @endif
         </section>
     </main>
+
+    {{-- Aviso rápido (ex.: "Pedir de novo" sem itens disponíveis) --}}
+    <div x-data x-cloak x-show="$store.cart.toast" x-transition
+         class="fixed inset-x-0 top-4 z-[60] mx-auto flex w-fit max-w-[90%] items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-float">
+        <x-icon name="info" class="size-4 text-amber-300" />
+        <span x-text="$store.cart.toast"></span>
+    </div>
 
     @include('public-menu.partials.bottom-nav', ['menuUrl' => $menuUrl, 'current' => 'pedidos'])
 

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Tables;
 
+use App\Livewire\Tenant\Concerns\KeepsDraft;
 use App\Livewire\Tenant\Concerns\PicksMenuItems;
 use App\Modules\Access\Models\User;
 use App\Modules\Cash\CashLedger;
@@ -20,7 +21,7 @@ use Livewire\Component;
 
 class CommandPage extends Component
 {
-    use PicksMenuItems;
+    use KeepsDraft, PicksMenuItems;
 
     #[Locked]
     public int $commandId;
@@ -54,6 +55,29 @@ class CommandPage extends Component
         $this->serviceFee = $command->service_fee_enabled;
         $this->adding = $command->status->isOpen() && $command->orders()->doesntExist();
         $this->payments = [['method' => (string) PaymentMethod::active()->value('code'), 'amount' => '']];
+
+        // Itens escolhidos e ainda não enviados à cozinha voltam se a página recarregar.
+        if ($command->status->isOpen()) {
+            $this->restoreDraft();
+            $this->adding = $this->adding || $this->draftRestored;
+        }
+    }
+
+    protected function draftKey(): string
+    {
+        return "comanda-draft:{$this->commandId}";
+    }
+
+    protected function draftFields(): array
+    {
+        return ['cart', 'sendNotes'];
+    }
+
+    /** "Começar do zero": descarta os itens recuperados. */
+    public function discardDraft(): void
+    {
+        $this->reset('cart', 'sendNotes');
+        $this->forgetDraft();
     }
 
     private function command(): Command
