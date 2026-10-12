@@ -10,6 +10,7 @@ use App\Http\Controllers\Tenant\PushSubscriptionController;
 use App\Http\Controllers\Tenant\LogoutController;
 use App\Http\Controllers\Tenant\SupportAccessController;
 use App\Http\Controllers\Tenant\MenuImageController;
+use App\Http\Controllers\Tenant\MenuSpreadsheetController;
 use App\Livewire\Tenant\AuditLogIndex;
 use App\Livewire\Tenant\Auth\ForgotPassword;
 use App\Livewire\Tenant\Auth\Login;
@@ -126,6 +127,10 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
         Route::get('/categorias', Menu\Categories::class)->name('categories');
 
         Route::get('/produtos', Menu\Products\Index::class)->name('products.index');
+        // Importação por planilha (modelo, cardápio atual no mesmo formato e a tela de importar).
+        Route::get('/produtos/importar', Menu\Import::class)->name('import');
+        Route::get('/produtos/importar/modelo.{format}', [MenuSpreadsheetController::class, 'template'])->whereIn('format', ['xlsx', 'csv'])->name('import.template');
+        Route::get('/produtos/exportar.{format}', [MenuSpreadsheetController::class, 'export'])->whereIn('format', ['xlsx', 'csv'])->name('import.export');
         Route::get('/produtos/novo', Menu\Products\Form::class)->name('products.create');
         Route::get('/produtos/{product}', Menu\Products\Form::class)->whereNumber('product')->name('products.edit');
         Route::get('/produtos/imagens/{image}', [MenuImageController::class, 'product'])->whereNumber('image')->name('images.show');

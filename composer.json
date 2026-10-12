@@ -16,6 +16,7 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "livewire/livewire": "^3.6",
         "minishlink/web-push": "^9.0",
+        "openspout/openspout": "^4.28",
         "pragmarx/google2fa": "^8.0",
         "sentry/sentry-laravel": "^4.10"
     },

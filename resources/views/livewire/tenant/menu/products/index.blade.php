@@ -1,6 +1,7 @@
 <div class="space-y-6">
     <x-ui.page-header title="Produtos" subtitle="“Esgotado” mantém o produto no cardápio, sem permitir pedido.">
         <a href="{{ url('/cardapio') }}" target="_blank" class="btn-secondary"><x-icon name="external" class="size-4" /> Ver cardápio</a>
+        <a href="{{ route('menu.import') }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar planilha</a>
         @if ($categories->isNotEmpty())
             <a href="{{ route('menu.products.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo produto</a>
         @endif
@@ -9,7 +10,8 @@
     @if ($categories->isEmpty())
         <div class="alert-warning">
             <x-icon name="alert" class="mt-0.5 size-4" />
-            <span>Crie uma categoria antes de cadastrar produtos. <a href="{{ route('menu.categories') }}" class="font-semibold underline" wire:navigate>Ir para categorias</a></span>
+            <span>Crie uma categoria antes de cadastrar produtos. <a href="{{ route('menu.categories') }}" class="font-semibold underline" wire:navigate>Ir para categorias</a>
+                ou <a href="{{ route('menu.import') }}" class="font-semibold underline" wire:navigate>importe o cardápio de uma planilha</a> (as categorias são criadas sozinhas).</span>
         </div>
     @endif
 

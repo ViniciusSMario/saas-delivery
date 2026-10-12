@@ -55,6 +55,8 @@ class AuditLog extends TenantModel
             'cash.deposit' => 'Fez suprimento',
             'cash.closed' => 'Fechou o caixa',
             'cash.register_created' => 'Cadastrou caixa',
+            'menu.imported' => 'Importou o cardápio por planilha',
+            'menu.import_undone' => 'Desfez uma importação do cardápio',
             'loyalty.updated' => 'Alterou o cartão fidelidade',
             'table.qr_settings' => 'Alterou o pedido pela mesa (QR code)',
             'table.qr_renewed' => 'Gerou novo QR code de mesa',

@@ -83,6 +83,14 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
 - **Produto excluído** é soft delete: sai do cardápio, mas pedidos antigos continuam apontando para ele. **Esgotado** mantém o produto visível, sem permitir pedido. Combo com item indisponível sai do cardápio.
 - **Fotos** ficam em `storage/app/tenants/<id>/products/<produto>/` (até 5 por produto) e são servidas por id, nunca por caminho vindo da URL.
 - **Cardápio de demonstração:** `docker compose exec app php artisan tenants:seed --tenant=empresa1 --class="Database\Seeders\Tenant\DemoMenuSeeder"`
+- **Importar cardápio por planilha** (Produtos → Importar planilha, `/produtos/importar`, `menu.manage`; `App\Modules\Menu\Import`):
+  - **Modelo** em Excel (abas Produtos, Adicionais e Como preencher) ou CSV só de produtos. "Baixar meu cardápio" gera o cardápio atual no mesmo formato, para mudar preços e descrições em massa e importar de volta.
+  - **Produtos:** Categoria, Nome e Preço obrigatórios; Descrição, Código, Disponível, Destaque, Adicionais (nomes dos grupos separados por `;`) e Foto. Os títulos podem variar ("Produto", "Valor (R$)", "Seção"...), o preço aceita "R$ 1.234,56", "29.9" ou número, e o CSV do Excel brasileiro (`;` e Windows-1252) é lido certo. Categoria que não existe é criada.
+  - **Adicionais:** uma linha por opção (Grupo, Mínimo, Máximo, Opção, Preço); grupo existente ganha as opções novas e o preço atualizado (nenhuma é apagada).
+  - **Fotos:** um .zip opcional; cada foto é achada pela coluna Foto, pelo código ou pelo nome do produto. Só JPG/PNG/WebP de até 4 MB, conferidos como imagem; produto que já tem foto não ganha outra. Até 500 fotos e 20 MB por envio (`config/livewire.php`).
+  - **Já existe?** O produto é reconhecido pelo código ou, sem código, pelo nome. Modo "Atualizar" (célula em branco não muda nada) ou "Não mexer" (só cria os novos).
+  - **Prévia antes de gravar:** totais, categorias e grupos novos, o que muda em cada produto ("preço: R$ 30,00 → R$ 32,00") e os erros por linha. Com erro, nada é gravado. Confirmar confere tudo de novo e grava numa transação só, dentro do limite de produtos do plano (até 1000 por planilha).
+  - **Desfazer:** cada importação fica no histórico (`menu_imports`, com os registros em `menu_import_items` e os valores de antes). A última pode ser desfeita: o que ela criou sai (produto já vendido fica só excluído) e o que alterou volta ao que era.
 
 ## Pedidos
 
