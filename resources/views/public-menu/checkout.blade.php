@@ -16,7 +16,7 @@
             <p class="font-bold leading-tight">Sacola</p>
             <p class="truncate text-xs text-stone-500">{{ $establishment->trade_name }}</p>
         </div>
-        <button type="button" x-data x-show="$store.cart.count > 0" @click="if (confirm('Esvaziar a sacola?')) $store.cart.clear()" class="btn-ghost btn-sm ml-auto text-red-600 hover:bg-red-50 hover:text-red-700">
+        <button type="button" x-data x-show="$store.cart.count > 0" @click="confirmDialog('Esvaziar a sacola? Os itens escolhidos saem do pedido.').then((ok) => ok && $store.cart.clear())" class="btn-ghost btn-sm ml-auto text-red-600 hover:bg-red-50 hover:text-red-700">
             Limpar
         </button>
     </header>
@@ -207,7 +207,7 @@
                     </div>
                     <div>
                         <label for="phone" class="label">Telefone (WhatsApp)</label>
-                        <input id="phone" name="phone" type="tel" class="input h-11" value="{{ old('phone') }}" autocomplete="tel" placeholder="(11) 98888-7777" required>
+                        <input id="phone" name="phone" type="tel" data-mask="phone" class="input h-11" value="{{ old('phone') }}" autocomplete="tel" placeholder="(11) 98888-7777" required>
                     </div>
                 </div>
             </section>
@@ -234,14 +234,19 @@
                     <x-icon name="pin" class="mt-0.5 size-4 text-stone-400" /> {{ $establishment->address() ?: 'Retire no estabelecimento.' }}
                 </p>
 
-                <div class="grid grid-cols-6 gap-4" x-show="fulfillment === 'delivery'">
+                <div class="grid grid-cols-6 gap-4" x-show="fulfillment === 'delivery'" data-cep-scope>
+                    <div class="col-span-6 sm:col-span-2">
+                        <label for="zip_code" class="label">CEP</label>
+                        <input id="zip_code" name="address[zip_code]" type="text" data-mask="cep" data-cep class="input h-11" value="{{ old('address.zip_code') }}" autocomplete="postal-code" placeholder="00000-000">
+                    </div>
+                    <p data-cep-status hidden class="col-span-6 -mt-2 text-xs font-medium text-stone-500 data-[tone=error]:text-amber-700 sm:col-span-4 sm:mt-8"></p>
                     <div class="col-span-4">
                         <label for="street" class="label">Rua</label>
-                        <input id="street" name="address[street]" type="text" class="input h-11" value="{{ old('address.street') }}" autocomplete="address-line1" :required="fulfillment === 'delivery'">
+                        <input id="street" name="address[street]" type="text" data-cep-field="street" class="input h-11" value="{{ old('address.street') }}" autocomplete="address-line1" :required="fulfillment === 'delivery'">
                     </div>
                     <div class="col-span-2">
                         <label for="number" class="label">Número</label>
-                        <input id="number" name="address[number]" type="text" class="input h-11" value="{{ old('address.number') }}" :required="fulfillment === 'delivery'">
+                        <input id="number" name="address[number]" type="text" data-cep-field="number" class="input h-11" value="{{ old('address.number') }}" :required="fulfillment === 'delivery'">
                     </div>
                     <div class="col-span-6 sm:col-span-3">
                         <label for="complement" class="label">Complemento</label>
@@ -250,7 +255,7 @@
                     <div class="col-span-6 sm:col-span-3">
                         <label for="district" class="label">Bairro</label>
                         @if ($zones->isNotEmpty())
-                            <select id="district" name="address[district]" class="input h-11" x-model="district" :required="fulfillment === 'delivery'">
+                            <select id="district" name="address[district]" data-cep-field="district" class="input h-11" x-model="district" :required="fulfillment === 'delivery'">
                                 <option value="">Escolha o bairro</option>
                                 @foreach ($zones as $zone)
                                     <option value="{{ $zone->name }}">{{ $zone->name }} · {{ $zone->fee_cents->isZero() ? 'grátis' : $zone->fee_cents->format() }}</option>
@@ -258,12 +263,12 @@
                             </select>
                             <p class="hint">Não achou seu bairro? Ainda não entregamos aí; você pode retirar no local.</p>
                         @else
-                            <input id="district" name="address[district]" type="text" class="input h-11" value="{{ old('address.district') }}" :required="fulfillment === 'delivery'">
+                            <input id="district" name="address[district]" type="text" data-cep-field="district" class="input h-11" value="{{ old('address.district') }}" :required="fulfillment === 'delivery'">
                         @endif
                     </div>
                     <div class="col-span-6 sm:col-span-3">
                         <label for="city" class="label">Cidade</label>
-                        <input id="city" name="address[city]" type="text" class="input h-11" value="{{ old('address.city', $establishment->city) }}">
+                        <input id="city" name="address[city]" type="text" data-cep-field="city" class="input h-11" value="{{ old('address.city', $establishment->city) }}">
                     </div>
                     <div class="col-span-6 sm:col-span-3">
                         <label for="reference" class="label">Ponto de referência</label>

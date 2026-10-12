@@ -69,7 +69,7 @@
                         </div>
                         <div>
                             <label for="phone" class="label">WhatsApp (opcional)</label>
-                            <input id="phone" name="phone" type="tel" class="input h-11" value="{{ old('phone') }}" autocomplete="tel" placeholder="(11) 98888-7777">
+                            <input id="phone" name="phone" type="tel" data-mask="phone" class="input h-11" value="{{ old('phone') }}" autocomplete="tel" placeholder="(11) 98888-7777">
                         </div>
                     </div>
                     <div>

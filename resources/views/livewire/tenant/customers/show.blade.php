@@ -18,7 +18,7 @@
             </div>
             <div>
                 <label for="phone" class="label">Telefone</label>
-                <input wire:model="phone" id="phone" type="tel" class="input">
+                <input wire:model="phone" id="phone" type="tel" data-mask="phone" class="input">
                 @error('phone') <p class="field-error">{{ $message }}</p> @enderror
                 <p class="hint"><a href="https://wa.me/55{{ $customer->phone }}" target="_blank" class="btn-link text-xs">Abrir no WhatsApp</a></p>
             </div>

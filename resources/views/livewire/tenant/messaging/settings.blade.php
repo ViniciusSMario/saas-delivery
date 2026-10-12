@@ -113,7 +113,7 @@
             <h2 class="section-title">Testar o envio</h2>
             <form wire:submit="sendTest" class="mt-3 flex flex-wrap items-start gap-2">
                 <div class="min-w-60 flex-1">
-                    <input wire:model="testPhone" type="tel" class="input" placeholder="Seu celular com DDD" aria-label="Celular para o teste">
+                    <input wire:model="testPhone" type="tel" data-mask="phone" class="input" placeholder="Seu celular com DDD" aria-label="Celular para o teste">
                     @error('testPhone') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
                 <button type="submit" class="btn-secondary" wire:loading.attr="disabled"><x-icon name="phone" class="size-4" /> Enviar teste</button>

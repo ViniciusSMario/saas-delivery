@@ -1,4 +1,7 @@
 @php
+    // Máscara (resources/js/masks.js) e campo preenchido pelo CEP (ViaCEP).
+    $masks = ['document' => 'cnpj', 'phone' => 'phone', 'zip_code' => 'cep'];
+    $cepFields = ['street' => 'street', 'number' => 'number', 'district' => 'district', 'city' => 'city', 'state' => 'state'];
     $fields = [
         ['trade_name', 'Nome fantasia', 'sm:col-span-2'],
         ['legal_name', 'Razão social', 'sm:col-span-2'],
@@ -29,7 +32,7 @@
             @foreach ($fields as [$key, $label, $span])
                 <div class="{{ $span }}">
                     <label for="{{ $key }}" class="label">{{ $label }}</label>
-                    <input wire:model="form.{{ $key }}" id="{{ $key }}" type="text" class="input">
+                    <input wire:model="form.{{ $key }}" id="{{ $key }}" type="{{ $key === 'phone' ? 'tel' : 'text' }}" class="input" @isset($masks[$key]) data-mask="{{ $masks[$key] }}" @endisset>
                     @error("form.$key") <p class="field-error">{{ $message }}</p> @enderror
                 </div>
             @endforeach
@@ -38,11 +41,14 @@
 
     <section class="card card-body">
         <h2 class="section-title">Endereço</h2>
-        <div class="mt-4 grid gap-4 sm:grid-cols-4">
+        <div class="mt-4 grid gap-4 sm:grid-cols-4" data-cep-scope>
             @foreach ($address as [$key, $label, $span])
                 <div class="{{ $span }}">
                     <label for="{{ $key }}" class="label">{{ $label }}</label>
-                    <input wire:model="form.{{ $key }}" id="{{ $key }}" type="text" class="input" @if ($key === 'state') maxlength="2" @endif>
+                    <input wire:model="form.{{ $key }}" id="{{ $key }}" type="text" class="input" @if ($key === 'state') maxlength="2" @endif
+                           @if ($key === 'zip_code') data-mask="cep" data-cep placeholder="00000-000" @endif
+                           @isset($cepFields[$key]) data-cep-field="{{ $cepFields[$key] }}" @endisset>
+                    @if ($key === 'zip_code')<p data-cep-status hidden class="hint data-[tone=error]:text-amber-700"></p>@endif
                     @error("form.$key") <p class="field-error">{{ $message }}</p> @enderror
                 </div>
             @endforeach

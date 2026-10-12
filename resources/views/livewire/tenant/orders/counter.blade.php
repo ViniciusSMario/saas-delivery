@@ -70,7 +70,7 @@
                     @error('customer.name') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input wire:model.blur="customerPhone" type="tel" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
+                    <input wire:model.blur="customerPhone" type="tel" data-mask="phone" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
                     @error('customer.phone') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -93,21 +93,24 @@
             @endif
 
             @if ($fulfillment === 'delivery')
-                <div class="grid grid-cols-3 gap-2">
-                    <input wire:model="address.street" type="text" class="input col-span-2" placeholder="Rua" aria-label="Rua">
-                    <input wire:model="address.number" type="text" class="input" placeholder="Nº" aria-label="Número">
+                {{-- CEP (ViaCEP): rua e bairro vêm nos campos; a cidade vai direto para o pedido. --}}
+                <div class="grid grid-cols-3 gap-2" data-cep-scope x-data @cep-found="$wire.set('address.city', $event.detail.localidade || '', false)">
+                    <input wire:model="address.zip_code" type="text" data-mask="cep" data-cep class="input" placeholder="CEP" aria-label="CEP">
+                    <input wire:model="address.street" type="text" data-cep-field="street" class="input col-span-2" placeholder="Rua" aria-label="Rua">
+                    <p data-cep-status hidden class="col-span-3 -mt-1 text-xs font-medium text-stone-500 data-[tone=error]:text-amber-700"></p>
+                    <input wire:model="address.number" type="text" data-cep-field="number" class="input" placeholder="Nº" aria-label="Número">
                     @if ($zones->isNotEmpty())
-                        <select wire:model.live="address.district" class="input col-span-2" aria-label="Bairro">
+                        <select wire:model.live="address.district" data-cep-field="district" class="input col-span-2" aria-label="Bairro">
                             <option value="">Bairro</option>
                             @foreach ($zones as $zone)
                                 <option value="{{ $zone->name }}">{{ $zone->name }} · {{ $zone->fee_cents->format() }}</option>
                             @endforeach
                         </select>
                     @else
-                        <input wire:model.blur="address.district" type="text" class="input col-span-2" placeholder="Bairro" aria-label="Bairro">
+                        <input wire:model.blur="address.district" type="text" data-cep-field="district" class="input col-span-2" placeholder="Bairro" aria-label="Bairro">
                     @endif
                     <input wire:model="address.complement" type="text" class="input" placeholder="Compl." aria-label="Complemento">
-                    <input wire:model="address.reference" type="text" class="input col-span-3" placeholder="Referência" aria-label="Referência">
+                    <input wire:model="address.reference" type="text" class="input col-span-2" placeholder="Referência" aria-label="Referência">
                 </div>
                 @if ($unknownZone)
                     <p class="field-error">Bairro fora da área de entrega.</p>

@@ -44,7 +44,7 @@ class Counter extends Component
     public string $customerNotes = '';
 
     /** @var array<string, string> */
-    public array $address = ['street' => '', 'number' => '', 'complement' => '', 'district' => '', 'city' => '', 'reference' => ''];
+    public array $address = ['zip_code' => '', 'street' => '', 'number' => '', 'complement' => '', 'district' => '', 'city' => '', 'reference' => ''];
 
     public string $paymentMethod = '';
 
@@ -132,7 +132,7 @@ class Counter extends Component
         $address = $customer->addresses->first();
 
         if ($address && collect($this->address)->filter()->isEmpty()) {
-            $this->address = array_merge($this->address, array_map(fn ($v) => (string) $v, $address->only(['street', 'number', 'complement', 'district', 'city', 'reference'])));
+            $this->address = array_merge($this->address, array_map(fn ($v) => (string) $v, $address->only(['zip_code', 'street', 'number', 'complement', 'district', 'city', 'reference'])));
         }
 
         $this->customerNotes = (string) $customer->notes;

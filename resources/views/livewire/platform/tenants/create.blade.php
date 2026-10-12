@@ -23,7 +23,7 @@
             </div>
             <div>
                 <label for="document" class="label">CNPJ</label>
-                <input wire:model="document" id="document" type="text" class="input">
+                <input wire:model="document" id="document" type="text" data-mask="cnpj" class="input" placeholder="00.000.000/0000-00">
                 @error('document') <p class="field-error">{{ $message }}</p> @enderror
             </div>
             <div>

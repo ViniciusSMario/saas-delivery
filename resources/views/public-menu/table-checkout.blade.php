@@ -8,7 +8,7 @@
             <p class="font-bold leading-tight">Pedido da mesa {{ $table->name }}</p>
             <p class="truncate text-xs text-stone-500">{{ $establishment->trade_name }}</p>
         </div>
-        <button type="button" x-data x-show="$store.cart.count > 0" @click="if (confirm('Esvaziar o pedido?')) $store.cart.clear()" class="btn-ghost btn-sm ml-auto text-red-600 hover:bg-red-50 hover:text-red-700">
+        <button type="button" x-data x-show="$store.cart.count > 0" @click="confirmDialog('Esvaziar o pedido? Os itens escolhidos saem do carrinho.').then((ok) => ok && $store.cart.clear())" class="btn-ghost btn-sm ml-auto text-red-600 hover:bg-red-50 hover:text-red-700">
             Limpar
         </button>
     </header>
