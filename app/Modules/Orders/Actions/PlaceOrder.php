@@ -73,11 +73,15 @@ class PlaceOrder
             $this->fail('fulfillment', 'Tipo de pedido inválido.');
         }
 
-        if ($online) {
+        // Pedido de teste do primeiro acesso (assistente): feito pela equipe logada, vale fora do
+        // horário, sem pedido mínimo e sem cliente; o assistente cancela no fim (não entra em vendas).
+        $test = $online && $actor !== null && ! empty($input['test']);
+
+        if ($online && ! $test) {
             $this->assertAcceptingOnlineOrders($fulfillment);
         }
 
-        $customer = $this->customerData($input['customer'] ?? [], required: $online || $fulfillment === Fulfillment::Delivery);
+        $customer = $this->customerData($input['customer'] ?? [], required: ($online && ! $test) || $fulfillment === Fulfillment::Delivery);
         $address = $fulfillment === Fulfillment::Delivery ? $this->addressData($input['address'] ?? []) : null;
         $lines = $this->priceLines($input['lines'] ?? [], $online || $viaQr);
 
@@ -111,7 +115,7 @@ class PlaceOrder
 
         $total = $subtotal->subtract($discount)->add($deliveryFee);
 
-        if ($online) {
+        if ($online && ! $test) {
             $minimum = $zone?->min_order_cents ?? Money::cents((int) Setting::read('min_order_cents', 0));
 
             if ($minimum->greaterThan($subtotal)) {

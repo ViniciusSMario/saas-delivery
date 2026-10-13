@@ -2,16 +2,13 @@
 
 namespace App\Modules\Menu\Import;
 
+use App\Modules\Imports\SpreadsheetReader;
 use App\Modules\Menu\Models\AddonGroup;
 use App\Modules\Menu\Models\Category;
 use App\Support\Money;
-use DateTimeInterface;
 use Illuminate\Support\Collection;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
-use OpenSpout\Reader\CSV\Options as CsvOptions;
-use OpenSpout\Reader\CSV\Reader as CsvReader;
-use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use OpenSpout\Writer\CSV\Writer as CsvWriter;
 use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 use RuntimeException;
@@ -54,7 +51,8 @@ class MenuSpreadsheet
      */
     public function read(string $path, string $extension): array
     {
-        $sheets = strtolower($extension) === 'xlsx' ? $this->xlsxSheets($path) : ['produtos' => $this->csvRows($path)];
+        $reader = app(SpreadsheetReader::class);
+        $sheets = $reader->sheets($path, $extension);
 
         $productRows = null;
         $addonRows = null;
@@ -69,7 +67,7 @@ class MenuSpreadsheet
             }
         }
 
-        $products = $this->table($productRows ?? [], self::PRODUCT_COLUMNS);
+        $products = $reader->table($productRows ?? [], self::PRODUCT_COLUMNS);
 
         if ($products === null) {
             throw new RuntimeException('Não encontramos a linha de títulos dos produtos. Use o modelo: a primeira linha precisa ter Categoria, Nome e Preço.');
@@ -83,7 +81,7 @@ class MenuSpreadsheet
             throw new RuntimeException('Faltam as colunas: '.implode(', ', $labels).'. Use os títulos do modelo.');
         }
 
-        $addons = $addonRows !== null ? $this->table($addonRows, self::ADDON_COLUMNS) : null;
+        $addons = $addonRows !== null ? $reader->table($addonRows, self::ADDON_COLUMNS) : null;
 
         return [
             'products' => $products['rows'],
@@ -93,144 +91,10 @@ class MenuSpreadsheet
         ];
     }
 
-    /**
-     * Acha a linha de títulos (até a 10ª linha) e devolve as linhas seguintes por coluna.
-     *
-     * @return array{columns: list<string>, rows: list<array{line: int, values: array<string, mixed>}>}|null
-     */
-    private function table(array $rows, array $columns): ?array
-    {
-        foreach (array_slice($rows, 0, 10, true) as $headerIndex => $header) {
-            $map = [];
-
-            foreach ($header as $index => $title) {
-                $title = self::plain(preg_replace('/\(.*?\)|\*/', '', (string) $title));
-
-                foreach ($columns as $key => [$label, $aliases]) {
-                    if (! isset($map[$key]) && ($title === self::plain($label) || in_array($title, $aliases, true))) {
-                        $map[$key] = $index;
-                        break;
-                    }
-                }
-            }
-
-            if (count($map) < 2) {
-                continue;
-            }
-
-            $result = [];
-
-            foreach (array_slice($rows, $headerIndex + 1, null, true) as $index => $row) {
-                $values = [];
-
-                foreach ($map as $key => $column) {
-                    $values[$key] = self::cell($row[$column] ?? null);
-                }
-
-                // Linha toda em branco: ignora.
-                if (array_filter($values, fn ($v) => $v !== null && $v !== '') === []) {
-                    continue;
-                }
-
-                $result[] = ['line' => $index + 1, 'values' => $values];
-            }
-
-            return ['columns' => array_keys($map), 'rows' => $result];
-        }
-
-        return null;
-    }
-
-    /** @return array<string, list<list<mixed>>> nome da aba => linhas */
-    private function xlsxSheets(string $path): array
-    {
-        $reader = new XlsxReader;
-
-        try {
-            $reader->open($path);
-        } catch (\Throwable) {
-            throw new RuntimeException('Não conseguimos abrir a planilha. Salve como Excel (.xlsx) ou CSV e tente de novo.');
-        }
-
-        $sheets = [];
-
-        foreach ($reader->getSheetIterator() as $sheet) {
-            $rows = [];
-
-            foreach ($sheet->getRowIterator() as $index => $row) {
-                $rows[$index - 1] = $row->toArray();
-
-                if (count($rows) > MenuImportPlanner::MAX_ROWS + 50) {
-                    break;
-                }
-            }
-
-            $sheets[$sheet->getName()] = $rows;
-        }
-
-        $reader->close();
-
-        return $sheets;
-    }
-
-    /** @return list<list<mixed>> */
-    private function csvRows(string $path): array
-    {
-        $raw = (string) file_get_contents($path, length: 5 * 1024 * 1024);
-        $raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw);
-
-        // Excel no Brasil salva CSV em Windows-1252 e separado por ";".
-        if (! mb_check_encoding($raw, 'UTF-8')) {
-            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
-        }
-
-        $firstLine = strtok($raw, "\n") ?: '';
-        $delimiter = collect([';', ',', "\t"])->sortByDesc(fn ($d) => substr_count($firstLine, $d))->first();
-
-        $temp = tempnam(sys_get_temp_dir(), 'cardapio');
-        file_put_contents($temp, $raw);
-
-        $options = new CsvOptions;
-        $options->FIELD_DELIMITER = $delimiter;
-        $reader = new CsvReader($options);
-        $rows = [];
-
-        try {
-            $reader->open($temp);
-
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $index => $row) {
-                    $rows[$index - 1] = $row->toArray();
-                }
-
-                break;
-            }
-        } catch (\Throwable) {
-            throw new RuntimeException('Não conseguimos ler o arquivo CSV. Salve de novo pelo Excel ou use o modelo.');
-        } finally {
-            $reader->close();
-            @unlink($temp);
-        }
-
-        return $rows;
-    }
-
-    private static function cell(mixed $value): mixed
-    {
-        return match (true) {
-            $value instanceof DateTimeInterface => $value->format('d/m/Y'),
-            is_string($value) => trim(preg_replace('/\s+/u', ' ', $value)),
-            default => $value,
-        };
-    }
-
     /** Sem acento, minúsculas e espaços simples (para comparar títulos e nomes). */
     public static function plain(?string $value): string
     {
-        $value = mb_strtolower(trim((string) $value));
-        $value = preg_replace('/\p{Mn}/u', '', \Normalizer::normalize($value, \Normalizer::FORM_D) ?: $value);
-
-        return trim(preg_replace('/\s+/u', ' ', $value));
+        return SpreadsheetReader::plain($value);
     }
 
     // ---------- Modelo e exportação ----------

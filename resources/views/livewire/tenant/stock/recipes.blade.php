@@ -5,6 +5,7 @@
             <h1 class="page-title mt-1">Fichas técnicas</h1>
             <p class="text-sm text-stone-500">{{ $withRecipe }} de {{ $products->count() }} produtos com ficha. Sem ficha, a venda não baixa estoque.</p>
         </div>
+        <a href="{{ route('imports.index', ['tipo' => 'fichas']) }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar fichas</a>
     </div>
 
     <div class="card overflow-x-auto">

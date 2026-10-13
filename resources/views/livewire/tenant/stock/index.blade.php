@@ -3,6 +3,7 @@
     <x-ui.page-header title="Estoque" subtitle="Insumos, saldos e movimentações.">
         <a href="{{ route('stock.recipes') }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Fichas técnicas</a>
         <a href="{{ route('stock.consumption') }}" class="btn-secondary" wire:navigate><x-icon name="activity" class="size-4" /> Consumo</a>
+        <a href="{{ route('imports.index', ['tipo' => 'insumos']) }}" class="btn-secondary" wire:navigate><x-icon name="download" class="size-4 rotate-180" /> Importar insumos</a>
     </x-ui.page-header>
 
     <div class="grid gap-4 sm:grid-cols-2">

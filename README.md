@@ -68,6 +68,17 @@ O dono recebe um e-mail com o link para definir a senha. Em desenvolvimento, o e
 docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.test "Nome" --role=dono
 ```
 
+- **Primeiros passos** (`/primeiros-passos`, `establishment.manage`; `App\Modules\Establishment\Onboarding`): no primeiro acesso do dono (restaurante sem produto nem pedido) o Início abre o assistente sozinho; quem já usa o sistema e a equipe em modo suporte nunca são levados para lá. Oito etapas, cada uma salvando de verdade:
+  1. **Sua loja:** nome, telefone com máscara, endereço pelo CEP (ViaCEP) e logo.
+  2. **Horário:** atalhos ("todos os dias 18h às 23h30", "segunda a sábado 11h às 15h"...) e ajuste por dia.
+  3. **Entrega e pagamento:** entrega e/ou retirada, taxa (ou link para os bairros), pedido mínimo, tempos estimados e formas de pagamento.
+  4. **Cardápio:** importar planilha, cadastrar à mão ou um **modelo pronto** (pizzaria, hamburgueria, açaí, restaurante/marmitas, bar), que entra pelo importador e pode ser desfeito em Importar planilha.
+  5. **Mesas** (opcional): cria as mesas 1 a N e leva aos QR codes.
+  6. **Equipe** (opcional): convida gerente, caixa, cozinha, garçom ou entregador por e-mail.
+  7. **Pedido de teste:** cria um pedido do cardápio online (vale fora do horário, sem pedido mínimo e sem cliente) para ver o alarme, o aceite e a impressão; ao encerrar, ele é cancelado e não entra nas vendas.
+  8. **Divulgar:** link do cardápio, QR code para baixar e envio pelo WhatsApp.
+- **Checklist no Início:** "Primeiros passos: 5 de 8", com barra de progresso e atalho para a próxima etapa, até concluir ou esconder. Cada etapa é conferida pelo estado real (telefone e endereço, horário alterado, configurações salvas, produto ativo, mesa, segundo usuário) ou marcada pelo assistente (pedido de teste, divulgação). O estado fica na configuração `onboarding`.
+
 ## Cardápio
 
 - **Gestão** (permissão `menu.manage`, perfis Dono e Gerente): `/produtos`, `/categorias`, `/adicionais` e `/combos` no endereço do estabelecimento.
@@ -90,7 +101,13 @@ docker compose exec app php artisan tenants:invite-user pizzaria outro@pizzaria.
   - **Fotos:** um .zip opcional; cada foto é achada pela coluna Foto, pelo código ou pelo nome do produto. Só JPG/PNG/WebP de até 4 MB, conferidos como imagem; produto que já tem foto não ganha outra. Até 500 fotos e 20 MB por envio (`config/livewire.php`).
   - **Já existe?** O produto é reconhecido pelo código ou, sem código, pelo nome. Modo "Atualizar" (célula em branco não muda nada) ou "Não mexer" (só cria os novos).
   - **Prévia antes de gravar:** totais, categorias e grupos novos, o que muda em cada produto ("preço: R$ 30,00 → R$ 32,00") e os erros por linha. Com erro, nada é gravado. Confirmar confere tudo de novo e grava numa transação só, dentro do limite de produtos do plano (até 1000 por planilha).
-  - **Desfazer:** cada importação fica no histórico (`menu_imports`, com os registros em `menu_import_items` e os valores de antes). A última pode ser desfeita: o que ela criou sai (produto já vendido fica só excluído) e o que alterou volta ao que era.
+  - **Desfazer:** cada importação fica no histórico (`data_imports` com o tipo `menu`, e os registros em `data_import_items` com os valores de antes). A última pode ser desfeita: o que ela criou sai (produto já vendido fica só excluído) e o que alterou volta ao que era.
+
+- **Importar dados** (Administração → Importar dados, `/importar-dados`; `App\Modules\Imports`): o mesmo fluxo da planilha do cardápio para **clientes**, **bairros e taxas**, **insumos do estoque** e **fichas técnicas**, cada um com a sua permissão (`customers.manage`, `settings.manage`, `stock.manage`). Modelo em Excel (com a aba Como preencher) ou CSV, "Baixar ... atuais" para editar em massa, prévia com erros por linha, modo atualizar ou só criar, gravação tudo ou nada e desfazer a última importação de cada tipo. Cada tipo implementa `TabularImport` e o `TabularImporter` faz a leitura, a transação e o histórico.
+  - **Clientes:** reconhecidos pelo telefone (sem duplicar); e-mail e observações; endereço completo (rua, número e bairro) entra como mais um endereço. Ao desfazer, quem já fez pedido depois da importação fica.
+  - **Bairros:** taxa, pedido mínimo, tempo e ativo, pelo nome; avisa quando a entrega ainda está com taxa única.
+  - **Insumos:** unidade (un, kg, g, l, ml, também "quilo", "litro"...), mínimo, saldo e custo. O saldo passa pelo livro do estoque: insumo novo vira uma compra com o custo; existente, uma contagem. A unidade não muda depois de ter movimento ou ficha.
+  - **Fichas técnicas:** uma linha por insumo de cada produto (pelo código ou nome) ou adicional (com o grupo se o nome se repete), em qualquer unidade compatível; as linhas de cada produto substituem a ficha dele.
 
 ## Pedidos
 

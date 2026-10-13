@@ -15,6 +15,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->a = tenantBySlug('teste1');
     $this->b = tenantBySlug('teste2');
+    skipOnboarding($this->a);
 });
 
 it('libera ou bloqueia telas conforme as permissões do perfil', function (string $role, array $allowed, array $denied) {

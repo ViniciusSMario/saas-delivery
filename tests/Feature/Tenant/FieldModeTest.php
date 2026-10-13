@@ -32,6 +32,7 @@ it('garçom e entregador entram direto na tela deles, no modo app', function () 
 
     // Dono e gerência continuam no painel com a barra lateral.
     $this->flushSession();
+    skipOnboarding($tenant);
     $this->actingAs($dono)->get(tenantUrl($tenant, '/'))->assertOk()->assertSee('Painel do estabelecimento');
     $this->get(tenantUrl($tenant, '/mesas'))->assertOk()->assertDontSee('aria-label="Navegação"', false);
 });

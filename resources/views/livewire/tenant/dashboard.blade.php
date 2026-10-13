@@ -37,6 +37,41 @@
         @endif
     </p>
 
+    {{-- Primeiros passos: até concluir ou esconder --}}
+    @if ($onboarding)
+        @php
+            $pending = collect($onboarding['steps'])->first(fn ($s) => ! $s['done'] && ! $s['skipped']);
+        @endphp
+        <section class="card overflow-hidden" aria-label="Primeiros passos">
+            <div class="flex flex-wrap items-center gap-4 border-b border-stone-100 px-5 py-4">
+                <div class="min-w-0 flex-1">
+                    <h2 class="font-bold">Primeiros passos: {{ $onboarding['progress']['done'] }} de {{ $onboarding['progress']['total'] }}</h2>
+                    <div class="mt-2 h-2 max-w-md overflow-hidden rounded-full bg-stone-200"><div class="h-full rounded-full bg-brand-600" style="width: {{ $onboarding['progress']['percent'] }}%"></div></div>
+                </div>
+                <a href="{{ route('onboarding', $pending ? ['step' => $pending['key']] : []) }}" class="btn-primary" wire:navigate>
+                    {{ $pending ? 'Continuar: '.$pending['title'] : 'Revisar e concluir' }} <x-icon name="chevron-right" class="size-4" />
+                </a>
+                <button type="button" wire:click="dismissOnboarding" class="btn-ghost btn-sm text-stone-500"
+                        wire:confirm="Esconder os primeiros passos? Dá para configurar tudo pelas telas do menu quando quiser." data-confirm-button="Esconder" data-confirm-tone="default">Esconder</button>
+            </div>
+            <ul class="grid gap-x-6 gap-y-1 px-5 py-3 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ($onboarding['steps'] as $item)
+                    <li>
+                        <a href="{{ route('onboarding', ['step' => $item['key']]) }}" wire:navigate class="flex items-center gap-2 py-1 text-sm hover:underline">
+                            @if ($item['done'])
+                                <x-icon name="check" class="size-4 text-emerald-600" stroke="3" /> <span class="text-stone-500 line-through">{{ $item['title'] }}</span>
+                            @elseif ($item['skipped'])
+                                <x-icon name="minus" class="size-4 text-stone-400" /> <span class="text-stone-400">{{ $item['title'] }} (pulado)</span>
+                            @else
+                                <span class="size-4 rounded-full border-2 border-stone-300"></span> <span class="font-medium">{{ $item['title'] }}</span>
+                            @endif
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     {{-- Alertas --}}
     @if ($lowStock->isNotEmpty())
         <a href="{{ route('stock.index', ['onlyLow' => 1]) }}" wire:navigate class="alert-warning transition hover:border-amber-300">

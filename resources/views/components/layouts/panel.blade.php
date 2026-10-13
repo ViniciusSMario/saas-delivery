@@ -25,8 +25,9 @@
         ['route' => 'stock.index', 'label' => 'Insumos', 'icon' => 'box', 'can' => 'stock.manage', 'match' => ['stock.index', 'stock.show'], 'feature' => 'stock'],
         ['route' => 'stock.recipes', 'label' => 'Fichas técnicas', 'icon' => 'file', 'can' => 'stock.manage', 'match' => ['stock.recipes', 'stock.recipe.*'], 'feature' => 'stock'],
         ['route' => 'stock.consumption', 'label' => 'Consumo', 'icon' => 'activity', 'can' => 'stock.manage', 'match' => ['stock.consumption'], 'feature' => 'stock'],
-        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage']],
+        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage', 'customers.manage', 'stock.manage', 'menu.manage']],
         ['route' => 'subscription', 'label' => 'Assinatura', 'icon' => 'card', 'can' => 'billing.manage'],
+        ['route' => 'imports.index', 'label' => 'Importar dados', 'icon' => 'file', 'can' => ['customers.manage', 'settings.manage', 'stock.manage', 'menu.manage']],
         ['route' => 'data-exports', 'label' => 'Exportar dados', 'icon' => 'download', 'can' => 'billing.manage'],
         ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
         ['route' => 'domains', 'label' => 'Domínio próprio', 'icon' => 'external', 'can' => 'establishment.manage'],
@@ -93,7 +94,7 @@
                             {{ $item['label'] }}
                             <x-icon name="lock" class="ml-auto size-3.5" />
                         </a>
-                    @elseif (! $item['can'] || $user->can($item['can']))
+                    @elseif (! $item['can'] || $user->canAny((array) $item['can']))
                         <a href="{{ route($item['route']) }}" wire:navigate
                            @class([
                                'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition',

@@ -7,8 +7,8 @@ use App\Modules\Access\Models\User;
 use App\Modules\Menu\Models\Addon;
 use App\Modules\Menu\Models\AddonGroup;
 use App\Modules\Menu\Models\Category;
-use App\Modules\Menu\Models\MenuImport;
-use App\Modules\Menu\Models\MenuImportItem;
+use App\Modules\Imports\ImportRecorder;
+use App\Modules\Imports\Models\DataImport;
 use App\Modules\Menu\Models\Product;
 use App\Modules\Menu\Models\ProductImage;
 use App\Support\Money;
@@ -19,11 +19,11 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Grava o plano da importação (tudo ou nada) e desfaz a última importação.
- * Cada registro criado ou alterado fica em menu_import_items, com os valores de antes.
+ * Cada registro criado ou alterado fica em data_import_items (tipo "menu"), com os valores de antes.
  */
 class MenuImporter
 {
-    private MenuImport $import;
+    private ImportRecorder $recorder;
 
     /** @var array<string, int> chave do nome => id */
     private array $categoryIds = [];
@@ -34,7 +34,7 @@ class MenuImporter
     /** @var list<string> fotos gravadas no disco (apagadas se a transação falhar) */
     private array $stored = [];
 
-    public function apply(MenuImportPlan $plan, string $mode, string $fileName, ?PhotoArchive $photos, ?string $photosName, ?User $user): MenuImport
+    public function apply(MenuImportPlan $plan, string $mode, string $fileName, ?PhotoArchive $photos, ?string $photosName, ?User $user): DataImport
     {
         if ($plan->hasErrors()) {
             throw ValidationException::withMessages(['file' => 'A planilha tem erros. Corrija e envie de novo.']);
@@ -44,28 +44,22 @@ class MenuImporter
 
         try {
             return DB::connection('tenant')->transaction(function () use ($plan, $mode, $fileName, $photos, $photosName, $user) {
-                $this->import = MenuImport::create([
-                    'user_id' => $user?->id,
-                    'file_name' => mb_substr($fileName, 0, 200),
-                    'photos_file_name' => $photosName ? mb_substr($photosName, 0, 200) : null,
-                    'mode' => $mode,
-                    'status' => 'applied',
-                    'summary' => $plan->counts(),
-                ]);
+                $this->recorder = new ImportRecorder;
+                $import = $this->recorder->start('menu', $fileName, $mode, $user, $plan->counts(), $photosName);
 
                 $this->categories($plan);
                 $this->groups($plan);
                 $photosSaved = $this->products($plan, $photos);
 
-                $this->import->update(['summary' => ['photos' => $photosSaved] + $plan->counts()]);
+                $import->update(['summary' => ['photos' => $photosSaved] + $plan->counts()]);
 
-                Audit::record('menu.imported', $this->import, [
-                    'arquivo' => $this->import->file_name,
+                Audit::record('menu.imported', $import, [
+                    'arquivo' => $import->file_name,
                     'produtos_criados' => $plan->counts()['products_created'],
                     'produtos_atualizados' => $plan->counts()['products_updated'],
                 ], $user);
 
-                return $this->import;
+                return $import;
             });
         } catch (\Throwable $e) {
             Storage::disk('tenant')->delete($this->stored);
@@ -205,25 +199,18 @@ class MenuImporter
 
     private function track(string $type, int $id, string $action, ?array $before = null): void
     {
-        MenuImportItem::create([
-            'menu_import_id' => $this->import->id,
-            'subject_type' => $type,
-            'subject_id' => $id,
-            'action' => $action,
-            'before' => $before,
-        ]);
+        $this->recorder->track($type, $id, $action, $before);
     }
 
     // ---------- Desfazer ----------
 
-    /** Só a última importação ainda aplicada pode ser desfeita (as anteriores podem ter sido mudadas por ela). */
-    public static function canUndo(MenuImport $import): bool
+    /** Só a última importação do cardápio ainda aplicada pode ser desfeita. */
+    public static function canUndo(DataImport $import): bool
     {
-        return $import->status === 'applied'
-            && ! MenuImport::where('status', 'applied')->where('id', '>', $import->id)->exists();
+        return $import->kind === 'menu' && $import->canUndo();
     }
 
-    public function undo(MenuImport $import, ?User $user): void
+    public function undo(DataImport $import, ?User $user): void
     {
         if (! self::canUndo($import)) {
             throw ValidationException::withMessages(['import' => 'Só a última importação pode ser desfeita.']);

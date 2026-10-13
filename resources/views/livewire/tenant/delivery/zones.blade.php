@@ -1,5 +1,7 @@
 <div class="space-y-6">
-    <x-ui.page-header title="Bairros e taxas de entrega" subtitle="Cobre um valor único ou uma taxa por bairro. Por bairro, o cardápio só aceita entrega nos bairros listados." :back="route('delivery.board')" back-label="Entregas" />
+    <x-ui.page-header title="Bairros e taxas de entrega" subtitle="Cobre um valor único ou uma taxa por bairro. Por bairro, o cardápio só aceita entrega nos bairros listados." :back="route('delivery.board')" back-label="Entregas">
+        <a href="{{ route('imports.index', ['tipo' => 'bairros']) }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar planilha</a>
+    </x-ui.page-header>
 
     <section class="card card-body space-y-3">
         <h2 class="section-title">Como cobrar a entrega</h2>

@@ -109,6 +109,7 @@ it('aplica os limites e recursos do plano', function () {
 
     $this->actingAs($owner)->get(tenantUrl($tenant, '/estoque'))->assertForbidden();
     $this->actingAs($owner)->get(tenantUrl($tenant, '/financeiro'))->assertForbidden();
+    skipOnboarding($tenant);
     $this->actingAs($owner)->get(tenantUrl($tenant, '/'))->assertSee('Insumos')->assertSee('Teste grátis');
 
     activateTenant($tenant);

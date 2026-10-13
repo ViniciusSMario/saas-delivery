@@ -4,6 +4,7 @@ namespace App\Livewire\Tenant;
 
 use App\Modules\Establishment\Models\Establishment;
 use App\Modules\Establishment\Models\OpeningHour;
+use App\Modules\Establishment\Onboarding;
 use App\Modules\Finance\Models\FinancialEntry;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Reports\SalesReport;
@@ -25,7 +26,20 @@ class Dashboard extends Component
 
         if ($user->usesFieldMode()) {
             $this->redirectRoute($user->fieldHome(), navigate: true);
+
+            return;
         }
+
+        // Primeiro acesso (restaurante sem produto nem pedido): o assistente abre sozinho.
+        if (app(Onboarding::class)->shouldStartFor($user)) {
+            $this->redirectRoute('onboarding', navigate: true);
+        }
+    }
+
+    public function dismissOnboarding(Onboarding $onboarding): void
+    {
+        $this->authorize('establishment.manage');
+        $onboarding->dismiss(auth()->user());
     }
 
     public function render()
@@ -39,6 +53,9 @@ class Dashboard extends Component
             'now' => $now,
             'lowStock' => collect(),
             'sales' => null,
+            'onboarding' => app(Onboarding::class)->visibleFor($user)
+                ? ['steps' => app(Onboarding::class)->steps(), 'progress' => app(Onboarding::class)->progress()]
+                : null,
         ];
 
         if ($user->can('reports.view')) {

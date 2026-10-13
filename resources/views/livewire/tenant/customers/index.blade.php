@@ -4,6 +4,7 @@
 @endphp
 <div class="space-y-6">
     <x-ui.page-header title="Clientes" subtitle="Cadastrados automaticamente pelo telefone nos pedidos online e de balcão.">
+        <a href="{{ route('imports.index', ['tipo' => 'clientes']) }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar</a>
         <a href="{{ route('customers.winback') }}" class="btn-secondary" wire:navigate><x-icon name="message" class="size-4" /> Clientes sumidos</a>
     </x-ui.page-header>
 

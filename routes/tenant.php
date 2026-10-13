@@ -57,6 +57,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::post('/suporte/sair', [SupportAccessController::class, 'leave'])->name('support.leave');
     Route::post('/confirmar-email/reenviar', \App\Http\Controllers\Tenant\ResendVerificationController::class)->middleware('throttle:3,60')->name('verification.resend');
     Route::get('/minha-conta', Profile::class)->name('profile');
+    Route::get('/primeiros-passos', \App\Livewire\Tenant\Onboarding\Wizard::class)->middleware('can:establishment.manage')->name('onboarding');
 
     Route::post('/notificacoes/assinatura', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
     Route::delete('/notificacoes/assinatura', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
@@ -83,6 +84,11 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
 
     Route::get('/entregas', \App\Livewire\Tenant\Delivery\Board::class)->middleware('can:deliveries.operate')->name('delivery.board');
     Route::get('/entregas/bairros', \App\Livewire\Tenant\Delivery\Zones::class)->middleware('can:settings.manage')->name('delivery.zones');
+
+    // Importar por planilha (cada tipo confere a própria permissão).
+    Route::get('/importar-dados', \App\Livewire\Tenant\Imports\Index::class)->name('imports.index');
+    Route::get('/importar-dados/{type}/modelo.{format}', [\App\Http\Controllers\Tenant\DataSpreadsheetController::class, 'template'])->whereIn('type', ['clientes', 'bairros', 'insumos', 'fichas'])->whereIn('format', ['xlsx', 'csv'])->name('imports.template');
+    Route::get('/importar-dados/{type}/exportar.{format}', [\App\Http\Controllers\Tenant\DataSpreadsheetController::class, 'export'])->whereIn('type', ['clientes', 'bairros', 'insumos', 'fichas'])->whereIn('format', ['xlsx', 'csv'])->name('imports.export');
 
     Route::get('/exportar-dados', \App\Livewire\Tenant\DataExports::class)->middleware('can:billing.manage')->name('data-exports');
     Route::get('/exportar-dados/{export}/baixar', \App\Http\Controllers\Tenant\DataExportDownloadController::class)->whereNumber('export')->middleware('can:billing.manage')->name('data-exports.download');

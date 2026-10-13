@@ -30,6 +30,10 @@ it('o cardápio só vai ao ar depois que o dono confirma o e-mail', function () 
 
     // O painel funciona e avisa o dono.
     $owner = inTenant($tenant, fn () => \App\Modules\Access\Models\User::sole());
+    // Primeiro acesso: o assistente abre e também mostra o aviso.
+    $this->actingAs($owner)->get(tenantUrl($tenant, '/'))->assertRedirect(tenantUrl($tenant, '/primeiros-passos'));
+    $this->actingAs($owner)->get(tenantUrl($tenant, '/primeiros-passos'))->assertOk()->assertSee('Confirme seu e-mail');
+    skipOnboarding($tenant);
     $this->actingAs($owner)->get(tenantUrl($tenant, '/'))->assertOk()->assertSee('Confirme seu e-mail');
 
     // O e-mail traz o link assinado.

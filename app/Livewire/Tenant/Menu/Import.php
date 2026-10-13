@@ -8,7 +8,7 @@ use App\Modules\Menu\Import\MenuImportPlan;
 use App\Modules\Menu\Import\MenuImportPlanner;
 use App\Modules\Menu\Import\MenuSpreadsheet;
 use App\Modules\Menu\Import\PhotoArchive;
-use App\Modules\Menu\Models\MenuImport;
+use App\Modules\Imports\Models\DataImport;
 use App\Modules\Establishment\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -128,7 +128,7 @@ class Import extends Component
         $this->authorize('menu.manage');
 
         try {
-            $importer->undo(MenuImport::findOrFail($importId), $this->user());
+            $importer->undo(DataImport::ofKind('menu')->findOrFail($importId), $this->user());
         } catch (ValidationException $e) {
             $this->addError('import', collect($e->errors())->flatten()->first());
 
@@ -185,7 +185,7 @@ class Import extends Component
 
     public function render()
     {
-        $imports = MenuImport::with('user')->latest('id')->limit(10)->get();
+        $imports = DataImport::ofKind('menu')->with('user')->latest('id')->limit(10)->get();
 
         return view('livewire.tenant.menu.import', [
             'preview' => $this->previewKey ? Cache::get($this->previewKey) : null,

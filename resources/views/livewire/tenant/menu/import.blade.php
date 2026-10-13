@@ -29,6 +29,9 @@
                 <p class="mt-2 flex flex-wrap gap-3">
                     <a href="{{ route('menu.products.index') }}" class="font-semibold underline" wire:navigate>Ver produtos</a>
                     <a href="{{ url('/cardapio') }}" target="_blank" class="font-semibold underline">Ver o cardápio</a>
+                    @if (app(\App\Modules\Establishment\Onboarding::class)->visibleFor(auth()->user()))
+                        <a href="{{ route('onboarding', ['step' => 'menu']) }}" class="font-semibold underline" wire:navigate>Voltar aos primeiros passos</a>
+                    @endif
                 </p>
             </div>
         </div>

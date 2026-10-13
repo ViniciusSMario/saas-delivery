@@ -36,6 +36,12 @@ function inTenant(Tenant $tenant, Closure $callback): mixed
     return app(TenantContext::class)->run($tenant, $callback);
 }
 
+/** Restaurante novo que não deve abrir o assistente de primeiros passos (testes do Início). */
+function skipOnboarding(Tenant $tenant): void
+{
+    inTenant($tenant, fn () => \App\Modules\Establishment\Models\Setting::write('onboarding', ['dismissed_at' => now()->toIso8601String()]));
+}
+
 /** Ativa o tenant como se fosse a requisição (para Livewire::test e chamadas diretas). */
 function activateTenant(Tenant $tenant): void
 {

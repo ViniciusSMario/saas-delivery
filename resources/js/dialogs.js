@@ -114,6 +114,29 @@ export function confirmDialog(options) {
 
 window.confirmDialog = confirmDialog;
 
+/**
+ * Copia um texto: área de transferência quando o navegador deixa (HTTPS e permissão) e,
+ * se não, o jeito antigo (campo escondido + copiar). Resolve true/false, sem erro solto.
+ */
+window.copyText = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text);
+
+        return true;
+    } catch (e) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand?.('copy') ?? false;
+        area.remove();
+
+        return ok;
+    }
+};
+
 /*
  * wire:confirm: o Livewire guarda em el.__livewire_confirm uma função que chama confirm().
  * Aqui a atribuição é interceptada e a função passa a abrir o modal (o "prompt" continua nativo).

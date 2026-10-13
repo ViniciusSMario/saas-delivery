@@ -8,7 +8,7 @@ use App\Modules\Menu\Import\MenuSpreadsheet;
 use App\Modules\Menu\Import\PhotoArchive;
 use App\Modules\Menu\Models\AddonGroup;
 use App\Modules\Menu\Models\Category;
-use App\Modules\Menu\Models\MenuImport;
+use App\Modules\Imports\Models\DataImport;
 use App\Modules\Menu\Models\Product;
 use App\Modules\Menu\Models\ProductImage;
 use App\Support\Money;
@@ -139,7 +139,7 @@ it('mostra os erros por linha e não grava nada quando a planilha tem problema',
 
     [$plan, $import] = importMenu($path);
 
-    expect($import)->toBeNull()->and(Product::count())->toBe($before)->and(MenuImport::count())->toBe(0)
+    expect($import)->toBeNull()->and(Product::count())->toBe($before)->and(DataImport::count())->toBe(0)
         ->and($plan->errors)->toBe([
             'Adicionais, grupo Molhos: o Máximo precisa ser pelo menos 1 e não pode ser menor que o Mínimo.',
             'Produtos, linha 2: falta o Preço.',
