@@ -19,7 +19,7 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
                 <tr><th>Pedido</th><th>Cliente</th><th>Status</th><th>Pagamento</th><th class="text-right">Total</th></tr>
             </thead>
@@ -40,7 +40,22 @@
                         <td class="text-right font-medium whitespace-nowrap">{{ $order->total_cents->format() }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5"><x-ui.empty icon="orders" title="Nenhum pedido neste dia" /></td></tr>
+                    <tr><td colspan="5">
+                        @if (trim($search) !== '' || $status !== '')
+                            <x-ui.empty icon="search" title="Nenhum pedido encontrado" text="Nada com essa busca ou situação neste dia.">
+                                <button type="button" wire:click="clearFilters" class="btn-secondary">Limpar filtros</button>
+                            </x-ui.empty>
+                        @else
+                            <x-ui.empty icon="orders" title="Nenhum pedido neste dia" text="Os pedidos do cardápio online, do balcão e das mesas aparecem aqui.">
+                                @if ($date !== $today)
+                                    <button type="button" wire:click="$set('date', @js($today))" class="btn-secondary">Ver hoje</button>
+                                @endif
+                                @can('pos.use')
+                                    <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Venda no balcão</a>
+                                @endcan
+                            </x-ui.empty>
+                        @endif
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

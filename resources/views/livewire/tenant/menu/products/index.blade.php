@@ -36,7 +36,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="table">
+            <table class="table table-cards">
                 <thead>
                     <tr><th>Produto</th><th>Categoria</th><th class="text-right">Preço</th><th class="text-right">Ações</th></tr>
                 </thead>
@@ -76,7 +76,25 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4"><x-ui.empty icon="book" title="Nenhum produto encontrado" /></td></tr>
+                        <tr><td colspan="4">
+                            @if ($search !== '' || $categoryId || $status !== '')
+                                <x-ui.empty icon="search" title="Nenhum produto encontrado" text="Nada com essa busca ou filtro.">
+                                    <button type="button" wire:click="clearFilters" class="btn-secondary">Limpar filtros</button>
+                                </x-ui.empty>
+                            @else
+                                <x-ui.empty icon="book" title="Seu cardápio ainda está vazio" text="Cadastre um produto de cada vez ou traga tudo de uma vez pela planilha (Excel ou CSV), com categorias, preços e adicionais.">
+                                    @if ($categories->isEmpty())
+                                        <a href="{{ route('menu.categories') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Criar categoria</a>
+                                    @else
+                                        <a href="{{ route('menu.products.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo produto</a>
+                                    @endif
+                                    <a href="{{ route('menu.import') }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar planilha</a>
+                                    @can('establishment.manage')
+                                        <a href="{{ route('onboarding', ['step' => 'menu']) }}" class="btn-ghost" wire:navigate>Usar um modelo pronto</a>
+                                    @endcan
+                                </x-ui.empty>
+                            @endif
+                        </td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -134,6 +134,11 @@ class Index extends Component
         $this->movingId = null;
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'onlyLow');
+    }
+
     public function render()
     {
         $items = StockItem::with('unit')

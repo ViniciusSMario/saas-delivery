@@ -26,9 +26,9 @@
     @error('list') <div class="alert-error">{{ $message }}</div> @enderror
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
-                <tr><th class="w-20">Ordem</th><th>Categoria</th><th>Produtos</th><th class="text-right">Ações</th></tr>
+                <tr><th class="w-20" data-card="field">Ordem</th><th data-card="title">Categoria</th><th>Produtos</th><th class="text-right">Ações</th></tr>
             </thead>
             <tbody>
                 @forelse ($categories as $category)
@@ -56,7 +56,11 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4"><x-ui.empty icon="table" title="Crie a primeira categoria acima (ex.: Pizzas, Bebidas, Sobremesas)" /></td></tr>
+                    <tr><td colspan="4">
+                        <x-ui.empty icon="tag" title="Nenhuma categoria ainda" text="Crie acima (ex.: Pizzas, Bebidas, Sobremesas) ou importe o cardápio pela planilha: as categorias vêm junto.">
+                            <a href="{{ route('menu.import') }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar planilha</a>
+                        </x-ui.empty>
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

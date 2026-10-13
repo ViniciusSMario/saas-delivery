@@ -9,7 +9,7 @@
 
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
                 <tr>
                     <th>Perfil</th>

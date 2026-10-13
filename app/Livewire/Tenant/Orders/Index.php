@@ -39,6 +39,12 @@ class Index extends Component
         }
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'status');
+        $this->resetPage();
+    }
+
     private function timezone(): string
     {
         return Setting::read('timezone', 'America/Sao_Paulo');
@@ -72,6 +78,7 @@ class Index extends Component
             'summaryCount' => (int) $summary->orders,
             'summaryTotal' => Money::cents((int) $summary->total),
             'timezone' => $tz,
+            'today' => CarbonImmutable::now($tz)->toDateString(),
         ]);
     }
 }

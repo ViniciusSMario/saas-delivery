@@ -32,6 +32,12 @@ class Index extends Component
         }
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset('search', 'categoryId', 'status');
+        $this->resetPage();
+    }
+
     public function toggleAvailability(int $id, SaveProduct $save): void
     {
         $this->authorize('menu.manage');

@@ -33,7 +33,12 @@
                 </ul>
             </div>
         @empty
-            <div class="card card-body text-center text-stone-500 sm:col-span-2">Nenhum grupo ainda. Exemplos: "Escolha a borda" (obrigatório, 1 opção) ou "Adicionais" (opcional, até 5).</div>
+            <div class="card sm:col-span-2">
+                <x-ui.empty icon="plus-circle" title="Nenhum grupo de adicionais ainda" text="Exemplos: “Escolha a borda” (obrigatório, 1 opção) ou “Adicionais” (opcional, até 5). Depois é só ligar o grupo aos produtos.">
+                    <a href="{{ route('menu.addon-groups.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo grupo</a>
+                    <a href="{{ route('menu.import') }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar planilha</a>
+                </x-ui.empty>
+            </div>
         @endforelse
     </div>
 </div>

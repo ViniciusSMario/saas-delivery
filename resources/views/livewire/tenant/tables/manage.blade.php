@@ -46,7 +46,7 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead><tr><th>Mesa</th><th>Lugares</th><th>Área</th><th>Comandas</th><th></th></tr></thead>
             <tbody>
                 @forelse ($tables as $table)
@@ -58,7 +58,7 @@
                         <td class="text-right"><button type="button" wire:click="edit({{ $table->id }})" class="btn-link">Editar</button></td>
                     </tr>
                 @empty
-                    <tr><td colspan="5"><x-ui.empty icon="table" title="Nenhuma mesa ainda" /></td></tr>
+                    <tr><td colspan="5"><x-ui.empty icon="table" title="Nenhuma mesa ainda" text="Cadastre as mesas acima. Depois imprima os QR codes: o cliente pede pelo celular e o pedido cai na comanda." /></td></tr>
                 @endforelse
             </tbody>
         </table>

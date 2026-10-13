@@ -8,7 +8,7 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
                 <tr><th>Combo</th><th class="text-right">Preço</th><th class="text-right">Avulso</th><th class="text-right">Ações</th></tr>
             </thead>
@@ -31,7 +31,11 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4"><x-ui.empty icon="gift" title="Nenhum combo ainda" /></td></tr>
+                    <tr><td colspan="4">
+                        <x-ui.empty icon="gift" title="Nenhum combo ainda" text="Junte produtos com um preço especial (ex.: pizza grande + refrigerante 2 L). O combo aparece em destaque no cardápio.">
+                            <a href="{{ route('menu.combos.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo combo</a>
+                        </x-ui.empty>
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -13,7 +13,7 @@
     <div @class(['grid gap-6', 'xl:grid-cols-[1fr_26rem]' => $showForm])>
         <section class="card overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="table">
+                <table class="table table-cards">
                     <thead><tr><th>Cupom</th><th>Desconto</th><th>Validade</th><th class="text-right">Usos</th><th class="text-right">Desconto dado</th><th class="text-right">Vendas</th><th class="text-right">Ações</th></tr></thead>
                     <tbody>
                         @forelse ($coupons as $coupon)

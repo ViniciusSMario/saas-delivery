@@ -45,7 +45,7 @@
 
     <section class="card overflow-x-auto">
         <div class="card-header"><h2 class="section-title">Movimentações</h2></div>
-        <table class="table">
+        <table class="table table-cards">
             <thead><tr><th>Quando</th><th>Tipo</th><th>Origem</th><th>Por</th><th class="text-right">Quantidade</th><th class="text-right">Saldo</th></tr></thead>
             <tbody>
                 @forelse ($movements as $movement)

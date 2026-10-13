@@ -1,8 +1,11 @@
 <?php
 
+use App\Livewire\Tenant\Customers\Index as CustomersIndex;
 use App\Livewire\Tenant\Menu\Products\Index as ProductsIndex;
 use App\Livewire\Tenant\Orders\Board;
+use App\Livewire\Tenant\Orders\Index as OrdersIndex;
 use App\Livewire\Tenant\Promotions\Coupons;
+use App\Livewire\Tenant\Stock\Index as StockIndex;
 use App\Livewire\Tenant\Stock\Show as StockShow;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Establishment\Models\OpeningHour;
@@ -112,4 +115,36 @@ it('as telas de operação têm atalhos de teclado', function () {
     $this->get(tenantUrl($this->tenant, '/pedidos'))->assertOk()
         ->assertSee('data-hotkey-help="enter"', false)
         ->assertSee('data-hotkey="n"', false);
+});
+
+it('as listas vazias dizem o que fazer, e a busca sem resultado oferece limpar', function () {
+    $empty = provisionTenant('ux');
+    skipOnboarding($empty);
+    activateTenant($empty);
+    $dono = createTenantUser($empty, ['dono']);
+
+    // Sem categoria ainda: o primeiro passo é criar uma (ou importar a planilha).
+    Livewire::actingAs($dono)->test(ProductsIndex::class)
+        ->assertSee('Seu cardápio ainda está vazio')->assertSee('Criar categoria')->assertSee('Importar planilha')->assertSee('Usar um modelo pronto')
+        ->set('search', 'xyz')->assertSee('Nenhum produto encontrado')->assertSee('Limpar filtros')
+        ->call('clearFilters')->assertSet('search', '')->assertSee('Seu cardápio ainda está vazio');
+
+    Livewire::actingAs($dono)->test(CustomersIndex::class)
+        ->assertSee('Nenhum cliente ainda')->assertSee('Importar clientes')
+        ->set('search', 'Zé')->assertSee('Nenhum cliente encontrado')->assertSee('Limpar busca');
+
+    Livewire::actingAs($dono)->test(StockIndex::class)->assertSee('Nenhum insumo ainda')->assertSee('Importar insumos')
+        ->set('onlyLow', true)->assertSee('Nenhum insumo abaixo do mínimo')->call('clearFilters')->assertSet('onlyLow', false);
+
+    Livewire::actingAs($dono)->test(OrdersIndex::class)->assertSee('Nenhum pedido neste dia')->assertSee('Venda no balcão')->assertDontSee('Ver hoje')
+        ->set('date', '2026-01-05')->assertSee('Ver hoje')
+        ->set('status', 'ready')->assertSee('Nenhum pedido encontrado')->call('clearFilters')->assertSet('status', '');
+});
+
+it('as tabelas principais viram cartões no celular', function () {
+    $this->actingAs(createTenantUser($this->tenant, ['dono']));
+
+    foreach (['/produtos', '/clientes', '/estoque', '/pedidos/historico', '/entregas/bairros', '/cupons', '/financeiro', '/usuarios'] as $path) {
+        $this->get(tenantUrl($this->tenant, $path))->assertOk()->assertSee('table table-cards', false);
+    }
 });

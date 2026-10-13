@@ -9,10 +9,10 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead><tr><th>Produto</th><th class="text-right">Preço</th><th class="text-right">Custo (ficha)</th><th class="text-right">Margem</th><th></th></tr></thead>
             <tbody>
-                @foreach ($products as $row)
+                @forelse ($products as $row)
                     <tr wire:key="p-{{ $row['product']->id }}">
                         <td>
                             <p class="font-medium text-stone-900">{{ $row['product']->name }}</p>
@@ -25,7 +25,13 @@
                         </td>
                         <td class="text-right"><a href="{{ route('stock.recipe.product', $row['product']) }}" class="btn-link" wire:navigate>{{ $row['recipe'] ? 'Editar ficha' : 'Criar ficha' }}</a></td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="5">
+                        <x-ui.empty icon="file" title="Nenhum produto no cardápio" text="A ficha técnica diz quanto de cada insumo um produto gasta. Cadastre os produtos primeiro.">
+                            <a href="{{ route('menu.products.index') }}" class="btn-secondary" wire:navigate>Ir para os produtos</a>
+                        </x-ui.empty>
+                    </td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>

@@ -5,3 +5,4 @@ import './toasts';
 import './busy';
 import './shortcuts';
 import './palette';
+import './table-cards';

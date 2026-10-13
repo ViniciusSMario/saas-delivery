@@ -19,7 +19,7 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead><tr><th>Cliente</th><th class="text-right">Pedidos</th><th class="text-right">Total gasto</th><th class="text-right">Ticket médio</th><th>Último pedido</th></tr></thead>
             <tbody>
                 @forelse ($customers as $customer)
@@ -34,7 +34,17 @@
                         <td class="text-stone-500">{{ $customer->last_order_at?->timezone($tz)->format('d/m/Y') ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5"><x-ui.empty icon="users" title="Nenhum cliente encontrado" /></td></tr>
+                    <tr><td colspan="5">
+                        @if (trim($search) !== '')
+                            <x-ui.empty icon="search" title="Nenhum cliente encontrado" text="Busque pelo nome ou por parte do telefone.">
+                                <button type="button" wire:click="$set('search', '')" class="btn-secondary">Limpar busca</button>
+                            </x-ui.empty>
+                        @else
+                            <x-ui.empty icon="users" title="Nenhum cliente ainda" text="Todo pedido com telefone já cadastra o cliente. Tem uma lista de outro sistema ou de uma planilha? Importe e comece com os contatos e endereços.">
+                                <a href="{{ route('imports.index', ['tipo' => 'clientes']) }}" class="btn-primary" wire:navigate><x-icon name="file" class="size-4" /> Importar clientes</a>
+                            </x-ui.empty>
+                        @endif
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

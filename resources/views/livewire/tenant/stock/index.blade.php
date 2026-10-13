@@ -42,9 +42,9 @@
             <label class="flex items-center gap-2 text-sm font-medium text-stone-600"><input type="checkbox" wire:model.live="onlyLow" class="checkbox"> Só abaixo do mínimo</label>
         </div>
         <div class="overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
-                <tr><th>Insumo</th><th class="text-right">Saldo</th><th class="text-right">Mínimo</th><th class="text-right">Custo médio</th><th class="text-right">Valor</th><th class="text-right">Movimentar</th></tr>
+                <tr><th>Insumo</th><th class="text-right">Saldo</th><th class="text-right">Mínimo</th><th class="text-right">Custo médio</th><th class="text-right">Valor</th><th class="text-right" data-card="actions">Movimentar</th></tr>
             </thead>
             <tbody>
                 @forelse ($items as $item)
@@ -71,7 +71,17 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><x-ui.empty icon="box" title="Nenhum insumo. Cadastre acima (ex.: Muçarela em kg, Massa em kg, Caixa de pizza em un)" /></td></tr>
+                    <tr><td colspan="6">
+                        @if (trim($search) !== '' || $onlyLow)
+                            <x-ui.empty icon="search" title="Nenhum insumo encontrado" text="{{ $onlyLow ? 'Nenhum insumo abaixo do mínimo. Bom sinal!' : 'Nada com essa busca.' }}">
+                                <button type="button" wire:click="clearFilters" class="btn-secondary">Ver todos</button>
+                            </x-ui.empty>
+                        @else
+                            <x-ui.empty icon="box" title="Nenhum insumo ainda" text="Cadastre acima (ex.: Muçarela em kg, Massa em kg, Caixa de pizza em un) ou traga a lista com saldo e custo pela planilha.">
+                                <a href="{{ route('imports.index', ['tipo' => 'insumos']) }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar insumos</a>
+                            </x-ui.empty>
+                        @endif
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

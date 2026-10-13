@@ -44,8 +44,8 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
-            <thead><tr><th>Vencimento</th><th>Descrição</th><th>Categoria</th><th>Situação</th><th class="text-right">Valor</th><th></th></tr></thead>
+        <table class="table table-cards">
+            <thead><tr><th data-card="field">Vencimento</th><th data-card="title">Descrição</th><th>Categoria</th><th>Situação</th><th class="text-right">Valor</th><th></th></tr></thead>
             <tbody>
                 @forelse ($entries as $entry)
                     @php($label = $entry->statusLabel($today))
@@ -74,7 +74,13 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><x-ui.empty icon="trending" title="Nenhum lançamento" /></td></tr>
+                    <tr><td colspan="6">
+                        <x-ui.empty icon="trending" title="Nenhum lançamento" text="Contas a pagar e a receber deste período aparecem aqui. As vendas pagas entram sozinhas quando o caixa fecha.">
+                            @can('finance.manage')
+                                <a href="{{ route('finance.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo lançamento</a>
+                            @endcan
+                        </x-ui.empty>
+                    </td></tr>
                 @endforelse
             </tbody>
         </table>

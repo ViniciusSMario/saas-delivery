@@ -28,7 +28,7 @@
         <section class="card overflow-hidden">
             <div class="card-header"><h2 class="section-title">Bairros atendidos ({{ $zones->where('is_active', true)->count() }})</h2></div>
             <div class="overflow-x-auto">
-                <table class="table">
+                <table class="table table-cards">
                     <thead><tr><th>Bairro</th><th class="text-right">Taxa</th><th class="text-right">Mínimo</th><th class="text-right">Tempo</th><th class="text-right">Ações</th></tr></thead>
                     <tbody>
                         @forelse ($zones as $zone)
@@ -44,7 +44,11 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5"><x-ui.empty icon="pin" title="Nenhum bairro cadastrado" text="Cadastre os bairros que você atende e a taxa de cada um." /></td></tr>
+                            <tr><td colspan="5">
+                                <x-ui.empty icon="pin" title="Nenhum bairro cadastrado" text="Cadastre os bairros que você atende e a taxa de cada um, ou traga a lista pela planilha.">
+                                    <a href="{{ route('imports.index', ['tipo' => 'bairros']) }}" class="btn-secondary" wire:navigate><x-icon name="file" class="size-4" /> Importar bairros</a>
+                                </x-ui.empty>
+                            </td></tr>
                         @endforelse
                     </tbody>
                 </table>

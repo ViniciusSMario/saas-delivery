@@ -266,6 +266,90 @@
     }
 }
 
+/*
+ * Tabela que vira lista de cartões no celular (<table class="table table-cards">): cada linha
+ * empilha as células com o nome da coluna ao lado do valor; a primeira coluna é o título e a
+ * de ações vai para o rodapé. Os rótulos vêm de resources/js/table-cards.js.
+ */
+@media (width < 40rem) {
+    .table-cards thead {
+        display: none;
+    }
+
+    .table-cards,
+    .table-cards tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .table-cards tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        padding: 0.875rem 1rem;
+    }
+
+    .table-cards tbody tr + tr {
+        border-top: 1px solid var(--color-stone-100);
+    }
+
+    .table.table-cards td {
+        position: relative;
+        display: block;
+        min-height: 1.5rem;
+        padding: 0.125rem 0 0.125rem 7.5rem;
+        border: 0;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .table-cards td[data-label]::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 0.2rem;
+        left: 0;
+        width: 7rem;
+        overflow: hidden;
+        font-size: 0.75rem;
+        line-height: 1.25rem;
+        font-weight: 500;
+        color: var(--color-stone-500);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .table.table-cards td[data-card='title'] {
+        order: -1;
+        padding-left: 0;
+        margin-bottom: 0.25rem;
+        font-size: 0.9375rem;
+    }
+
+    .table.table-cards td[data-card='actions'] {
+        order: 99;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        padding: 0.5rem 0 0;
+    }
+
+    .table-cards td[data-card='actions']:empty,
+    .table-cards td[data-card='hide'] {
+        display: none;
+    }
+
+    .table-cards td[data-card='title']::before,
+    .table-cards td[data-card='actions']::before {
+        content: none;
+    }
+
+    .table.table-cards td[colspan] {
+        padding-left: 0;
+    }
+}
+
 /* Tecla de atalho ao lado do botão: só com teclado/mouse (no celular não faz sentido). */
 .kbd {
     @apply hidden min-w-5 items-center justify-center rounded-md border border-current/25 px-1 font-sans text-[11px] leading-[1.15rem] font-semibold opacity-75;

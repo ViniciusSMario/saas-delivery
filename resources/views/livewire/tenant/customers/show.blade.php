@@ -64,7 +64,7 @@
 
             <section class="card overflow-x-auto">
                 <div class="card-header"><h2 class="section-title">Pedidos</h2></div>
-                <table class="table">
+                <table class="table table-cards">
                     <thead><tr><th>Pedido</th><th>Quando</th><th>Status</th><th class="text-right">Total</th></tr></thead>
                     <tbody>
                         @forelse ($orders as $order)

@@ -5,12 +5,12 @@
     </div>
 
     <div class="card overflow-x-auto">
-        <table class="table">
+        <table class="table table-cards">
             <thead>
                 <tr>
-                    <th>Quando</th>
+                    <th data-card="field">Quando</th>
                     <th>Quem</th>
-                    <th>O quê</th>
+                    <th data-card="title">O quê</th>
                     <th>Detalhes</th>
                 </tr>
             </thead>

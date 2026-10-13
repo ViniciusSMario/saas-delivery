@@ -21,7 +21,7 @@
 
     <section class="card overflow-x-auto">
         <div class="card-header"><h2 class="section-title">Fechados</h2></div>
-        <table class="table">
+        <table class="table table-cards">
             <thead><tr><th>Caixa</th><th>Operador</th><th>Período</th><th class="text-right">Diferença</th><th></th></tr></thead>
             <tbody>
                 @forelse ($sessions as $session)
