@@ -7,6 +7,7 @@
         <x-ui.page-header title="PDV" subtitle="Venda no balcão, retirada ou entrega.">
             <a href="{{ route('cash.current') }}" class="btn-secondary" wire:navigate><x-icon name="wallet" class="size-4" /> Caixa</a>
             <a href="{{ route('orders.board') }}" class="btn-secondary" wire:navigate><x-icon name="flame" class="size-4" /> Painel</a>
+            @include('partials.shortcuts-button')
         </x-ui.page-header>
 
         @if (! $session)
@@ -38,7 +39,7 @@
         <div class="card-header">
             <h2 class="section-title flex items-center gap-2"><x-icon name="bag" class="size-5 text-brand-600" /> Pedido</h2>
             @if ($cart)
-                <button type="button" wire:click="clearCart" wire:confirm="Limpar o pedido?" class="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700">Limpar</button>
+                <button type="button" wire:click="clearCart" wire:confirm="Limpar o pedido?" data-hotkey="alt+backspace" data-hotkey-label="Limpar o pedido" class="btn-ghost btn-sm text-red-600 hover:bg-red-50 hover:text-red-700">Limpar</button>
             @endif
         </div>
 
@@ -57,7 +58,7 @@
 
             <div class="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1 text-sm">
                 @foreach ($fulfillments as $value => [$label, $icon])
-                    <label @class(['flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 font-semibold transition', 'bg-white text-brand-700 shadow-sm' => $fulfillment === $value, 'text-stone-500 hover:text-stone-800' => $fulfillment !== $value])>
+                    <label data-hotkey="alt+{{ $loop->iteration }}" data-hotkey-label="{{ $label }}" @class(['flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 font-semibold transition', 'bg-white text-brand-700 shadow-sm' => $fulfillment === $value, 'text-stone-500 hover:text-stone-800' => $fulfillment !== $value])>
                         <input type="radio" wire:model.live="fulfillment" value="{{ $value }}" class="sr-only">
                         <x-icon :name="$icon" class="size-4" /> {{ $label }}
                     </label>
@@ -70,7 +71,7 @@
                     @error('customer.name') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <input wire:model.blur="customerPhone" type="tel" data-mask="phone" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
+                    <input wire:model.blur="customerPhone" type="tel" data-mask="phone" data-hotkey="F2" class="input" placeholder="Telefone {{ $fulfillment === 'delivery' ? '' : '(opcional)' }}" aria-label="Telefone do cliente">
                     @error('customer.phone') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -121,7 +122,7 @@
             @endif
 
             <div class="grid grid-cols-2 gap-2">
-                <select wire:model.live="paymentMethod" class="input" aria-label="Forma de pagamento">
+                <select wire:model.live="paymentMethod" data-hotkey="F4" class="input" aria-label="Forma de pagamento">
                     @foreach ($paymentMethods as $method)
                         <option value="{{ $method->code }}">{{ $method->name }}</option>
                     @endforeach
@@ -171,8 +172,8 @@
             <div class="flex items-baseline justify-between pt-1"><span class="font-semibold">Total</span><span class="text-2xl font-extrabold tracking-tight tabular-nums">{{ $total->format() }}</span></div>
             <p class="text-xs text-stone-500">{{ $fulfillment === 'counter' ? 'Balcão: o pagamento entra no seu caixa agora.' : 'Pagamento recebido na entrega/retirada.' }}</p>
 
-            <button type="submit" class="btn-primary btn-lg mt-3 w-full" @disabled(! $cart) wire:loading.attr="disabled">
-                <x-icon name="check" class="size-5" /> Finalizar pedido
+            <button type="submit" class="btn-primary btn-lg mt-3 w-full" @disabled(! $cart) wire:loading.attr="disabled" data-hotkey="F9 ctrl+enter" data-hotkey-label="Finalizar pedido">
+                <x-icon name="check" class="size-5" /> Finalizar pedido <span class="kbd">F9</span>
             </button>
         </div>
     </form>

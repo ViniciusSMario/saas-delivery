@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Stock;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Stock\Models\StockItem;
 use App\Support\Quantity;
@@ -12,7 +13,7 @@ use Livewire\WithPagination;
 
 class Show extends Component
 {
-    use WithPagination;
+    use Toasts, WithPagination;
 
     #[Locked]
     public int $itemId;
@@ -46,7 +47,7 @@ class Show extends Component
             Audit::record('stock_item.updated', $item, Audit::diff($item));
         }
 
-        session()->flash('status', 'Insumo salvo.');
+        $this->toast('Insumo salvo.');
     }
 
     public function render()

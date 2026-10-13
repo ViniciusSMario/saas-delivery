@@ -4,6 +4,7 @@ namespace App\Livewire\Tenant\Tables;
 
 use App\Livewire\Tenant\Concerns\KeepsDraft;
 use App\Livewire\Tenant\Concerns\PicksMenuItems;
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Models\User;
 use App\Modules\Cash\CashLedger;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
@@ -21,7 +22,7 @@ use Livewire\Component;
 
 class CommandPage extends Component
 {
-    use KeepsDraft, PicksMenuItems;
+    use KeepsDraft, PicksMenuItems, Toasts;
 
     #[Locked]
     public int $commandId;
@@ -102,7 +103,7 @@ class CommandPage extends Component
             $order = $manage->addItems($this->command(), $this->cartLines(), $this->user(), $this->sendNotes);
             $this->reset('cart', 'sendNotes');
             $this->adding = false;
-            session()->flash('status', "Itens enviados para a cozinha (pedido #{$order->number}).");
+            $this->toast("Itens enviados para a cozinha (pedido #{$order->number}).");
         });
     }
 
@@ -204,7 +205,7 @@ class CommandPage extends Component
             );
 
             $this->change = $result['change']->isZero() ? null : $result['change']->format();
-            session()->flash('status', 'Conta fechada.'.($this->change ? " Troco: {$this->change}." : ''));
+            $this->toast('Conta fechada.'.($this->change ? " Troco: {$this->change}." : ''));
         });
     }
 

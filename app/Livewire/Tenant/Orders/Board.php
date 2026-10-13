@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Orders;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Models\User;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\OrderSource;
@@ -22,6 +23,8 @@ use Livewire\Component;
 #[Title('Painel de pedidos')]
 class Board extends Component
 {
+    use Toasts;
+
     public int $lastSeenId = 0;
 
     public ?int $cancellingId = null;
@@ -46,9 +49,10 @@ class Board extends Component
 
         try {
             $change->handle($order, $next, $this->user());
+            $this->toast("Pedido #{$order->number}: {$next->label()}.", 'info');
         } catch (ValidationException $e) {
             // Outro atendente mexeu no pedido antes: o painel só recarrega.
-            $this->addError('board', collect($e->errors())->flatten()->first());
+            $this->toast(collect($e->errors())->flatten()->first(), 'error');
         }
     }
 
@@ -58,7 +62,9 @@ class Board extends Component
         $this->authorize('orders.view');
 
         $count = $tickets->queue(Order::findOrFail($orderId), reprint: true)->count();
-        $this->dispatch('notify', message: $count ? 'Enviado para a impressão.' : 'Nenhuma impressora configurada.');
+        $count
+            ? $this->toast('Enviado para a impressão.')
+            : $this->toast('Nenhuma impressora configurada (Administração → Impressoras).', 'warning');
     }
 
     public function startCancel(int $orderId): void
@@ -74,8 +80,10 @@ class Board extends Component
         $this->authorize('orders.cancel');
         $this->validate(['cancelReason' => ['required', 'string', 'max:255']], attributes: ['cancelReason' => 'motivo']);
 
-        $change->handle(Order::findOrFail($this->cancellingId), OrderStatus::Cancelled, $this->user(), $this->cancelReason);
+        $order = Order::findOrFail($this->cancellingId);
+        $change->handle($order, OrderStatus::Cancelled, $this->user(), $this->cancelReason);
         $this->reset('cancellingId', 'cancelReason');
+        $this->toast("Pedido #{$order->number} cancelado.", 'info');
     }
 
     private function user(): User

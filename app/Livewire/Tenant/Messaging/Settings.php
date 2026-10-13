@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Messaging;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Establishment\Models\Establishment;
@@ -19,6 +20,8 @@ use Throwable;
 #[Title('WhatsApp')]
 class Settings extends Component
 {
+    use Toasts;
+
     public bool $enabled = false;
 
     public string $provider = 'manual';
@@ -120,7 +123,7 @@ class Settings extends Component
 
         Audit::record('settings.updated', null, ['whatsapp' => $this->enabled ? WhatsAppSettings::PROVIDERS[$this->provider] : 'desligado']);
         $this->reset('evolutionKey', 'cloudToken');
-        session()->flash('status', 'WhatsApp salvo.');
+        $this->toast('WhatsApp salvo.');
     }
 
     public function sendTest(WhatsApp $whatsapp): void
@@ -144,7 +147,7 @@ class Settings extends Component
         $message = $whatsapp->sendNow($phone, "Mensagem de teste do {$name}: os avisos de pedido pelo WhatsApp estão funcionando.");
 
         $message->status === 'sent'
-            ? session()->flash('status', 'Mensagem de teste enviada.')
+            ? $this->toast('Mensagem de teste enviada.')
             : $this->addError('testPhone', 'Não enviou: '.$message->error);
     }
 

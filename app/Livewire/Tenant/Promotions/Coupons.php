@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Promotions;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Establishment\Models\Setting;
 use App\Modules\Orders\Enums\OrderStatus;
@@ -19,6 +20,8 @@ use Livewire\Component;
 #[Title('Cupons de desconto')]
 class Coupons extends Component
 {
+    use Toasts;
+
     public ?int $editingId = null;
 
     public string $code = '';
@@ -156,7 +159,7 @@ class Coupons extends Component
         ])->save();
 
         Audit::record($this->editingId ? 'coupon.updated' : 'coupon.created', $coupon, ['cupom' => $coupon->code, 'benefício' => $coupon->benefit()]);
-        session()->flash('status', "Cupom {$coupon->code} salvo.");
+        $this->toast("Cupom {$coupon->code} salvo.");
         $this->cancel();
     }
 
@@ -166,6 +169,7 @@ class Coupons extends Component
         $coupon = Coupon::findOrFail($id);
         $coupon->update(['is_active' => ! $coupon->is_active]);
         Audit::record('coupon.updated', $coupon, ['cupom' => $coupon->code, 'situação' => $coupon->is_active ? 'ativado' : 'pausado']);
+        $this->toast($coupon->is_active ? "Cupom {$coupon->code} ativado." : "Cupom {$coupon->code} pausado.", 'info', undo: 'toggle', params: [$id]);
     }
 
     /** Excluir libera o código; os pedidos que usaram o cupom continuam mostrando o código. */
@@ -175,6 +179,7 @@ class Coupons extends Component
         $coupon = Coupon::findOrFail($id);
         $coupon->delete();
         Audit::record('coupon.deleted', $coupon, ['cupom' => $coupon->code]);
+        $this->toast("Cupom {$coupon->code} excluído.");
 
         if ($this->editingId === $id) {
             $this->cancel();

@@ -57,6 +57,7 @@ Route::middleware(['auth', AuthenticateSession::class, EnsureUserIsActive::class
     Route::post('/suporte/sair', [SupportAccessController::class, 'leave'])->name('support.leave');
     Route::post('/confirmar-email/reenviar', \App\Http\Controllers\Tenant\ResendVerificationController::class)->middleware('throttle:3,60')->name('verification.resend');
     Route::get('/minha-conta', Profile::class)->name('profile');
+    Route::get('/busca', \App\Http\Controllers\Tenant\QuickSearchController::class)->middleware('throttle:120,1')->name('quick-search');
     Route::get('/primeiros-passos', \App\Livewire\Tenant\Onboarding\Wizard::class)->middleware('can:establishment.manage')->name('onboarding');
 
     Route::post('/notificacoes/assinatura', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');

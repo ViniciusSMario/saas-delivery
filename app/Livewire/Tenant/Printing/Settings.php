@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Printing;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Menu\Models\Category;
 use App\Modules\Printing\Models\PrintJob;
@@ -16,6 +17,8 @@ use Livewire\Component;
 #[Title('Impressoras')]
 class Settings extends Component
 {
+    use Toasts;
+
     public ?int $editingId = null;
 
     public string $name = '';
@@ -137,7 +140,7 @@ class Settings extends Component
         $this->authorize('settings.manage');
 
         $tickets->test(PrintStation::findOrFail($id));
-        session()->flash('status', 'Cupom de teste enviado para a fila.');
+        $this->toast('Cupom de teste enviado para a fila.');
     }
 
     public function render()

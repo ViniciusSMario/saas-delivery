@@ -26,7 +26,7 @@
      x-data="{
          sound: false,
          full: false,
-         toast: '',
+         selected: null,
          {{-- O som é o mesmo do alarme de pedido online (resources/js/alarm.js): ligado por aparelho. --}}
          syncSound() {
              this.sound = Boolean(window.orderAlarm?.soundEnabled() && ! window.orderAlarm.isBlocked());
@@ -45,12 +45,54 @@
          toggleFull() {
              if (document.fullscreenElement) document.exitFullscreen(); else this.$refs.board.requestFullscreen?.();
          },
+         {{-- Teclado: setas escolhem o pedido (segue o pedido quando ele muda de coluna); Enter avança. --}}
+         move(key) {
+             const cols = [...this.$root.querySelectorAll('[data-column]')].map((c) => [...c.querySelectorAll('[data-order-card]')]);
+             let col = -1, row = -1;
+             cols.forEach((list, i) => { const j = list.findIndex((el) => Number(el.dataset.orderCard) === this.selected); if (j >= 0) { col = i; row = j; } });
+             if (col < 0) {
+                 col = cols.findIndex((list) => list.length);
+                 if (col < 0) return;
+                 row = 0;
+             } else if (key === 'ArrowDown') {
+                 row = Math.min(row + 1, cols[col].length - 1);
+             } else if (key === 'ArrowUp') {
+                 row = Math.max(row - 1, 0);
+             } else {
+                 const step = key === 'ArrowRight' ? 1 : -1;
+                 let next = col + step;
+                 while (next >= 0 && next < cols.length && ! cols[next].length) next += step;
+                 if (next < 0 || next >= cols.length) return;
+                 col = next;
+                 row = Math.min(row, cols[col].length - 1);
+             }
+             const card = cols[col][row];
+             this.selected = Number(card.dataset.orderCard);
+             card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+         },
+         act(name) {
+             this.$root.querySelector(`[data-order-card='${this.selected}'] [data-act='${name}']`)?.click();
+         },
+         onKey(e) {
+             if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.target.closest('input, textarea, select') || document.querySelector('[role=alertdialog], [data-hotkeys-modal]')) return;
+             const key = e.key;
+             if (key.startsWith('Arrow')) { e.preventDefault(); this.move(key); return; }
+             if (this.selected === null) return;
+             const action = { Enter: 'advance', i: 'reprint', I: 'reprint', x: 'cancel', X: 'cancel' }[key];
+             if (! action) return;
+             e.preventDefault();
+             this.act(action);
+         },
      }"
      x-init="syncSound()"
      @order-alarm-changed.document="syncSound()"
      @fullscreenchange.document="full = !! document.fullscreenElement"
-     @notify.window="toast = $event.detail.message; setTimeout(() => toast = '', 2500)"
-     @new-order.window="window.orderAlarm?.beep()">
+     @new-order.window="window.orderAlarm?.beep()"
+     @keydown.window="onKey($event)">
+    <template data-hotkey-help="arrowup arrowdown arrowleft arrowright">Escolher um pedido</template>
+    <template data-hotkey-help="enter">Avançar o pedido escolhido</template>
+    <template data-hotkey-help="i">Reimprimir o pedido escolhido</template>
+    <template data-hotkey-help="x">Cancelar o pedido escolhido</template>
 
     <x-ui.page-header title="Painel de pedidos">
         <x-slot:subtitle>
@@ -58,25 +100,20 @@
             <span class="text-stone-300">•</span> {{ $todayDone }} concluídos/cancelados hoje
         </x-slot:subtitle>
 
-        <button type="button" class="btn-secondary" @click="toggleSound()" :class="sound && 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">
+        @include('partials.shortcuts-button')
+        <button type="button" class="btn-secondary" data-hotkey="s" data-hotkey-label="Ligar ou desligar o som" @click="toggleSound()" :class="sound && 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'">
             <span x-show="sound"><x-icon name="volume" class="size-4" /></span>
             <span x-show="! sound"><x-icon name="volume-off" class="size-4" /></span>
             <span x-text="sound ? 'Som ligado' : 'Ligar som'">Ligar som</span>
         </button>
-        <button type="button" class="btn-secondary" @click="toggleFull()">
+        <button type="button" class="btn-secondary" data-hotkey="f" data-hotkey-label="Tela cheia" @click="toggleFull()">
             <x-icon name="expand" class="size-4" /> <span x-text="full ? 'Sair da tela cheia' : 'Tela cheia'">Tela cheia</span>
         </button>
         <a href="{{ route('orders.index') }}" class="btn-secondary" wire:navigate x-show="! full"><x-icon name="clock" class="size-4" /> Histórico</a>
         @can('pos.use')
-            <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate x-show="! full"><x-icon name="plus" class="size-4" /> Venda no balcão</a>
+            <a href="{{ route('orders.counter') }}" class="btn-primary" wire:navigate x-show="! full" data-hotkey="n" data-hotkey-label="Nova venda no balcão"><x-icon name="plus" class="size-4" /> Venda no balcão</a>
         @endcan
     </x-ui.page-header>
-
-    <div x-cloak x-show="toast" x-transition class="fixed inset-x-0 top-4 z-50 mx-auto flex w-fit items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white shadow-float">
-        <x-icon name="printer" class="size-4 text-emerald-400" /> <span x-text="toast"></span>
-    </div>
-
-    @error('board') <div class="alert-error"><x-icon name="alert" class="mt-0.5 size-4" /> {{ $message }}</div> @enderror
 
     <livewire:tenant.orders.rush-control />
 
@@ -84,7 +121,7 @@
         @foreach ($columns as $column)
             @php($list = $orders->get($column->value, collect()))
             @php([$columnColor, $columnIcon] = $columnStyle[$column->value] ?? ['bg-stone-500', 'list'])
-            <section class="flex min-h-40 flex-col rounded-2xl bg-stone-200/50 p-2.5">
+            <section class="flex min-h-40 flex-col rounded-2xl bg-stone-200/50 p-2.5" data-column>
                 <h2 class="flex items-center gap-2 px-1.5 pt-1 pb-3 text-sm font-bold text-stone-800">
                     <span class="flex size-7 items-center justify-center rounded-lg text-white {{ $columnColor }}"><x-icon :name="$columnIcon" class="size-4" stroke="2.2" /></span>
                     {{ $column->label() }}
@@ -95,8 +132,9 @@
                     @forelse ($list as $order)
                         @php($minutes = (int) abs($order->created_at->diffInMinutes(now())))
                         @php([$badge, $badgeIcon] = $fulfillmentStyle[$order->fulfillment->value] ?? ['badge-gray', 'orders'])
-                        <article wire:key="order-{{ $order->id }}" @class([
-                            'overflow-hidden rounded-xl border-l-4 bg-white text-sm shadow-(--shadow-card)',
+                        <article wire:key="order-{{ $order->id }}" data-order-card="{{ $order->id }}" @click="selected = {{ $order->id }}"
+                                 :class="selected === {{ $order->id }} && 'ring-2 ring-brand-500 ring-offset-2 ring-offset-stone-100'" @class([
+                            'scroll-m-4 overflow-hidden rounded-xl border-l-4 bg-white text-sm shadow-(--shadow-card) transition-shadow',
                             'border-l-stone-300' => $minutes < 10,
                             'border-l-amber-400' => $minutes >= 10 && $minutes < 20,
                             'border-l-red-500' => $minutes >= 20,
@@ -146,16 +184,16 @@
                             <div class="space-y-2 border-t border-stone-100 bg-stone-50/70 px-3.5 py-2.5">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="font-bold whitespace-nowrap tabular-nums">{{ $order->total_cents->format() }}</span>
-                                    <button type="button" wire:click="reprint({{ $order->id }})" class="btn-icon btn-ghost ml-auto size-8" title="Reimprimir nos setores" aria-label="Reimprimir pedido {{ $order->number }}">
+                                    <button type="button" wire:click="reprint({{ $order->id }})" data-act="reprint" class="btn-icon btn-ghost ml-auto size-8" title="Reimprimir nos setores" aria-label="Reimprimir pedido {{ $order->number }}">
                                         <x-icon name="printer" class="size-4" />
                                     </button>
                                     @can('orders.cancel')
-                                        <button type="button" wire:click="startCancel({{ $order->id }})" class="btn-ghost btn-sm -mr-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
+                                        <button type="button" wire:click="startCancel({{ $order->id }})" data-act="cancel" class="btn-ghost btn-sm -mr-2 text-red-600 hover:bg-red-50 hover:text-red-700" title="Cancelar pedido">Cancelar</button>
                                     @endcan
                                 </div>
                                 @can('orders.manage')
                                     @if ($label = $nextLabel($order))
-                                        <button type="button" wire:click="advance({{ $order->id }})" wire:loading.attr="disabled" class="btn-primary w-full">
+                                        <button type="button" wire:click="advance({{ $order->id }})" data-act="advance" class="btn-primary w-full">
                                             {{ $label }} <x-icon name="chevron-right" class="size-4" />
                                         </button>
                                     @endif

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Menu;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Menu\Actions\SaveCategory;
 use App\Modules\Menu\Models\Category;
 use Illuminate\Validation\ValidationException;
@@ -11,6 +12,8 @@ use Livewire\Component;
 #[Title('Categorias')]
 class Categories extends Component
 {
+    use Toasts;
+
     public ?int $editingId = null;
 
     public string $name = '';
@@ -73,6 +76,8 @@ class Categories extends Component
         $this->authorize('menu.manage');
         $category = Category::findOrFail($id);
         $save->handle($category, ['name' => $category->name, 'is_active' => ! $category->is_active]);
+        $category->refresh();
+        $this->toast($category->is_active ? "Categoria {$category->name} ativada." : "Categoria {$category->name} desativada.", 'info', undo: 'toggle', params: [$id]);
     }
 
     public function delete(int $id, SaveCategory $save): void

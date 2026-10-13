@@ -65,12 +65,7 @@
     @endif
 
     <main @class(['mx-auto max-w-5xl px-4', 'pt-4 pb-28' => ! $detail, 'pb-6' => $detail])>
-        @if (session('status'))
-            <div class="alert-success mb-4" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition>
-                <x-icon name="check" class="mt-0.5 size-4" />
-                <span>{{ session('status') }}</span>
-            </div>
-        @endif
+        @include('partials.toasts-flash')
 
         @if (! $detail && ! request()->routeIs('profile') && \App\Modules\Push\StaffAlerts::receivesAlerts($user))
             @include('partials.push-banner', ['what' => 'quando um pedido ficar pronto'])

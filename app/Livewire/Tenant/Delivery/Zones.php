@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Delivery;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Delivery\DeliveryFees;
 use App\Modules\Delivery\Models\DeliveryZone;
@@ -15,6 +16,8 @@ use Livewire\Component;
 #[Title('Bairros e taxas de entrega')]
 class Zones extends Component
 {
+    use Toasts;
+
     public string $mode = DeliveryFees::MODE_FIXED;
 
     public ?int $editingId = null;
@@ -100,6 +103,7 @@ class Zones extends Component
         $this->authorize('settings.manage');
         $zone = DeliveryZone::findOrFail($id);
         $zone->update(['is_active' => ! $zone->is_active]);
+        $this->toast($zone->is_active ? "Bairro {$zone->name} ativado." : "Bairro {$zone->name} pausado.", 'info', undo: 'toggle', params: [$id]);
     }
 
     public function delete(int $id): void

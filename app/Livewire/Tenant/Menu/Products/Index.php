@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Menu\Products;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Menu\Actions\SaveProduct;
 use App\Modules\Menu\Models\Category;
 use App\Modules\Menu\Models\Product;
@@ -13,7 +14,7 @@ use Livewire\WithPagination;
 #[Title('Produtos')]
 class Index extends Component
 {
-    use WithPagination;
+    use Toasts, WithPagination;
 
     #[Url(as: 'q')]
     public string $search = '';
@@ -34,7 +35,8 @@ class Index extends Component
     public function toggleAvailability(int $id, SaveProduct $save): void
     {
         $this->authorize('menu.manage');
-        $save->toggleAvailability(Product::findOrFail($id));
+        $save->toggleAvailability($product = Product::findOrFail($id));
+        $this->toast($product->is_available ? "{$product->name} voltou ao cardápio." : "{$product->name} marcado como esgotado.", 'info', undo: 'toggleAvailability', params: [$id]);
     }
 
     public function delete(int $id, SaveProduct $save): void

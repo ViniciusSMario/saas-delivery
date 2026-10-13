@@ -232,6 +232,51 @@
     }
 }
 
+/* Botão esperando o servidor (resources/js/busy.js): travado na hora; a rodinha só depois de 150 ms. */
+[data-busy] {
+    pointer-events: none;
+    cursor: progress;
+}
+
+[data-busy-visible] {
+    position: relative;
+    color: transparent !important;
+}
+
+[data-busy-visible] > * {
+    visibility: hidden;
+}
+
+[data-busy-visible]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid var(--busy-color, currentColor);
+    border-right-color: transparent;
+    border-radius: 9999px;
+    animation: busy-spin 0.7s linear infinite;
+}
+
+@keyframes busy-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tecla de atalho ao lado do botão: só com teclado/mouse (no celular não faz sentido). */
+.kbd {
+    @apply hidden min-w-5 items-center justify-center rounded-md border border-current/25 px-1 font-sans text-[11px] leading-[1.15rem] font-semibold opacity-75;
+}
+
+@media (pointer: fine) {
+    .kbd {
+        display: inline-flex;
+    }
+}
+
 /* Barra de rolagem discreta em listas horizontais. */
 @utility scrollbar-none {
     scrollbar-width: none;

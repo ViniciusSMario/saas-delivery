@@ -168,7 +168,7 @@ it('reimprime pelo painel de pedidos', function () {
 
     activateTenant($this->tenant);
     $this->actingAs(createTenantUser($this->tenant, ['cozinha']));
-    Livewire::test(Board::class)->call('reprint', $order->id)->assertDispatched('notify');
+    Livewire::test(Board::class)->call('reprint', $order->id)->assertDispatched('toast');
 
     expect(PrintJob::where('order_id', $order->id)->count())->toBe(2)
         ->and(ticketText(PrintJob::latest('id')->first()))->toContain('REIMPRESSÃO');

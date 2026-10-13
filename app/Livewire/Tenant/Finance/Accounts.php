@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Finance;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Finance\Models\FinancialAccount;
 use App\Modules\Orders\Models\PaymentMethod;
@@ -14,6 +15,8 @@ use Livewire\Component;
 #[Title('Contas financeiras')]
 class Accounts extends Component
 {
+    use Toasts;
+
     public string $name = '';
 
     public string $type = 'bank';
@@ -51,7 +54,7 @@ class Accounts extends Component
             $method->update(['financial_account_id' => $accountId ? (int) $accountId : null]);
         }
 
-        session()->flash('status', 'Destino das formas de pagamento salvo.');
+        $this->toast('Destino das formas de pagamento salvo.');
     }
 
     public function render()

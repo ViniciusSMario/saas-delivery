@@ -7,9 +7,6 @@
         <a href="{{ route('roles.create') }}" class="btn-primary" wire:navigate><x-icon name="plus" class="size-4" /> Novo perfil</a>
     </div>
 
-    @if (session('error'))
-        <div class="alert-error">{{ session('error') }}</div>
-    @endif
 
     <div class="card overflow-x-auto">
         <table class="table">

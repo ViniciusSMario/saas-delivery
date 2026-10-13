@@ -1,6 +1,6 @@
 {{-- Seletor de adicionais: folha que sobe de baixo no celular, janela no computador. Espera: $picking, $picked. --}}
 @if ($picking)
-    <div class="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/50 backdrop-blur-sm sm:items-center sm:p-4" wire:click.self="$set('pickingId', null)">
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/50 backdrop-blur-sm sm:items-center sm:p-4" wire:click.self="$set('pickingId', null)" role="dialog" aria-modal="true" aria-label="{{ $picking->name }}">
         <div class="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl">
             <div class="flex items-start justify-between gap-3 border-b border-stone-100 px-5 pt-6 pb-4 sm:pt-4">
                 <div>
@@ -8,7 +8,7 @@
                     <h3 class="text-lg font-bold">{{ $picking->name }}</h3>
                     <p class="text-sm text-stone-500">{{ $picking->price_cents->format() }}</p>
                 </div>
-                <button type="button" wire:click="$set('pickingId', null)" class="btn-icon btn-ghost mt-2 rounded-full" aria-label="Fechar"><x-icon name="x" class="size-6" /></button>
+                <button type="button" wire:click="$set('pickingId', null)" data-hotkey="esc" data-hotkey-label="Fechar sem adicionar" class="btn-icon btn-ghost mt-2 rounded-full" aria-label="Fechar"><x-icon name="x" class="size-6" /></button>
             </div>
 
             <div class="flex-1 space-y-5 overflow-y-auto p-5">
@@ -52,7 +52,7 @@
                     <span class="w-7 text-center text-lg font-bold tabular-nums" x-text="qty">{{ $pickQuantity }}</span>
                     <button type="button" @click="qty = Math.min(99, qty + 1)" class="flex size-12 items-center justify-center text-stone-700" aria-label="Aumentar"><x-icon name="plus" class="size-5" stroke="2.4" /></button>
                 </div>
-                <button type="button" wire:click="confirmPick" class="btn-primary h-14 min-w-0 flex-1 rounded-2xl px-3 text-base font-bold"><x-icon name="plus" class="size-5 max-[359px]:hidden" /> Adicionar</button>
+                <button type="button" wire:click="confirmPick" data-hotkey="ctrl+enter" data-hotkey-label="Adicionar ao pedido" class="btn-primary h-14 min-w-0 flex-1 rounded-2xl px-3 text-base font-bold"><x-icon name="plus" class="size-5 max-[359px]:hidden" /> Adicionar <span class="kbd">Ctrl Enter</span></button>
             </div>
         </div>
     </div>

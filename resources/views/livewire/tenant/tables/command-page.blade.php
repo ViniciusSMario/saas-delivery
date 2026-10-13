@@ -78,7 +78,7 @@
                 @include('livewire.tenant.partials.cart-lines', ['empty' => 'Toque nos produtos para lançar.'])
                 <input wire:model="sendNotes" type="text" class="input" placeholder="Observação para a cozinha" aria-label="Observação">
                 <p class="flex justify-between text-sm font-semibold"><span class="text-stone-500">Subtotal</span><span class="tabular-nums">{{ $cartSubtotal->format() }}</span></p>
-                <button type="button" wire:click="send" class="btn-primary w-full" @disabled(! $cart) wire:loading.attr="disabled"><x-icon name="flame" class="size-4" /> Enviar para a cozinha</button>
+                <button type="button" wire:click="send" class="btn-primary w-full" @disabled(! $cart) wire:loading.attr="disabled" data-hotkey="F9 ctrl+enter" data-hotkey-label="Enviar para a cozinha"><x-icon name="flame" class="size-4" /> Enviar para a cozinha <span class="kbd">F9</span></button>
             </div>
         </section>
 

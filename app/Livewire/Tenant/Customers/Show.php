@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tenant\Customers;
 
+use App\Livewire\Tenant\Concerns\Toasts;
 use App\Modules\Access\Audit;
 use App\Modules\Customers\Actions\AnonymizeCustomer;
 use App\Modules\Customers\Models\Customer;
@@ -17,7 +18,7 @@ use Livewire\WithPagination;
 
 class Show extends Component
 {
-    use WithPagination;
+    use Toasts, WithPagination;
 
     #[Locked]
     public int $customerId;
@@ -64,7 +65,7 @@ class Show extends Component
             Audit::record('customer.updated', $customer, Audit::diff($customer));
         }
 
-        session()->flash('status', 'Cliente salvo.');
+        $this->toast('Cliente salvo.');
     }
 
     public function removeAddress(int $id): void

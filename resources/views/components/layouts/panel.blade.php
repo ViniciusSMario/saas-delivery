@@ -1,50 +1,10 @@
 @php
-    $nav = [
-        ['route' => 'dashboard', 'label' => 'Início', 'icon' => 'home', 'can' => null],
-        ['section' => 'Atendimento', 'can' => ['orders.view', 'pos.use', 'tables.manage', 'cash.operate', 'deliveries.operate']],
-        ['route' => 'orders.board', 'label' => 'Painel de pedidos', 'icon' => 'flame', 'can' => 'orders.view', 'match' => ['orders.board', 'orders.show']],
-        ['route' => 'tables.map', 'label' => 'Mesas', 'icon' => 'table', 'can' => 'tables.manage', 'match' => ['tables.map', 'tables.command']],
-        ['route' => 'orders.counter', 'label' => 'PDV', 'icon' => 'pos', 'can' => 'pos.use'],
-        ['route' => 'delivery.board', 'label' => 'Entregas', 'icon' => 'truck', 'can' => 'deliveries.operate', 'match' => ['delivery.*']],
-        ['route' => 'cash.current', 'label' => 'Caixa', 'icon' => 'wallet', 'can' => 'cash.operate', 'match' => ['cash.*']],
-        ['route' => 'orders.index', 'label' => 'Histórico', 'icon' => 'clock', 'can' => 'orders.view', 'match' => ['orders.index']],
-        ['route' => 'printing.station', 'label' => 'Estação de impressão', 'icon' => 'printer', 'can' => 'orders.view'],
-        ['section' => 'Cardápio', 'can' => 'menu.manage'],
-        ['route' => 'menu.products.index', 'label' => 'Produtos', 'icon' => 'book', 'can' => 'menu.manage'],
-        ['route' => 'menu.categories', 'label' => 'Categorias', 'icon' => 'tag', 'can' => 'menu.manage'],
-        ['route' => 'menu.addon-groups.index', 'label' => 'Adicionais', 'icon' => 'plus-circle', 'can' => 'menu.manage'],
-        ['route' => 'menu.combos.index', 'label' => 'Combos', 'icon' => 'gift', 'can' => 'menu.manage'],
-        ['route' => 'menu.coupons', 'label' => 'Cupons', 'icon' => 'ticket', 'can' => 'menu.manage'],
-        ['route' => 'menu.loyalty', 'label' => 'Fidelidade', 'icon' => 'star', 'can' => 'menu.manage'],
-        ['section' => 'Gestão', 'can' => ['customers.manage', 'finance.view', 'reports.view']],
-        ['route' => 'customers.index', 'label' => 'Clientes', 'icon' => 'users', 'can' => 'customers.manage', 'match' => ['customers.index', 'customers.show']],
-        ['route' => 'customers.winback', 'label' => 'Clientes sumidos', 'icon' => 'message', 'can' => 'customers.manage'],
-        ['route' => 'finance.index', 'label' => 'Financeiro', 'icon' => 'trending', 'can' => 'finance.view', 'match' => ['finance.*'], 'feature' => 'finance'],
-        ['route' => 'reports.index', 'label' => 'Relatórios', 'icon' => 'chart', 'can' => 'reports.view', 'match' => ['reports.*']],
-        ['section' => 'Estoque', 'can' => 'stock.manage', 'feature' => 'stock'],
-        ['route' => 'stock.index', 'label' => 'Insumos', 'icon' => 'box', 'can' => 'stock.manage', 'match' => ['stock.index', 'stock.show'], 'feature' => 'stock'],
-        ['route' => 'stock.recipes', 'label' => 'Fichas técnicas', 'icon' => 'file', 'can' => 'stock.manage', 'match' => ['stock.recipes', 'stock.recipe.*'], 'feature' => 'stock'],
-        ['route' => 'stock.consumption', 'label' => 'Consumo', 'icon' => 'activity', 'can' => 'stock.manage', 'match' => ['stock.consumption'], 'feature' => 'stock'],
-        ['section' => 'Administração', 'can' => ['establishment.manage', 'settings.manage', 'users.view', 'roles.manage', 'audit.view', 'billing.manage', 'customers.manage', 'stock.manage', 'menu.manage']],
-        ['route' => 'subscription', 'label' => 'Assinatura', 'icon' => 'card', 'can' => 'billing.manage'],
-        ['route' => 'imports.index', 'label' => 'Importar dados', 'icon' => 'file', 'can' => ['customers.manage', 'settings.manage', 'stock.manage', 'menu.manage']],
-        ['route' => 'data-exports', 'label' => 'Exportar dados', 'icon' => 'download', 'can' => 'billing.manage'],
-        ['route' => 'establishment.edit', 'label' => 'Estabelecimento', 'icon' => 'store', 'can' => 'establishment.manage'],
-        ['route' => 'domains', 'label' => 'Domínio próprio', 'icon' => 'external', 'can' => 'establishment.manage'],
-        ['route' => 'settings.edit', 'label' => 'Configurações', 'icon' => 'sliders', 'can' => 'settings.manage'],
-        ['route' => 'printing.settings', 'label' => 'Impressoras', 'icon' => 'printer', 'can' => 'settings.manage'],
-        ['route' => 'whatsapp.settings', 'label' => 'WhatsApp', 'icon' => 'phone', 'can' => 'settings.manage'],
-        ['route' => 'delivery.zones', 'label' => 'Bairros e taxas', 'icon' => 'pin', 'can' => 'settings.manage'],
-        ['route' => 'users.index', 'label' => 'Usuários', 'icon' => 'user', 'can' => 'users.view'],
-        ['route' => 'roles.index', 'label' => 'Perfis e permissões', 'icon' => 'shield', 'can' => 'roles.manage'],
-        ['route' => 'audit.index', 'label' => 'Auditoria', 'icon' => 'list', 'can' => 'audit.view'],
-    ];
+    $nav = \App\Support\PanelMenu::items();
     $user = auth()->user();
     $establishment = \App\Modules\Establishment\Models\Establishment::current();
     $tenant = tenant();
     $isOwner = $user->can('billing.manage');
-    // Recurso fora do plano: o dono vê o item com cadeado, levando à tela de assinatura.
-    $locked = fn (array $item) => isset($item['feature']) && ! $tenant->hasFeature($item['feature']) && $isOwner;
+    $locked = fn (array $item) => \App\Support\PanelMenu::locked($user, $item);
     $isActive = fn (array $item) => request()->routeIs(...($item['match'] ?? [$item['route'], str_replace('.index', '.*', $item['route'])]));
 @endphp
 <!DOCTYPE html>
@@ -65,7 +25,7 @@
 <body class="min-h-screen" x-data="{ menu: false }" @keydown.escape.window="menu = false">
     <div class="lg:flex">
         {{-- Barra lateral --}}
-        <aside class="print:hidden fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col bg-stone-950 text-stone-300 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0"
+        <aside data-sidebar class="print:hidden fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col bg-stone-950 text-stone-300 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0"
                :class="menu && 'translate-x-0'">
             <div class="flex items-center gap-3 px-5 py-5">
                 @if ($establishment->logo_path)
@@ -79,6 +39,14 @@
                 </div>
                 <button type="button" class="ml-auto rounded-lg p-1.5 text-stone-400 hover:bg-white/10 lg:hidden" @click="menu = false" aria-label="Fechar menu">
                     <x-icon name="x" class="size-5" />
+                </button>
+            </div>
+
+            <div class="px-3 pb-1">
+                <button type="button" @click="menu = false; $dispatch('open-palette')" class="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-stone-400 transition hover:border-white/20 hover:text-stone-200">
+                    <x-icon name="search" class="size-[18px]" />
+                    <span class="flex-1 text-left">Buscar</span>
+                    <span class="kbd">Ctrl K</span>
                 </button>
             </div>
 
@@ -134,7 +102,10 @@
                     <x-icon name="menu" class="size-6" />
                 </button>
                 <p class="truncate font-semibold">{{ $title ?? 'Início' }}</p>
-                <a href="{{ url('/cardapio') }}" target="_blank" class="btn-icon btn-ghost ml-auto -mr-2" aria-label="Ver cardápio público">
+                <button type="button" class="btn-icon btn-ghost ml-auto" @click="$dispatch('open-palette')" aria-label="Buscar">
+                    <x-icon name="search" class="size-5" />
+                </button>
+                <a href="{{ url('/cardapio') }}" target="_blank" class="btn-icon btn-ghost -mr-2" aria-label="Ver cardápio público">
                     <x-icon name="external" class="size-5" />
                 </a>
             </header>
@@ -201,12 +172,7 @@
                     @endif
                 @endif
 
-                @if (session('status'))
-                    <div class="alert-success mb-6" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" x-transition>
-                        <x-icon name="check" class="mt-0.5 size-4" />
-                        <span>{{ session('status') }}</span>
-                    </div>
-                @endif
+                @include('partials.toasts-flash')
 
                 @if (! request()->routeIs('profile') && \App\Modules\Push\StaffAlerts::receivesAlerts($user))
                     @include('partials.push-banner', ['what' => 'quando chegar um pedido pelo cardápio online', 'class' => 'mb-6'])
@@ -216,6 +182,8 @@
             </main>
         </div>
     </div>
+
+    @include('partials.command-palette')
 
     {{-- Pedido online esperando aceite: cartão e som em qualquer tela do painel. --}}
     @can('orders.manage')
